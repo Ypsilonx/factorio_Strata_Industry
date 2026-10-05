@@ -1,1 +1,5 @@
--- Research Towns – prototypy nezávislé na obsahu jiných modů (doplňují další úkoly).
+-- Research Towns – prototypy nezávislé na obsahu jiných modů.
+require("prototypes.group")
+require("prototypes.house")
+require("prototypes.depots")
+require("prototypes.bonus")
