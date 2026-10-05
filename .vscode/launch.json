@@ -1,0 +1,11 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "factoriomod",
+      "request": "launch",
+      "name": "Factorio – Research Towns",
+      "factorioPath": "C:/STEAM/steamapps/common/Factorio/bin/x64/factorio.exe"
+    }
+  ]
+}

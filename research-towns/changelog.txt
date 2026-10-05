@@ -1,0 +1,5 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2026-10-05
+  Features:
+    - Town halls replace labs; towns level up from goods, fluids and power delivered through depots.

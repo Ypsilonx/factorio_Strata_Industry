@@ -1,6 +1,9 @@
 {
-    "Lua.workspace.userThirdParty": [
-        "c:\\Users\\cibul\\AppData\\Roaming\\Code\\User\\workspaceStorage\\5cabece8e5d4669bc00fbad05a47d90a\\justarandomgeek.factoriomod-debug\\sumneko-3rd"
-    ],
-    "Lua.workspace.checkThirdParty": "ApplyInMemory"
+  "Lua.runtime.version": "Lua 5.2",
+  "Lua.diagnostics.globals": ["data", "mods", "settings", "script", "storage", "defines", "game", "prototypes", "helpers", "rendering", "remote", "commands", "log", "serpent", "table_size", "localised_print"],
+  "files.encoding": "utf8",
+  "Lua.workspace.userThirdParty": [
+    "c:\Users\cibul\AppData\Roaming\Code\User\workspaceStorage\5cabece8e5d4669bc00fbad05a47d90a\justarandomgeek.factoriomod-debug\sumneko-3rd"
+  ],
+  "Lua.workspace.checkThirdParty": "ApplyInMemory"
 }

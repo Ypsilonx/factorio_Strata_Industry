@@ -1,0 +1,1 @@
+-- Research Towns – vše odvozené z obsahu hry (vědy, laboratoře, suroviny milníků); doplní Task 4.

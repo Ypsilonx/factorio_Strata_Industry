@@ -1,0 +1,1 @@
+-- Research Towns – napojení událostí na moduly; logika je ve scripts/ (doplní Task 6).
