@@ -61,7 +61,7 @@ return {
     steps = {
       { ticks = 1, run = function(ctx)
         local hall = H.hall(ctx.town)
-        local expected = levels.bonus_modules(1, 4) * levels.BONUS_STEP
+        local expected = levels.bonus_modules(1, { 1, 1, 1, 1 }) * levels.BONUS_STEP
         local speed = hall.effects and hall.effects.speed or 0
         H.check(math.abs(speed - expected) < 1e-6, "rychlost radnice: " .. speed .. " ≠ " .. expected)
         local beacon = ctx.surface.find_entities_filtered({ name = "rt-hall-beacon", position = hall.position })[1]
@@ -71,7 +71,7 @@ return {
       end },
       { ticks = 1, run = function(ctx)
         local s = H.status(ctx.town)
-        H.check(s.beacon_modules == levels.bonus_modules(1, 4), "beacon se neobnovil: " .. s.beacon_modules)
+        H.check(s.beacon_modules == levels.bonus_modules(1, { 1, 1, 1, 1 }), "beacon se neobnovil: " .. s.beacon_modules)
       end },
     },
   },
@@ -112,7 +112,7 @@ return {
     steps = { { ticks = 1, run = function(ctx)
       local s = H.status(ctx.town)
       H.check(s.active_houses == 8, "aktivní domy: " .. s.active_houses)
-      local expected = levels.bonus_modules(1, 8)
+      local expected = levels.bonus_modules(1, { 1, 1, 1, 1, 1, 1, 1, 1 })
       H.check(s.beacon_modules == expected, "moduly beaconu: " .. s.beacon_modules .. " ≠ " .. expected)
     end } },
   },

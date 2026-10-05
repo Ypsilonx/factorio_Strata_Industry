@@ -53,7 +53,14 @@ return {
     name = "překladiště kapalin dodá kapalinu milníku",
     setup = function(ctx)
       ctx.town = H.town(ctx)
-      remote.call(R, "set_level", ctx.town, 2)
+      local fluid_level
+      for level = 1, H.level_count() - 1 do
+        for _, req in ipairs(H.levels_data().upgrade[tostring(level)]) do
+          if req.type == "fluid" and not fluid_level then fluid_level = level end
+        end
+      end
+      H.check(fluid_level, "žádný milník nechce kapalinu")
+      remote.call(R, "set_level", ctx.town, fluid_level)
       ctx.depot = H.place(ctx, "rt-fluid-depot", 4, 11)
       ctx.req = first_requirement(ctx.town, "fluid")
       ctx.depot.insert_fluid({ name = ctx.req.name, amount = 1000 })

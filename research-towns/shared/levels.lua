@@ -1,10 +1,9 @@
 --- Balanc úrovní měst – jediné místo, kde se ladí čísla. Sdílí ho data stage i control stage.
---- Suroviny milníků jsou seznamy kandidátů: v data-final-fixes vyhraje první existující a dostupný
---- (kompatibilita s overhauly), viz prototypes/science.lua.
+--- Počet úrovní = počet věd ve hře (spočítá data-final-fixes, runtime ho čte z mod-data); hodnoty úrovní jsou
+--- vzorce, takže fungují pro vanillu (7 věd) i overhauly (Bob's 18). Suroviny milníků jsou seznamy kandidátů:
+--- v data-final-fixes vyhraje první existující a dostupný (kompatibilita s overhauly), viz prototypes/science.lua.
 local M = {}
 
---- Počet úrovní města.
-M.MAX_LEVEL = 5
 --- Nejvýš tolik domů v sérii od radnice (hloubka v grafu sítě).
 M.MAX_HOUSE_DEPTH = 5
 --- Dosah propojení domů: mezera mezi okraji budov v dlaždicích.
@@ -13,67 +12,74 @@ M.HOUSE_REACH = 6
 M.DEPOT_REACH = 4
 --- Jak často se město zpracuje (ticky).
 M.TOWN_INTERVAL = 120
---- Bonus k rychlosti výzkumu za jeden skrytý modul v beaconu radnice.
+--- Bonus za jeden skrytý modul v beaconu radnice.
 M.BONUS_STEP = 0.01
---- Počet slotů skrytého beaconu (strop bonusu = BONUS_SLOTS × BONUS_STEP).
+--- Počet slotů skrytého beaconu.
 M.BONUS_SLOTS = 200
 --- Rozměr radnice v dlaždicích.
 M.HALL_SIZE = 15
 
---- Úrovně: rychlost radnice, limit domů s bonusem, bonus za dům, příkon města a milník na další úroveň.
-M.LEVELS = {
+--- Rychlost výzkumu radnice na první a na poslední vědecké úrovni (mezi nimi lineárně).
+M.SPEED_FIRST = 2
+M.SPEED_LAST = 10
+--- Domy s bonusem: HOUSES_PER_LEVEL × úroveň, nejvýš HOUSE_LIMIT_MAX. Stejný počet je podmínkou povýšení.
+M.HOUSES_PER_LEVEL = 4
+M.HOUSE_LIMIT_MAX = 20
+--- Strop bonusu k rychlosti ze všech domů dohromady (+120 %).
+M.SPEED_BONUS_CAP = 1.2
+--- Příkon města (MW) na první a na poslední vědecké úrovni (mezi nimi geometricky).
+M.POWER_FIRST_MW = 1
+M.POWER_LAST_MW = 150
+--- Nad poslední vědou roste příkon o tento díl příkonu poslední úrovně za každou úroveň.
+M.POWER_INFINITE_GROWTH = 0.1
+--- Kusů nové vědy v milníku.
+M.SCIENCE_PACKS = 200
+--- Množství surovin milníku k → k+1 = základ z TIERS × (1 + MILESTONE_GROWTH × (k − 1)).
+M.MILESTONE_GROWTH = 0.25
+--- Počet grafických variant radnice a domu (rozloží se rovnoměrně na vědecké úrovně).
+M.VARIANTS = 5
+
+--- Pásma kandidátů surovin milníků od nejranějšího; tier_index je roztáhne na libovolný počet úrovní.
+--- Nad poslední vědou se používá poslední pásmo.
+M.TIERS = {
   {
-    researching_speed = 2, house_limit = 4, house_bonus = 0.02, power_mw = 1,
-    upgrade = {
-      { type = "item", candidates = { "wood" }, amount = 200 },
-      { type = "item", candidates = { "iron-plate" }, amount = 400 },
-      { type = "item", candidates = { "copper-plate" }, amount = 200 },
-      { type = "item", candidates = { "stone-brick", "stone" }, amount = 200 },
-    },
+    { type = "item", candidates = { "wood" }, amount = 200 },
+    { type = "item", candidates = { "iron-plate" }, amount = 400 },
+    { type = "item", candidates = { "copper-plate" }, amount = 200 },
+    { type = "item", candidates = { "stone-brick", "stone" }, amount = 200 },
   },
   {
-    researching_speed = 4, house_limit = 8, house_bonus = 0.03, power_mw = 4,
-    upgrade = {
-      { type = "item", candidates = { "steel-plate", "iron-plate" }, amount = 400 },
-      { type = "item", candidates = { "electronic-circuit" }, amount = 400 },
-      { type = "item", candidates = { "pipe" }, amount = 100 },
-      { type = "fluid", candidates = { "water" }, amount = 20000 },
-    },
+    { type = "item", candidates = { "steel-plate", "iron-plate" }, amount = 400 },
+    { type = "item", candidates = { "electronic-circuit" }, amount = 400 },
+    { type = "item", candidates = { "pipe" }, amount = 100 },
+    { type = "fluid", candidates = { "water" }, amount = 20000 },
   },
   {
-    researching_speed = 6, house_limit = 12, house_bonus = 0.04, power_mw = 15,
-    upgrade = {
-      { type = "item", candidates = { "plastic-bar" }, amount = 500 },
-      { type = "item", candidates = { "advanced-circuit", "electronic-circuit" }, amount = 300 },
-      { type = "item", candidates = { "engine-unit" }, amount = 100 },
-      { type = "item", candidates = { "concrete", "stone-brick" }, amount = 1000 },
-      { type = "fluid", candidates = { "petroleum-gas", "crude-oil" }, amount = 30000 },
-    },
+    { type = "item", candidates = { "plastic-bar" }, amount = 500 },
+    { type = "item", candidates = { "advanced-circuit", "electronic-circuit" }, amount = 300 },
+    { type = "item", candidates = { "engine-unit" }, amount = 100 },
+    { type = "item", candidates = { "concrete", "stone-brick" }, amount = 1000 },
+    { type = "fluid", candidates = { "petroleum-gas", "crude-oil" }, amount = 30000 },
   },
   {
-    researching_speed = 8, house_limit = 16, house_bonus = 0.05, power_mw = 50,
-    upgrade = {
-      { type = "item", candidates = { "processing-unit", "advanced-circuit" }, amount = 400 },
-      { type = "item", candidates = { "low-density-structure", "plastic-bar" }, amount = 200 },
-      { type = "item", candidates = { "electric-engine-unit", "engine-unit" }, amount = 200 },
-      { type = "item", candidates = { "refined-concrete", "concrete" }, amount = 1000 },
-      { type = "fluid", candidates = { "lubricant", "heavy-oil" }, amount = 30000 },
-    },
+    { type = "item", candidates = { "processing-unit", "advanced-circuit" }, amount = 400 },
+    { type = "item", candidates = { "low-density-structure", "plastic-bar" }, amount = 200 },
+    { type = "item", candidates = { "electric-engine-unit", "engine-unit" }, amount = 200 },
+    { type = "item", candidates = { "refined-concrete", "concrete" }, amount = 1000 },
+    { type = "fluid", candidates = { "lubricant", "heavy-oil" }, amount = 30000 },
   },
   {
-    researching_speed = 10, house_limit = 20, house_bonus = 0.06, power_mw = 150,
+    { type = "item", candidates = { "flying-robot-frame", "electric-engine-unit" }, amount = 200 },
+    { type = "item", candidates = { "rocket-fuel", "solid-fuel" }, amount = 300 },
+    { type = "item", candidates = { "low-density-structure", "plastic-bar" }, amount = 400 },
+    { type = "item", candidates = { "processing-unit", "advanced-circuit" }, amount = 600 },
+    { type = "fluid", candidates = { "lubricant", "heavy-oil" }, amount = 50000 },
   },
 }
 
---- Parametry úrovně.
---- @param level integer 1..MAX_LEVEL
-function M.get(level)
-  return M.LEVELS[level]
-end
-
---- Jméno prototypu radnice dané úrovně.
-function M.hall_name(level)
-  return "rt-town-hall-" .. level
+--- Jméno prototypu radnice dané vědecké úrovně.
+function M.hall_name(tier)
+  return "rt-town-hall-" .. tier
 end
 
 --- Úroveň podle jména prototypu radnice, nebo nil pro jinou entitu.
@@ -82,23 +88,88 @@ function M.hall_level(name)
   return level and tonumber(level)
 end
 
---- Jména všech prototypů radnic.
-function M.hall_names()
+--- Jména prototypů radnic 1..count.
+function M.hall_names(count)
   local names = {}
-  for level = 1, M.MAX_LEVEL do names[level] = M.hall_name(level) end
+  for tier = 1, count do names[tier] = M.hall_name(tier) end
   return names
 end
 
---- Příkon města dané úrovně v joulech za tick.
-function M.power_per_tick(level)
-  return M.LEVELS[level].power_mw * 1e6 / 60
+--- Vědecká úroveň (prototyp radnice) pro úroveň města; nad poslední vědou zůstává nejvyšší.
+function M.hall_tier(level, count)
+  return math.min(level, count)
 end
 
---- Počet skrytých bonusových modulů pro aktivní domy (domy nad limit úrovně se nepočítají).
-function M.bonus_modules(level, active_houses)
-  local cfg = M.LEVELS[level]
-  local counted = math.min(active_houses, cfg.house_limit)
-  return math.floor(counted * cfg.house_bonus / M.BONUS_STEP + 0.5)
+--- Rychlost výzkumu radnice vědecké úrovně tier z count.
+function M.researching_speed(tier, count)
+  if count <= 1 then return M.SPEED_FIRST end
+  return M.SPEED_FIRST + (M.SPEED_LAST - M.SPEED_FIRST) * (tier - 1) / (count - 1)
+end
+
+--- Kolik domů dává bonus (a kolik jich je potřeba k povýšení) na dané úrovni.
+function M.house_limit(level)
+  return math.min(M.HOUSE_LIMIT_MAX, M.HOUSES_PER_LEVEL * level)
+end
+
+--- Příkon města v MW.
+function M.power_mw(level, count)
+  local tier = M.hall_tier(level, count)
+  local mw = M.POWER_FIRST_MW
+  if count > 1 then mw = M.POWER_FIRST_MW * (M.POWER_LAST_MW / M.POWER_FIRST_MW) ^ ((tier - 1) / (count - 1)) end
+  if level > count then mw = mw * (1 + M.POWER_INFINITE_GROWTH * (level - count)) end
+  return mw
+end
+
+--- Příkon města v joulech za tick.
+function M.power_per_tick(level, count)
+  return M.power_mw(level, count) * 1e6 / 60
+end
+
+--- Index pásma TIERS pro milník level → level+1. Konečné milníky (1..count−1) se rozloží rovnoměrně
+--- na všechna pásma; poslední konečný a nekonečné milníky dostanou poslední pásmo.
+function M.tier_index(level, count)
+  local last = count - 1
+  if level >= last then return last <= 1 and 1 or #M.TIERS end
+  return math.floor((level - 1) * (#M.TIERS - 1) / (last - 1)) + 1
+end
+
+--- Násobek množství surovin milníku level → level+1.
+function M.milestone_scale(level)
+  return 1 + M.MILESTONE_GROWTH * (level - 1)
+end
+
+--- Kopie požadavků s množstvím × milestone_scale(level) (zaokrouhleno; ostatní pole zůstanou).
+--- @param requirements table[] { {type, name, amount, science?} }
+function M.scaled(requirements, level)
+  local scale = M.milestone_scale(level)
+  local out = {}
+  for i, req in ipairs(requirements) do
+    out[i] = { type = req.type, name = req.name, amount = math.floor(req.amount * scale + 0.5), science = req.science }
+  end
+  return out
+end
+
+--- Grafická varianta (1..VARIANTS) radnice nebo domu dané úrovně.
+function M.variant(level, count)
+  local tier = M.hall_tier(level, count)
+  return math.min(M.VARIANTS, math.floor((tier - 1) * M.VARIANTS / count) + 1)
+end
+
+--- Bonus jednoho domu k rychlosti výzkumu: (úroveň domu + 1) %.
+function M.house_bonus(house_level)
+  return (house_level + 1) / 100
+end
+
+--- Počet bonusových modulů rychlosti: domy od nejvyšší úrovně, nejvýš house_limit(level) domů,
+--- součet zastropovaný SPEED_BONUS_CAP.
+--- @param house_levels integer[] úrovně aktivních domů
+function M.bonus_modules(level, house_levels)
+  local sorted = {}
+  for i, house_level in ipairs(house_levels) do sorted[i] = house_level end
+  table.sort(sorted, function(a, b) return a > b end)
+  local bonus = 0
+  for i = 1, math.min(#sorted, M.house_limit(level)) do bonus = bonus + M.house_bonus(sorted[i]) end
+  return math.floor(math.min(bonus, M.SPEED_BONUS_CAP) / M.BONUS_STEP + 0.5)
 end
 
 return M

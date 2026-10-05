@@ -44,29 +44,33 @@ local function raw()
 end
 
 return {
-  { "první věda je úroveň 1, ostatní rovnoměrně 2–5", function()
-    local bands = science.bands(raw(), 5)
+  { "první věda je úroveň 1, každá další otevírá novou úroveň", function()
+    local bands, count = science.bands(raw())
     A.eq(bands.red, 1, "red")
     A.eq(bands.green, 2, "green")
     A.eq(bands.blue, 3, "blue")
-    A.eq(bands.mil, 4, "mil")
+    A.eq(bands.mil, 4, "mil (stejná hloubka jako blue → podle jména)")
     A.eq(bands.secret, nil, "věda skrytého výzkumu")
+    A.eq(count, 4, "počet úrovní")
+    A.eq(science.new_at(bands, 3), "blue", "úroveň 3 otevírá blue")
+    A.eq(science.new_at(bands, 9), nil, "neexistující úroveň")
   end },
   { "vědy úrovní jsou kumulativní", function()
-    local list = science.sciences(science.bands(raw(), 5), 5)
+    local bands, count = science.bands(raw())
+    local list = science.sciences(bands, count)
     A.eq(table.concat(list[1], ","), "red", "úroveň 1")
     A.eq(table.concat(list[3], ","), "red,green,blue", "úroveň 3")
-    A.eq(table.concat(list[5], ","), "red,green,blue,mil", "úroveň 5")
+    A.eq(table.concat(list[4], ","), "red,green,blue,mil", "úroveň 4")
   end },
   { "úroveň výzkumu zahrnuje prerekvizity", function()
-    local levels = science.tech_levels(raw(), science.bands(raw(), 5))
+    local levels = science.tech_levels(raw(), science.bands(raw()))
     A.eq(levels["t-red"], 1, "t-red")
     A.eq(levels["t-blue"], 3, "t-blue")
     A.eq(levels["t-trigger"], 3, "spouštěný výzkum dědí z prerekvizit")
   end },
   { "dostupnost: recept, výzkum, suroviny ze světa", function()
     local r = raw()
-    local avail = science.availability(r, science.tech_levels(r, science.bands(r, 5)))
+    local avail = science.availability(r, science.tech_levels(r, science.bands(r)))
     A.eq(avail["item/gear"], 1, "recept od začátku")
     A.eq(avail["item/steel"], 3, "recept za výzkumem")
     A.eq(avail["item/iron-ore"], 1, "ruda")
@@ -75,18 +79,18 @@ return {
   end },
   { "dostupnost respektuje ingredience receptu", function()
     local r = raw()
-    local avail = science.availability(r, science.tech_levels(r, science.bands(r, 5)))
+    local avail = science.availability(r, science.tech_levels(r, science.bands(r)))
     A.eq(avail["item/frame"], 3, "výrobek nejde dřív než jeho ingredience")
   end },
   { "skryté recepty a barely se nepočítají", function()
     local r = raw()
-    local avail = science.availability(r, science.tech_levels(r, science.bands(r, 5)))
+    local avail = science.availability(r, science.tech_levels(r, science.bands(r)))
     A.eq(avail["item/secret-item"], nil, "recyklace")
     A.eq(avail["fluid/lube"], nil, "vyprázdnění barelu")
   end },
   { "kandidáti: první dostupný na úrovni, jinak vynechat", function()
     local r = raw()
-    local avail = science.availability(r, science.tech_levels(r, science.bands(r, 5)))
+    local avail = science.availability(r, science.tech_levels(r, science.bands(r)))
     local exists = science.exists_in(r)
     local reqs = {
       { type = "item", candidates = { "steel", "gear" }, amount = 5 },
@@ -103,7 +107,7 @@ return {
   end },
   { "stejná surovina se v milníku nezdvojí", function()
     local r = raw()
-    local avail = science.availability(r, science.tech_levels(r, science.bands(r, 5)))
+    local avail = science.availability(r, science.tech_levels(r, science.bands(r)))
     local reqs = {
       { type = "item", candidates = { "gear" }, amount = 5 },
       { type = "item", candidates = { "gear", "wood" }, amount = 5 },

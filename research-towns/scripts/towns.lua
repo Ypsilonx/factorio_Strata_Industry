@@ -54,7 +54,7 @@ function M.update_bonus(town)
   local beacon = ensure_beacon(town)
   if not beacon then return end
   local inventory = beacon.get_module_inventory()
-  local wanted = levels.bonus_modules(town.level, network.active_houses(town))
+  local wanted = levels.bonus_modules(town.level, network.active_house_levels(town))
   local have = inventory.get_item_count(BONUS_MODULE)
   if wanted > have then
     inventory.insert({ name = BONUS_MODULE, count = wanted - have })
@@ -82,7 +82,7 @@ end
 --- Založí město s radnicí úrovně 1; nil, když tam radnice nejde postavit.
 --- @param position MapPosition střed radnice
 function M.create(surface, position, force)
-  local name = levels.hall_name(1)
+  local name = config.hall_name(1)
   if not surface.can_place_entity({ name = name, position = position, force = force }) then return nil end
   local hall = surface.create_entity({ name = name, position = position, force = force })
   if not hall then return nil end
@@ -111,7 +111,7 @@ end
 function M.can_upgrade(town)
   local requirements = config.upgrade(town.level)
   return requirements ~= nil and milestones.complete(requirements, town.progress)
-    and network.active_houses(town) >= levels.get(town.level).house_limit
+    and network.active_houses(town) >= levels.house_limit(town.level)
 end
 
 --- Přesune obsah inventáře entity do dočasného inventáře (zachová trvanlivost balíčků i moduly).
@@ -142,7 +142,7 @@ function M.set_level(town, level)
   local modules = take_inventory(old, defines.inventory.lab_modules)
   local old_key = old.unit_number
   old.destroy()
-  local hall = surface.create_entity({ name = levels.hall_name(level), position = position, force = force })
+  local hall = surface.create_entity({ name = config.hall_name(level), position = position, force = force })
   restore_inventory(packs, hall, defines.inventory.lab_input)
   restore_inventory(modules, hall, defines.inventory.lab_modules)
   network.replace_hall(old_key, hall)
@@ -167,8 +167,7 @@ end
 
 --- Stav města pro GUI a remote rozhraní.
 function M.status(town)
-  local cfg = levels.get(town.level)
-  local active = network.active_houses(town)
+  local count = config.level_count()
   local requirements = {}
   for _, req in ipairs(config.upgrade(town.level) or {}) do
     requirements[#requirements + 1] = {
@@ -178,11 +177,11 @@ function M.status(town)
   end
   local beacon = town.beacon
   return {
-    id = town.id, name = town.name, level = town.level, hall = town.hall.unit_number,
-    active_houses = active, house_limit = cfg.house_limit,
-    bonus = levels.bonus_modules(town.level, active) * levels.BONUS_STEP,
+    id = town.id, name = town.name, level = town.level, level_count = count, hall = town.hall.unit_number,
+    active_houses = network.active_houses(town), house_limit = levels.house_limit(town.level),
+    bonus = levels.bonus_modules(town.level, network.active_house_levels(town)) * levels.BONUS_STEP,
     beacon_modules = beacon and beacon.valid and beacon.get_module_inventory().get_item_count(BONUS_MODULE) or 0,
-    power_ok = town.power_ok, power_watts = cfg.power_mw * 1e6,
+    power_ok = town.power_ok, power_watts = levels.power_mw(town.level, count) * 1e6,
     requirements = requirements, can_upgrade = M.can_upgrade(town),
   }
 end

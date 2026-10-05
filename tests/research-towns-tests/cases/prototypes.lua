@@ -24,6 +24,13 @@ return {
         name .. ": dosah " .. serpent.line(spec and spec.distance) .. " ≠ " .. (half + distance))
     end
   end } } },
+  { name = "rychlost radnice roste od první do poslední vědy", steps = { { ticks = 1, run = function()
+    local count = H.level_count()
+    local first = prototypes.entity[levels.hall_name(1)].get_researching_speed()
+    local last = prototypes.entity[levels.hall_name(count)].get_researching_speed()
+    H.check(math.abs(first - levels.SPEED_FIRST) < 1e-6, "rychlost úrovně 1: " .. first)
+    H.check(math.abs(last - levels.SPEED_LAST) < 1e-6, "rychlost úrovně " .. count .. ": " .. last)
+  end } } },
   { name = "výzkum červené vědy se spouští vyrobením domu", steps = { { ticks = 1, run = function()
     local trigger = prototypes.technology["automation-science-pack"].research_trigger
     H.check(serpent.line(trigger):find("rt-house", 1, true), "spouštěč: " .. serpent.line(trigger))

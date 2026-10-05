@@ -25,7 +25,7 @@ function M.apply_town_power(town)
     if depot and depot.kind == "power" and depot.entity.valid then list[#list + 1] = depot end
   end
   for _, depot in ipairs(list) do
-    local usage = levels.power_per_tick(town.level) / #list
+    local usage = levels.power_per_tick(town.level, config.level_count()) / #list
     depot.entity.power_usage = usage
     depot.entity.electric_buffer_size = usage * 2
   end

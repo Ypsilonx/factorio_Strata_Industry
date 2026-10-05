@@ -1,6 +1,7 @@
 --- GUI radnice: panel ukotvený vpravo od okna laboratoře, zobrazený jen u radnic.
 local levels = require("shared.levels")
 local towns = require("scripts.towns")
+local config = require("scripts.config")
 
 local M = {}
 
@@ -25,7 +26,7 @@ function M.ensure(player)
   local frame = relative.add({
     type = "frame", name = M.NAMES.frame, direction = "vertical", caption = { "rt.gui-title" },
     anchor = { gui = defines.relative_gui_type.lab_gui, position = defines.relative_gui_position.right,
-      names = levels.hall_names() },
+      names = config.hall_names() },
   })
   frame.add({ type = "textfield", name = M.NAMES.name, tooltip = { "rt.gui-rename" } })
   frame.add({ type = "label", name = M.NAMES.level })
@@ -54,7 +55,7 @@ local function fill(player, town)
   if not frame then return end
   local n = M.NAMES
   local status = towns.status(town)
-  frame[n.level].caption = { "rt.gui-level", status.level, levels.MAX_LEVEL }
+  frame[n.level].caption = { "rt.gui-level", status.level, math.min(status.level, status.level_count), status.level_count }
   frame[n.houses].caption = { "rt.gui-houses", status.active_houses, status.house_limit,
     string.format("%d", math.floor(status.bonus * 100 + 0.5)) }
   local megawatts = string.format("%.0f", status.power_watts / 1e6)

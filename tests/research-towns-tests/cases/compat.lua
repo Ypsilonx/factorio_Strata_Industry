@@ -9,24 +9,36 @@ local function set(list)
   return result
 end
 
+--- Vědy, které přijímá radnice dané vědecké úrovně.
+local function inputs(tier)
+  return prototypes.entity[levels.hall_name(tier)].lab_inputs
+end
+
+--- Existuje předmět/kapalina požadavku?
+local function exists(req)
+  return (req.type == "fluid" and prototypes.fluid[req.name] or prototypes.item[req.name]) ~= nil
+end
+
 return {
-  { name = "radnice 1–5 existují a vědy s úrovní přibývají", steps = { { ticks = 1, run = function()
-    local previous = 0
-    for level = 1, levels.MAX_LEVEL do
-      local proto = prototypes.entity[levels.hall_name(level)]
-      H.check(proto and proto.type == "lab", "chybí radnice " .. level)
-      H.check(#proto.lab_inputs >= previous, "úroveň " .. level .. " přijímá méně věd než předchozí")
+  { name = "radnice všech úrovní existují a každá další přidá právě jednu vědu", steps = { { ticks = 1, run = function()
+    local count = H.level_count()
+    H.check(count >= 2, "jen " .. count .. " úroveň")
+    local previous
+    for tier = 1, count do
+      local proto = prototypes.entity[levels.hall_name(tier)]
+      H.check(proto and proto.type == "lab", "chybí radnice " .. tier)
+      if previous then H.check(#proto.lab_inputs == previous + 1, "úroveň " .. tier .. " nepřidala jednu vědu") end
       previous = #proto.lab_inputs
     end
+    H.check(prototypes.entity[levels.hall_name(count + 1)] == nil, "radnice nad počtem věd")
   end } } },
   { name = "úroveň 1 přijímá nejvýš polovinu věd nejvyšší úrovně", steps = { { ticks = 1, run = function()
     -- Hlídá pořadí final-fixes: když pásma vzniknou před dopočtem stromu overhaulu, skončí skoro vše na úrovni 1.
-    local first = #prototypes.entity[levels.hall_name(1)].lab_inputs
-    local top = #prototypes.entity[levels.hall_name(levels.MAX_LEVEL)].lab_inputs
+    local first, top = #inputs(1), #inputs(H.level_count())
     H.check(first * 2 <= top, "úroveň 1: " .. first .. " věd, nejvyšší: " .. top)
   end } } },
   { name = "nejvyšší radnice umí všechny vědy výzkumů", steps = { { ticks = 1, run = function()
-    local top = set(prototypes.entity[levels.hall_name(levels.MAX_LEVEL)].lab_inputs)
+    local top = set(inputs(H.level_count()))
     for name, tech in pairs(prototypes.technology) do
       if tech.enabled and not tech.hidden then
         for _, ingredient in pairs(tech.research_unit_ingredients) do
@@ -48,15 +60,22 @@ return {
       end
     end
   end } } },
-  { name = "suroviny milníků existují", steps = { { ticks = 1, run = function()
-    local data = prototypes.mod_data["rt-levels"].data
-    for level = 1, levels.MAX_LEVEL - 1 do
+  { name = "milník chce vědu další úrovně a existující suroviny", steps = { { ticks = 1, run = function()
+    local data, count = H.levels_data(), H.level_count()
+    for level = 1, count - 1 do
       local upgrade = data.upgrade[tostring(level)]
-      H.check(upgrade and #upgrade > 0, "úroveň " .. level .. " nemá milník")
+      H.check(upgrade and #upgrade > 1, "úroveň " .. level .. " nemá milník se surovinami")
+      local here, next_level, sciences = set(inputs(level)), set(inputs(level + 1)), 0
       for _, req in ipairs(upgrade) do
-        local found = req.type == "fluid" and prototypes.fluid[req.name] or prototypes.item[req.name]
-        H.check(found, "surovina " .. req.name .. " neexistuje")
+        H.check(exists(req), "surovina " .. req.name .. " neexistuje")
+        if req.science then
+          sciences = sciences + 1
+          H.check(next_level[req.name] and not here[req.name], "věda milníku " .. level .. ": " .. req.name)
+        end
       end
+      H.check(sciences == 1, "milník " .. level .. " má " .. sciences .. " věd")
     end
+    H.check(#data.infinite > 0, "nekonečný milník je prázdný")
+    for _, req in ipairs(data.infinite) do H.check(exists(req), "surovina " .. req.name .. " neexistuje") end
   end } } },
 }

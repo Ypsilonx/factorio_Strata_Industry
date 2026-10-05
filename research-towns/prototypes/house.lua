@@ -1,8 +1,8 @@
---- Dům: jedna entita, úroveň města určuje grafickou variantu (graphics_variation = úroveň).
+--- Dům: jedna entita, grafická varianta (graphics_variation) podle úrovně – levels.variant.
 local levels = require("shared.levels")
 local reach = require("prototypes.reach")
 
---- Odstín variant podle úrovně (dočasná grafika).
+--- Odstín grafických variant (dočasná grafika).
 local TINTS = {
   { r = 1, g = 1, b = 1 }, { r = 0.8, g = 1, b = 0.8 }, { r = 0.8, g = 0.9, b = 1 },
   { r = 1, g = 0.85, b = 0.6 }, { r = 1, g = 0.7, b = 1 },
@@ -12,7 +12,7 @@ local ICON = "__base__/graphics/icons/stone-furnace.png"
 local SELECTION = { { -1.5, -1.5 }, { 1.5, 1.5 } }
 
 local pictures = {}
-for level = 1, levels.MAX_LEVEL do
+for level = 1, levels.VARIANTS do
   pictures[level] = { filename = ICON, size = 64, scale = 1.5, tint = TINTS[level] }
 end
 

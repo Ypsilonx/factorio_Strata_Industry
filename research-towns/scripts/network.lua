@@ -1,6 +1,7 @@
 --- Runtime síť města: uzly (radnice, domy) ve storage.nodes, vazby = visuté chodníky v dosahu.
 --- Příslušnost k městu a hloubku počítá čistá logika scripts/graph.lua.
 local levels = require("shared.levels")
+local config = require("scripts.config")
 local geometry = require("scripts.geometry")
 local graph = require("scripts.graph")
 
@@ -14,7 +15,7 @@ local LINK_COLOR = { r = 0.55, g = 0.45, b = 0.3, a = 0.9 }
 
 --- Jména všech budov sítě (domy + radnice).
 function M.names()
-  local names = levels.hall_names()
+  local names = config.hall_names()
   names[#names + 1] = M.HOUSE
   return names
 end
@@ -67,7 +68,7 @@ end
 local function refresh_house(node)
   if not node.entity.valid then return end
   local town = node.town and storage.towns[node.town]
-  node.entity.graphics_variation = town and town.level or 1
+  node.entity.graphics_variation = levels.variant(town and town.level or 1, config.level_count())
   local active = M.is_active(node)
   if active and node.warning then
     if node.warning.valid then node.warning.destroy() end
@@ -159,6 +160,17 @@ function M.active_houses(town)
     if node and M.is_active(node) then count = count + 1 end
   end
   return count
+end
+
+--- Úrovně aktivních domů města (zatím mají domy úroveň města).
+--- @return integer[]
+function M.active_house_levels(town)
+  local list = {}
+  for key in pairs(town.houses) do
+    local node = storage.nodes[key]
+    if node and M.is_active(node) then list[#list + 1] = town.level end
+  end
+  return list
 end
 
 --- Obnoví vzhled všech domů města (po povýšení).

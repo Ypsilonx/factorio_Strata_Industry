@@ -35,9 +35,10 @@ function M.tech_depths(raw)
   return depth
 end
 
---- Rozdělí vědy používané výzkumy do úrovní: nejranější věda(y) = 1, ostatní podle pořadí rovnoměrně 2..max.
---- @return table<string, integer> věda → úroveň
-function M.bands(raw, max_level)
+--- Rozdělí vědy používané výzkumy do úrovní: nejranější věda(y) = úroveň 1, každá další věda (podle hloubky
+--- prvního výzkumu, který ji používá, při shodě podle jména) otevírá další úroveň.
+--- @return table<string, integer> věda → úroveň, integer počet úrovní
+function M.bands(raw)
   local depths = M.tech_depths(raw)
   local tier = {}
   for name, tech in pairs(raw.technology) do
@@ -54,21 +55,23 @@ function M.bands(raw, max_level)
     if tier[a] ~= tier[b] then return tier[a] < tier[b] end
     return a < b
   end)
-  local bands, rest = {}, {}
+  local bands, count = {}, 1
   for _, pack in ipairs(packs) do
-    if tier[pack] == tier[packs[1]] then bands[pack] = 1 else rest[#rest + 1] = pack end
+    if tier[pack] == tier[packs[1]] then
+      bands[pack] = 1
+    else
+      count = count + 1
+      bands[pack] = count
+    end
   end
-  for rank, pack in ipairs(rest) do
-    bands[pack] = math.floor((rank - 1) * (max_level - 1) / #rest) + 2
-  end
-  return bands
+  return bands, count
 end
 
---- Vědy, které přijímá radnice každé úrovně (kumulativně, seřazeno podle pásma a jména).
+--- Vědy, které přijímá radnice každé úrovně 1..count (kumulativně, seřazeno podle úrovně a jména).
 --- @return table<integer, string[]>
-function M.sciences(bands, max_level)
+function M.sciences(bands, count)
   local result = {}
-  for level = 1, max_level do
+  for level = 1, count do
     local list = {}
     for pack, band in pairs(bands) do
       if band <= level then list[#list + 1] = pack end
@@ -80,6 +83,14 @@ function M.sciences(bands, max_level)
     result[level] = list
   end
   return result
+end
+
+--- Věda, kterou daná úroveň otevírá (pro úroveň ≥ 2 právě jedna), nebo nil.
+function M.new_at(bands, level)
+  for pack, band in pairs(bands) do
+    if band == level then return pack end
+  end
+  return nil
 end
 
 --- Úroveň města potřebná pro výzkum: nejvyšší pásmo jeho věd i věd všech prerekvizit.

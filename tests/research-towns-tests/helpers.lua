@@ -72,4 +72,14 @@ function H.delivered(id, kind, name)
   return nil
 end
 
+--- Data úrovní vyřešená v data stage (mod-data rt-levels).
+function H.levels_data()
+  return prototypes.mod_data["rt-levels"].data
+end
+
+--- Počet vědeckých úrovní (= počet věd ve hře).
+function H.level_count()
+  return H.levels_data().level_count
+end
+
 return H

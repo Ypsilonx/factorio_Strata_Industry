@@ -1,56 +1,86 @@
---- Jednotkové testy balanční tabulky úrovní a pomocných funkcí.
+--- Jednotkové testy balančních vzorců úrovní (počet úrovní = počet věd).
 local A = require("assert")
 local levels = require("shared.levels")
 
+--- Je posloupnost f(1..n) neklesající?
+local function non_decreasing(n, f)
+  for i = 2, n do
+    if f(i) < f(i - 1) then return false end
+  end
+  return true
+end
+
 return {
-  { "pět úrovní se všemi poli", function()
-    A.eq(#levels.LEVELS, levels.MAX_LEVEL, "počet úrovní")
-    for level = 1, levels.MAX_LEVEL do
-      local cfg = levels.get(level)
-      A.truthy(cfg.researching_speed > 0 and cfg.house_limit > 0 and cfg.house_bonus > 0 and cfg.power_mw > 0,
-        "pole úrovně " .. level)
-    end
+  { "rychlost radnice od SPEED_FIRST do SPEED_LAST", function()
+    A.eq(levels.researching_speed(1, 7), levels.SPEED_FIRST, "první úroveň")
+    A.eq(levels.researching_speed(7, 7), levels.SPEED_LAST, "poslední věda")
+    A.eq(levels.researching_speed(1, 1), levels.SPEED_FIRST, "jediná věda")
+    A.truthy(non_decreasing(18, function(t) return levels.researching_speed(t, 18) end), "roste i pro 18 úrovní")
   end },
-  { "limity, příkon a rychlost rostou", function()
-    for level = 2, levels.MAX_LEVEL do
-      local a, b = levels.get(level - 1), levels.get(level)
-      A.truthy(b.house_limit > a.house_limit, "limit domů roste " .. level)
-      A.truthy(b.power_mw > a.power_mw, "příkon roste " .. level)
-      A.truthy(b.researching_speed > a.researching_speed, "rychlost roste " .. level)
-    end
+  { "limit domů 4 na úroveň, strop 20", function()
+    A.eq(levels.house_limit(1), 4, "úroveň 1")
+    A.eq(levels.house_limit(5), 20, "úroveň 5")
+    A.eq(levels.house_limit(9), 20, "nad stropem")
   end },
-  { "milníky mají všechny úrovně kromě poslední", function()
-    for level = 1, levels.MAX_LEVEL - 1 do
-      local upgrade = levels.get(level).upgrade
-      A.truthy(upgrade and #upgrade > 0, "milník úrovně " .. level)
-      for _, req in ipairs(upgrade) do
+  { "příkon od 1 MW do 150 MW, nad poslední vědou dál roste", function()
+    A.truthy(math.abs(levels.power_mw(1, 7) - 1) < 1e-9, "úroveň 1")
+    A.truthy(math.abs(levels.power_mw(7, 7) - 150) < 1e-6, "poslední věda")
+    A.truthy(math.abs(levels.power_mw(8, 7) - 165) < 1e-6, "první nekonečná")
+    A.truthy(non_decreasing(30, function(l) return levels.power_mw(l, 18) end), "roste i pro 18 úrovní")
+    A.eq(levels.power_per_tick(1, 7), levels.power_mw(1, 7) * 1e6 / 60, "joule za tick")
+  end },
+  { "pásma surovin se roztáhnou na libovolný počet úrovní", function()
+    A.eq(levels.tier_index(1, 7), 1, "první milník")
+    A.eq(levels.tier_index(6, 7), #levels.TIERS, "poslední konečný milník")
+    A.eq(levels.tier_index(20, 7), #levels.TIERS, "nekonečné")
+    A.eq(levels.tier_index(1, 2), 1, "jediný milník")
+    local seen = {}
+    for k = 1, 17 do seen[levels.tier_index(k, 18)] = true end
+    for t = 1, #levels.TIERS do A.truthy(seen[t], "18 úrovní použije pásmo " .. t) end
+    A.truthy(non_decreasing(17, function(k) return levels.tier_index(k, 18) end), "pásma neklesají")
+  end },
+  { "pásma mají platné kandidáty", function()
+    for t, tier in ipairs(levels.TIERS) do
+      A.truthy(#tier > 0, "pásmo " .. t)
+      for _, req in ipairs(tier) do
         A.truthy((req.type == "item" or req.type == "fluid") and #req.candidates > 0 and req.amount > 0,
-          "požadavek úrovně " .. level)
+          "požadavek pásma " .. t)
       end
     end
-    A.eq(levels.get(levels.MAX_LEVEL).upgrade, nil, "poslední úroveň nemá milník")
+  end },
+  { "množství milníku roste s úrovní", function()
+    A.eq(levels.milestone_scale(1), 1, "úroveň 1")
+    local out = levels.scaled({ { type = "item", name = "a", amount = 100, science = true } }, 3)
+    A.eq(out[1].amount, math.floor(100 * levels.milestone_scale(3) + 0.5), "úroveň 3")
+    A.eq(out[1].science, true, "příznak vědy zůstane")
+  end },
+  { "grafické varianty pokryjí všechny úrovně", function()
+    A.eq(levels.variant(1, 7), 1, "první")
+    A.eq(levels.variant(7, 7), levels.VARIANTS, "poslední věda")
+    A.eq(levels.variant(100, 7), levels.VARIANTS, "nekonečné")
+    local seen = {}
+    for t = 1, 18 do seen[levels.variant(t, 18)] = true end
+    for v = 1, levels.VARIANTS do A.truthy(seen[v], "18 úrovní použije variantu " .. v) end
+  end },
+  { "bonus domu je (úroveň domu + 1) %", function()
+    for h = 1, 5 do
+      A.eq(levels.bonus_modules(1, { h }) * levels.BONUS_STEP, levels.house_bonus(h), "dům úrovně " .. h)
+      A.truthy(math.abs(levels.house_bonus(h) - (h + 1) / 100) < 1e-9, "house_bonus " .. h)
+    end
+    A.eq(levels.bonus_modules(1, {}), 0, "bez domů")
+  end },
+  { "počítají se nejlepší domy do limitu a strop +120 %", function()
+    A.eq(levels.bonus_modules(1, { 1, 1, 1, 1, 5 }), 6 + 2 + 2 + 2, "nejlepší 4 domy")
+    local many = {}
+    for i = 1, 20 do many[i] = 10 end
+    A.eq(levels.bonus_modules(5, many), math.floor(levels.SPEED_BONUS_CAP / levels.BONUS_STEP + 0.5), "strop")
+    A.truthy(levels.bonus_modules(5, many) <= levels.BONUS_SLOTS, "vejde se do beaconu")
   end },
   { "jména radnic tam i zpět", function()
     A.eq(levels.hall_name(3), "rt-town-hall-3", "hall_name")
     A.eq(levels.hall_level("rt-town-hall-3"), 3, "hall_level")
     A.eq(levels.hall_level("lab"), nil, "cizí jméno")
-    A.eq(#levels.hall_names(), levels.MAX_LEVEL, "hall_names")
-  end },
-  { "příkon v joulech za tick", function()
-    A.eq(levels.power_per_tick(1), levels.get(1).power_mw * 1e6 / 60, "power_per_tick")
-  end },
-  { "bonus za dům je (úroveň + 1) %", function()
-    for level = 1, levels.MAX_LEVEL do
-      local bonus = levels.bonus_modules(level, 1) * levels.BONUS_STEP
-      A.truthy(math.abs(bonus - (level + 1) / 100) < 1e-9, "bonus domu na úrovni " .. level .. ": " .. bonus)
-    end
-  end },
-  { "bonusové moduly se stropem limitu domů", function()
-    local cfg = levels.get(1)
-    A.eq(levels.bonus_modules(1, 0), 0, "bez domů")
-    A.eq(levels.bonus_modules(1, cfg.house_limit), math.floor(cfg.house_limit * cfg.house_bonus / levels.BONUS_STEP + 0.5), "na limitu")
-    A.eq(levels.bonus_modules(1, cfg.house_limit + 10), levels.bonus_modules(1, cfg.house_limit), "nad limitem")
-    local top = levels.get(levels.MAX_LEVEL)
-    A.truthy(levels.bonus_modules(levels.MAX_LEVEL, top.house_limit) <= levels.BONUS_SLOTS, "vejde se do beaconu")
+    A.eq(#levels.hall_names(7), 7, "hall_names")
+    A.eq(levels.hall_tier(9, 7), 7, "nad poslední vědou zůstává nejvyšší radnice")
   end },
 }
