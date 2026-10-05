@@ -5,5 +5,5 @@
   "author": "Ypsilonx",
   "factorio_version": "2.0",
   "description": "Labs are gone. Research happens in town halls of towns you supply with science packs, goods, fluids and power. Compatible with overhaul mods.",
-  "dependencies": ["base >= 2.0.0"]
+  "dependencies": ["base >= 2.0.0", "? pypostprocessing"]
 }
