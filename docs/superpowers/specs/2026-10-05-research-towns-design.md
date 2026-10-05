@@ -190,10 +190,15 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
 ### Balanc domů po prvním hraní (2026-10-05)
 - **Hotovo:** bonus za dům = (úroveň + 1) % (dřív 10–30 %), krok bonusu 1 %; překladiště a dům ukazují dosah
   (`radius_visualisation_specification`).
-- **Plán 1b – vylepšování domů:** domy s městem nepovyšují automaticky. Po povýšení města se vylepšují postupně
-  jeden po druhém (od radnice podle hloubky) z „materiálu pro domy“ dodaného do překladišť města. Cena vylepšení
-  jednoho domu ≈ 2× odpovídající podíl milníku (konstanta k ladění). Bonus domu se řídí **jeho** úrovní.
-  Jednotlivé domy se dál nezásobují.
+- **Plán 1b – vylepšování domů (potvrzeno 2026-10-05):**
+  - Domy s městem nepovyšují automaticky. Vylepšení domu na úroveň k stojí **stejné suroviny jako milník
+    radnice k−1 → k, bez vědeckých balíčků**.
+  - Vylepšení je **dobrovolné**: podmínkou povýšení města je jen **počet** připojených domů, ne jejich úroveň.
+    Nevylepšený dům funguje dál, jen dává bonus podle **své** úrovně.
+  - Domy se vylepšují postupně jeden po druhém, od radnice podle hloubky v síti. Jednotlivé domy se nezásobují –
+    suroviny jdou do překladišť města.
+  - **Pořadí rozdělení surovin z překladišť:** 1) aktuální milník radnice, 2) vylepšení domů, 3) co nikdo
+    nepotřebuje, zůstane v překladišti. Přepínač „pro radnici / pro domy“ v GUI překladiště jen případně později.
 
 ### Obvodová síť (plán 1b)
 - Kontejner ve Factoriu do sítě vždy posílá svůj obsah, vlastní signály neumí – proto nová budova
@@ -201,8 +206,8 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   - režim **Radnice**: zbývající množství milníku radnice (signály předmětů/kapalin),
   - režim **Dům**: požadavek na vylepšení **jednoho** domu + virtuální signál „počet domů k vylepšení“
     (hráč si násobí aritmetickým kombinátorem).
-  - Režim se volí v GUI tabule; víc tabulí = víc režimů naráz. Pořadí „nejdřív radnice, pak domy“ plyne z toho,
-    že požadavky domů vzniknou až po povýšení radnice.
+  - Režim se volí v GUI tabule; víc tabulí = víc režimů naráz. Pořadí „nejdřív radnice, pak domy“ odpovídá
+    pořadí rozdělení surovin v překladištích.
   - Kapaliny jdou jako signály kapalin. Elektřina: virtuální signály „potřebný příkon (MW)“ a „pokrytí elektřiny
     (%)“ – trvalá spotřeba se nedodává do překladiště, takže tabule ukazuje jen stav.
 - Varianta s logistickou požadavkovou bednou zamítnuta (neřeší kapaliny ani elektřinu).
@@ -210,7 +215,14 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
 ### Domy v nekonečných úrovních (plán 1b)
 - Úroveň domu sleduje úrovně města (počet úrovní = počet věd), ne pevných 5.
 - Bonus domů k **rychlosti** roste do poslední vědecké úrovně a je zastropovaný na **+120 %** celkem.
-- V nekonečných úrovních se domy dál vylepšují (vylepšení všech domů je součást ceny úrovně), ale odměnou je
-  jen **produktivita výzkumu radnice** (jeden zdroj, klesající křivka kvůli stropu produktivity) – domy samy
-  produktivitu nepřidávají.
+- V nekonečných úrovních dává **produktivitu výzkumu jen radnice** za svůj milník (jeden zdroj, klesající křivka
+  kvůli stropu produktivity). Domy se vylepšují dobrovolně stejně jako dřív a přidávají jen rychlost do stropu
+  +120 %; samy produktivitu nepřidávají.
 - Grafické varianty domu (cca 5) se rozloží rovnoměrně na všechny úrovně; nad poslední vědou zůstává poslední.
+
+## Další kroky (stav 2026-10-05)
+1. **Plán 1b – úrovně:** úroveň = věda (milník = nová věda + suroviny), nekonečné úrovně s produktivitou radnice,
+   dobrovolné vylepšování domů (pořadí radnice → domy), strop rychlosti +120 %, městská tabule pro obvodovou síť.
+2. **Plán 2 – svět:** posuvníky „Města“ v generátoru mapy, generování a převzetí měst, ruiny, specializace měst,
+   pohlcování znečištění.
+3. **Plán 3 – grafika a vydání:** modely z Blenderu (radnice, domy, překladiště, chodník, tabule), portál.
