@@ -1,4 +1,4 @@
---- Skrytý beacon uprostřed radnice: počet bonusových modulů = bonus k rychlosti výzkumu za domy.
+--- Skrytý beacon uprostřed radnice: moduly rychlosti (bonus za domy) a produktivity (nekonečné úrovně).
 local levels = require("shared.levels")
 
 local beacon = table.deepcopy(data.raw.beacon["beacon"])
@@ -16,7 +16,7 @@ beacon.energy_source = { type = "void" }
 beacon.energy_usage = "1W"
 beacon.module_slots = levels.BONUS_SLOTS
 beacon.allowed_module_categories = { "rt-bonus" }
-beacon.allowed_effects = { "speed" }
+beacon.allowed_effects = { "speed", "productivity" }
 beacon.distribution_effectivity = 1
 beacon.distribution_effectivity_bonus_per_quality_level = 0
 beacon.profile = { 1 }
@@ -32,6 +32,11 @@ data:extend({
     type = "module", name = "rt-bonus-module", icon = "__base__/graphics/icons/speed-module.png",
     hidden = true, subgroup = "rt-town", category = "rt-bonus", tier = 1, stack_size = 200,
     effect = { speed = levels.BONUS_STEP },
+  },
+  {
+    type = "module", name = "rt-productivity-module", icon = "__base__/graphics/icons/productivity-module.png",
+    hidden = true, subgroup = "rt-town", category = "rt-bonus", tier = 1, stack_size = 200,
+    effect = { productivity = levels.BONUS_STEP },
   },
   beacon,
 })

@@ -76,6 +76,19 @@ return {
     A.eq(levels.bonus_modules(5, many), math.floor(levels.SPEED_BONUS_CAP / levels.BONUS_STEP + 0.5), "strop")
     A.truthy(levels.bonus_modules(5, many) <= levels.BONUS_SLOTS, "vejde se do beaconu")
   end },
+  { "produktivita jen nad poslední vědou, klesající přírůstky pod stropem", function()
+    A.eq(levels.productivity(7, 7), 0, "poslední věda")
+    local p1, p2, p3 = levels.productivity(8, 7), levels.productivity(9, 7), levels.productivity(10, 7)
+    A.truthy(p1 > 0 and p2 > p1 and p3 > p2, "roste")
+    A.truthy(p2 - p1 < p1, "přírůstky klesají")
+    A.truthy(levels.productivity(1000, 7) <= levels.PRODUCTIVITY_MAX, "strop")
+  end },
+  { "rychlost i produktivita se vejdou do beaconu, příkon zůstane konečný", function()
+    local speed = math.floor(levels.SPEED_BONUS_CAP / levels.BONUS_STEP + 0.5)
+    A.truthy(speed + levels.productivity_modules(1000, 7) <= levels.BONUS_SLOTS, "sloty beaconu")
+    local mw = levels.power_mw(100, 7)
+    A.truthy(mw > levels.POWER_LAST_MW and mw < math.huge, "příkon na úrovni 100")
+  end },
   { "jména radnic tam i zpět", function()
     A.eq(levels.hall_name(3), "rt-town-hall-3", "hall_name")
     A.eq(levels.hall_level("rt-town-hall-3"), 3, "hall_level")

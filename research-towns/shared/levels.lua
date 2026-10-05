@@ -14,8 +14,8 @@ M.DEPOT_REACH = 4
 M.TOWN_INTERVAL = 120
 --- Bonus za jeden skrytý modul v beaconu radnice.
 M.BONUS_STEP = 0.01
---- Počet slotů skrytého beaconu.
-M.BONUS_SLOTS = 200
+--- Počet slotů skrytého beaconu (rychlost do SPEED_BONUS_CAP + produktivita do PRODUCTIVITY_MAX).
+M.BONUS_SLOTS = 250
 --- Rozměr radnice v dlaždicích.
 M.HALL_SIZE = 15
 
@@ -38,6 +38,10 @@ M.SCIENCE_PACKS = 200
 M.MILESTONE_GROWTH = 0.25
 --- Počet grafických variant radnice a domu (rozloží se rovnoměrně na vědecké úrovně).
 M.VARIANTS = 5
+--- Nekonečné úrovně: produktivita radnice se blíží PRODUCTIVITY_MAX; každá úroveň nad poslední vědou přidá
+--- (1 − PRODUCTIVITY_DECAY) ze zbývajícího rozdílu (klesající křivka).
+M.PRODUCTIVITY_MAX = 1
+M.PRODUCTIVITY_DECAY = 0.9
 
 --- Pásma kandidátů surovin milníků od nejranějšího; tier_index je roztáhne na libovolný počet úrovní.
 --- Nad poslední vědou se používá poslední pásmo.
@@ -170,6 +174,17 @@ function M.bonus_modules(level, house_levels)
   local bonus = 0
   for i = 1, math.min(#sorted, M.house_limit(level)) do bonus = bonus + M.house_bonus(sorted[i]) end
   return math.floor(math.min(bonus, M.SPEED_BONUS_CAP) / M.BONUS_STEP + 0.5)
+end
+
+--- Produktivita výzkumu radnice (0.1 = +10 %); jen nad poslední vědou.
+function M.productivity(level, count)
+  if level <= count then return 0 end
+  return M.PRODUCTIVITY_MAX * (1 - M.PRODUCTIVITY_DECAY ^ (level - count))
+end
+
+--- Počet modulů produktivity ve skrytém beaconu.
+function M.productivity_modules(level, count)
+  return math.floor(M.productivity(level, count) / M.BONUS_STEP + 0.5)
 end
 
 return M

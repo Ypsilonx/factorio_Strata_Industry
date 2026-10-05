@@ -10,9 +10,11 @@ function M.level_count()
   return data.level_count
 end
 
---- Požadavky na povýšení z dané úrovně ({ {type, name, amount, science?} }), nil nad poslední vědou.
+--- Požadavky na povýšení z dané úrovně ({ {type, name, amount, science?} }). Nad poslední vědou nekonečný milník:
+--- suroviny posledního pásma × milestone_scale(level), bez vědy.
 function M.upgrade(level)
-  return data.upgrade[tostring(level)]
+  if level < data.level_count then return data.upgrade[tostring(level)] end
+  return levels.scaled(data.infinite, level)
 end
 
 --- Vědy, které přijímá radnice dané úrovně.

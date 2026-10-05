@@ -91,4 +91,31 @@ return {
       end },
     },
   },
+  {
+    name = "nad poslední vědou zůstává nejvyšší radnice a přidá produktivitu",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      ctx.count = H.level_count()
+      remote.call(R, "set_level", ctx.town, ctx.count + 3)
+      H.hall(ctx.town).insert({ name = "automation-science-pack", count = 5 })
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        local hall = H.hall(ctx.town)
+        H.check(hall.name == levels.hall_name(ctx.count), "radnice: " .. hall.name)
+        local expected = levels.productivity_modules(ctx.count + 3, ctx.count) * levels.BONUS_STEP
+        local productivity = hall.effects and hall.effects.productivity or 0
+        H.check(math.abs(productivity - expected) < 1e-6, "produktivita " .. productivity .. " ≠ " .. expected)
+        H.check(#H.status(ctx.town).requirements > 0, "nekonečný milník je prázdný")
+        ctx.unit = hall.unit_number
+        remote.call(R, "set_level", ctx.town, ctx.count + 4)
+      end },
+      { ticks = 1, run = function(ctx)
+        local hall = H.hall(ctx.town)
+        H.check(hall.unit_number == ctx.unit, "stejný prototyp se zbytečně vyměnil")
+        H.check(hall.get_item_count("automation-science-pack") == 5, "balíčky se ztratily")
+        H.check(H.status(ctx.town).level == ctx.count + 4, "úroveň")
+      end },
+    },
+  },
 }

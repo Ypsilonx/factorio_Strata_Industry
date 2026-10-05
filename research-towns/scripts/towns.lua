@@ -12,6 +12,7 @@ local M = {}
 
 local LABEL_COLOR = { r = 1, g = 0.85, b = 0.5 }
 local BONUS_MODULE = "rt-bonus-module"
+local PRODUCTIVITY_MODULE = "rt-productivity-module"
 
 --- Zničí popisky města.
 local function destroy_labels(town)
@@ -49,18 +50,23 @@ local function ensure_beacon(town)
   return beacon
 end
 
---- Nastaví počet bonusových modulů ve skrytém beaconu podle aktivních domů.
+--- Nastaví počet modulů daného jména v inventáři beaconu.
+local function set_modules(inventory, name, wanted)
+  local have = inventory.get_item_count(name)
+  if wanted > have then
+    inventory.insert({ name = name, count = wanted - have })
+  elseif wanted < have then
+    inventory.remove({ name = name, count = have - wanted })
+  end
+end
+
+--- Nastaví skrytý beacon: moduly rychlosti podle aktivních domů a produktivity podle nekonečné úrovně.
 function M.update_bonus(town)
   local beacon = ensure_beacon(town)
   if not beacon then return end
   local inventory = beacon.get_module_inventory()
-  local wanted = levels.bonus_modules(town.level, network.active_house_levels(town))
-  local have = inventory.get_item_count(BONUS_MODULE)
-  if wanted > have then
-    inventory.insert({ name = BONUS_MODULE, count = wanted - have })
-  elseif wanted < have then
-    inventory.remove({ name = BONUS_MODULE, count = have - wanted })
-  end
+  set_modules(inventory, BONUS_MODULE, levels.bonus_modules(town.level, network.active_house_levels(town)))
+  set_modules(inventory, PRODUCTIVITY_MODULE, levels.productivity_modules(town.level, config.level_count()))
 end
 
 --- Po změně sítě: přestaví seznamy domů, přiřazení překladišť a bonus dotčených měst.
@@ -133,23 +139,29 @@ local function restore_inventory(buffer, entity, inventory_id)
   buffer.destroy()
 end
 
---- Vymění radnici za prototyp dané úrovně (stejný půdorys), přenese obsah, přebarví domy,
---- vynuluje postup milníku a přepočte elektřinu i bonus.
-function M.set_level(town, level)
+--- Vymění entitu radnice za jiný prototyp (stejný půdorys) a přenese balíčky i moduly.
+local function replace_hall(town, name)
   local old = town.hall
   local surface, position, force = old.surface, old.position, old.force
   local packs = take_inventory(old, defines.inventory.lab_input)
   local modules = take_inventory(old, defines.inventory.lab_modules)
   local old_key = old.unit_number
   old.destroy()
-  local hall = surface.create_entity({ name = config.hall_name(level), position = position, force = force })
+  local hall = surface.create_entity({ name = name, position = position, force = force })
   restore_inventory(packs, hall, defines.inventory.lab_input)
   restore_inventory(modules, hall, defines.inventory.lab_modules)
   network.replace_hall(old_key, hall)
   town.hall = hall
+end
+
+--- Nastaví úroveň města: radnici vymění jen při změně prototypu (nad poslední vědou zůstává), vynuluje postup
+--- milníku a přepočte domy, elektřinu, bonus i popisky.
+function M.set_level(town, level)
+  local name = config.hall_name(level)
+  if town.hall.name ~= name then replace_hall(town, name) end
   town.level = level
   town.progress = {}
-  hall.disabled_by_script = not town.power_ok
+  town.hall.disabled_by_script = not town.power_ok
   network.refresh_town_houses(town)
   depots.apply_town_power(town)
   M.update_bonus(town)
@@ -180,6 +192,7 @@ function M.status(town)
     id = town.id, name = town.name, level = town.level, level_count = count, hall = town.hall.unit_number,
     active_houses = network.active_houses(town), house_limit = levels.house_limit(town.level),
     bonus = levels.bonus_modules(town.level, network.active_house_levels(town)) * levels.BONUS_STEP,
+    productivity = levels.productivity_modules(town.level, count) * levels.BONUS_STEP,
     beacon_modules = beacon and beacon.valid and beacon.get_module_inventory().get_item_count(BONUS_MODULE) or 0,
     power_ok = town.power_ok, power_watts = levels.power_mw(town.level, count) * 1e6,
     requirements = requirements, can_upgrade = M.can_upgrade(town),
