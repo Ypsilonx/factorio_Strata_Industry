@@ -3,7 +3,8 @@
 package.path = "research-towns/?.lua;tests/unit/?.lua;" .. package.path
 
 --- Seznam testovacích sad; každá vrací pole { "název", funkce }.
-local SUITES = { "test_locale", "test_levels", "test_science", "test_labs", "test_placeholder" }
+local SUITES = { "test_locale", "test_levels", "test_science", "test_labs", "test_placeholder",
+  "test_geometry", "test_graph", "test_milestones", "test_names" }
 
 local pass, fail = 0, 0
 for _, suite in ipairs(SUITES) do
