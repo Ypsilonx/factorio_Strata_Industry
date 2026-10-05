@@ -5,6 +5,7 @@ local scheduler = require("scripts.scheduler")
 local network = require("scripts.network")
 local depots = require("scripts.depots")
 local towns = require("scripts.towns")
+local gui = require("scripts.gui")
 require("scripts.remote")
 
 --- Postavení domu nebo překladiště (hráč, robot, skript): připojí ho k městu.
@@ -65,11 +66,22 @@ end
 
 script.on_event(defines.events.on_tick, function(event) scheduler.run(event.tick, process) end)
 script.on_nth_tick(levels.TOWN_INTERVAL, depots.resolve_unassigned)
-script.on_init(state.init)
+script.on_event(defines.events.on_player_created, function(event) gui.ensure(game.get_player(event.player_index)) end)
+script.on_event(defines.events.on_gui_opened, gui.on_opened)
+script.on_event(defines.events.on_gui_closed, gui.on_closed)
+script.on_event(defines.events.on_gui_click, gui.on_click)
+script.on_event(defines.events.on_gui_confirmed, gui.on_confirmed)
+-- Obnova otevřených panelů; bez otevřeného okna jen jedna kontrola prázdné tabulky.
+script.on_nth_tick(gui.REFRESH_TICKS, gui.refresh)
+script.on_init(function()
+  state.init()
+  gui.rebuild_all()
+end)
 script.on_configuration_changed(function()
   state.init()
   scheduler.clear()
   for _, town in pairs(storage.towns) do
     if town.hall.valid then scheduler.schedule(town, game.tick + 1) end
   end
+  gui.rebuild_all()
 end)
