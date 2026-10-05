@@ -153,3 +153,36 @@ domy) a tlačítko „Povýšit“. Ruina má obdobné GUI s cenou obnovy.
 - Kompatibilita (`tools/run-tests.sh mods …`): Bob's, Pyanodon – radnice vzniknou, každá věda je v některé
   úrovni, žádný výzkum nevyžaduje laboratoř, všechny požadavky milníků existují.
 - Výkon: N měst s plnými sítěmi, ms/tick proti prázdné mapě.
+
+## Rozšíření (schváleno 2026-10-05, po dokončení plánu 1)
+
+Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (svět).
+
+### Úroveň = jeden vědecký balíček (plán 1b)
+- **Počet úrovní = počet věd ve hře** (vanilla 7, Pyanodon 11, Space Age 12, Bob's 18). Pořadí věd podle hloubky
+  ve stromu výzkumů (stávající `science.lua`); úroveň k přijímá prvních k věd. Nahrazuje pevných 5 úrovní a pásma.
+- **Milník k → k+1 = N kusů nové vědy + suroviny.** Úroveň se tak odemkne zhruba ve chvíli, kdy hráč novou vědu
+  umí vyrábět – tempo měst se srovná s tempem výzkumu i v pomalých overhaulech.
+- Suroviny milníků: dosavadních 5 „pásem“ kandidátů se roztáhne na libovolný počet úrovní, množství roste
+  plynule vzorcem s úrovní (konstanty v `shared/levels.lua`).
+- **Po poslední vědě nekonečné úrovně:** každá přidá produktivitu výzkumu radnice (bonusové moduly ve skrytém
+  beaconu, klesající křivka kvůli stropu produktivity), cena roste vzorcem (suroviny posledního pásma + elektřina).
+  Vzhled zůstává na nejvyšší grafické variantě, úroveň ukazuje popisek a panel.
+- **Domy** zůstávají podmínkou růstu i bonusem k rychlosti; limit domů s bonusem roste do stropu 20.
+- Rychlost radnice podle úrovně: vzorec místo tabulky; v Pyanodonu doladit po zkušebním hraní (víc měst =
+  paralelní výzkum).
+
+### Specializace měst (plán 2)
+- Každé vygenerované město dostane specializaci (např. kovy, elektronika, chemie, stavebniny) určenou ze skupin
+  receptů ve hře (ne natvrdo podle jmen – kompatibilita s overhauly).
+- Bonus: produktivita receptů dané skupiny pro celou sílu (`LuaRecipe.productivity_bonus`), roste s úrovní města.
+  Víc měst stejné specializace se nesčítá naplno (klesající přínos), respektuje strop produktivity.
+- Milníky specializovaného města preferují suroviny jeho skupiny.
+
+### Pohlcování znečištění (plán 2)
+- Radnice při výzkumu pohlcuje znečištění (záporné emise prototypu – ověřit), domy pohlcují skriptem při
+  zpracování města (`surface.pollute` se zápornou hodnotou – ověřit). Množství podle úrovně, konstanty k ladění.
+
+### Generátor měst (plán 2)
+- Vlastní `autoplace-control` „Města“ v okně nové mapy (četnost, velikost – jako biteři); generátor z něj čte hustotu
+  a rozestupy. Měst má být na mapě hodně.
