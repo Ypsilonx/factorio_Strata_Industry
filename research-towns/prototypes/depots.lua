@@ -1,4 +1,4 @@
---- Překladiště: zboží (bedna), kapaliny (nádrž) a městská rozvodna (spotřebič elektřiny).
+--- Překladiště: zboží (bedna), kapaliny (nádrž), městská rozvodna (spotřebič elektřiny) a městská tabule.
 --- Odvozené z vanilla prototypů; skript je přiřadí k nejbližšímu městu.
 local placeholder = require("prototypes.placeholder")
 local levels = require("shared.levels")
@@ -29,6 +29,9 @@ goods.picture = placeholder.scaled(goods.picture, 1, TINT)
 
 local fluid = derive(data.raw["storage-tank"]["storage-tank"], "rt-fluid-depot")
 
+-- Městská tabule: konstantní kombinátor, jehož signály plní skript podle režimu (viz scripts/board.lua).
+local board = derive(data.raw["constant-combinator"]["constant-combinator"], "rt-town-board")
+
 local power = derive(data.raw["electric-energy-interface"]["electric-energy-interface"], "rt-power-depot")
 power.flags = { "placeable-neutral", "player-creation" }
 power.gui_mode = "none"
@@ -51,7 +54,7 @@ local function item_and_recipe(entity, order, ingredients)
   }
 end
 
-data:extend({ goods, fluid, power })
+data:extend({ goods, fluid, power, board })
 data:extend({ item_and_recipe(goods, "b", {
   { type = "item", name = "iron-chest", amount = 2 }, { type = "item", name = "iron-gear-wheel", amount = 5 } }) })
 data:extend({ item_and_recipe(fluid, "c", {
@@ -60,3 +63,6 @@ data:extend({ item_and_recipe(fluid, "c", {
 data:extend({ item_and_recipe(power, "d", {
   { type = "item", name = "copper-cable", amount = 20 }, { type = "item", name = "iron-plate", amount = 10 },
   { type = "item", name = "stone-brick", amount = 10 } }) })
+data:extend({ item_and_recipe(board, "e", {
+  { type = "item", name = "copper-cable", amount = 10 }, { type = "item", name = "iron-plate", amount = 5 },
+  { type = "item", name = "stone-brick", amount = 5 } }) })

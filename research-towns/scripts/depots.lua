@@ -3,16 +3,19 @@ local levels = require("shared.levels")
 local config = require("scripts.config")
 local geometry = require("scripts.geometry")
 local allocation = require("scripts.allocation")
+local board = require("scripts.board")
 local network = require("scripts.network")
 
 local M = {}
 
 --- Prototypy překladišť a jejich druh.
-M.KINDS = { ["rt-goods-depot"] = "goods", ["rt-fluid-depot"] = "fluid", ["rt-power-depot"] = "power" }
+M.KINDS = {
+  ["rt-goods-depot"] = "goods", ["rt-fluid-depot"] = "fluid", ["rt-power-depot"] = "power", ["rt-town-board"] = "board",
+}
 
 --- Jména prototypů překladišť.
 function M.names()
-  return { "rt-goods-depot", "rt-fluid-depot", "rt-power-depot" }
+  return { "rt-goods-depot", "rt-fluid-depot", "rt-power-depot", "rt-town-board" }
 end
 
 --- Nastaví odběr všech rozvoden města: příkon úrovně rozdělený rovným dílem; bez města nic.
@@ -64,6 +67,8 @@ function M.resolve(depot)
   end
   local old = depot.town
   depot.town = best and best.town
+  -- Tabule bez města nesmí posílat staré požadavky.
+  if depot.kind == "board" and not depot.town then board.write(entity, {}) end
   if old == depot.town then return end
   local old_town = old and storage.towns[old]
   if old_town then
@@ -79,9 +84,11 @@ function M.resolve(depot)
   end
 end
 
---- Zaeviduje nové překladiště.
-function M.add(entity)
+--- Zaeviduje nové překladiště nebo tabuli; tagy z plánu nesou režim tabule.
+--- @param tags table|nil
+function M.add(entity, tags)
   local depot = { key = entity.unit_number, entity = entity, kind = M.KINDS[entity.name] }
+  if depot.kind == "board" then depot.mode = tags and tags[board.TAG] or "hall" end
   storage.depots[depot.key] = depot
   -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
   script.register_on_object_destroyed(entity)
@@ -151,6 +158,20 @@ function M.power_ok(town)
     end
   end
   return any
+end
+
+--- Pokrytí elektřiny města v procentech (nejhorší rozvodna; bez rozvodny 0).
+function M.power_percent(town)
+  local worst
+  for key in pairs(town.depots) do
+    local depot = storage.depots[key]
+    local entity = depot and depot.kind == "power" and depot.entity
+    if entity and entity.valid and entity.power_usage > 0 then
+      local ratio = math.min(1, entity.energy / entity.power_usage)
+      if not worst or ratio < worst then worst = ratio end
+    end
+  end
+  return math.floor((worst or 0) * 100)
 end
 
 return M

@@ -9,6 +9,7 @@ runner.register(require("cases.depots"))
 runner.register(require("cases.upgrade"))
 runner.register(require("cases.houses"))
 runner.register(require("cases.upkeep"))
+runner.register(require("cases.board"))
 
 script.on_init(runner.on_init)
 script.on_event(defines.events.on_tick, runner.on_tick)

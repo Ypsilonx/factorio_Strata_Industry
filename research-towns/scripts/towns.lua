@@ -9,6 +9,7 @@ local scheduler = require("scripts.scheduler")
 local story = require("shared.story")
 local houses = require("scripts.houses")
 local upkeep = require("scripts.upkeep")
+local board = require("scripts.board")
 
 local M = {}
 
@@ -226,12 +227,25 @@ function M.status(town)
     productivity = levels.productivity_modules(town.level, count) * levels.BONUS_STEP,
     beacon_modules = beacon and beacon.valid and beacon.get_module_inventory().get_item_count(BONUS_MODULE) or 0,
     power_ok = town.power_ok, power_watts = levels.power_mw(town.level, count) * 1e6,
+    power_percent = depots.power_percent(town),
     requirements = with_delivered(config.upgrade(town.level), town.progress), can_upgrade = M.can_upgrade(town),
     house_requirements = with_delivered(house_reqs, town.house_progress),
     houses_to_upgrade = houses.upgradable(candidates, math.min(town.level, count)),
     house_target_level = target and target.level,
     upkeep = upkeep_status(town, #candidates), upkeep_ok = town.upkeep_ok,
   }
+end
+
+--- Zapíše signály do všech tabulí města (stav se počítá jen, když nějaká tabule je).
+function M.refresh_boards(town)
+  local status
+  for key in pairs(town.depots) do
+    local depot = storage.depots[key]
+    if depot and depot.kind == "board" and depot.entity.valid then
+      status = status or M.status(town)
+      board.write(depot.entity, board.signals(depot.mode, status))
+    end
+  end
 end
 
 --- Chce radnice zkoumat? (rozběhnutý výzkum a nějaké balíčky) – jen tehdy se spotřebovává.
@@ -268,6 +282,7 @@ function M.process(town)
   if not (town.beacon and town.beacon.valid) then M.update_bonus(town) end
   town.power_ok = depots.power_ok(town)
   town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
+  M.refresh_boards(town)
 end
 
 --- Radnice zanikla. Plán 1: město zaniká, domy se odpojí a překladiště uvolní (ruina přijde v plánu 2).

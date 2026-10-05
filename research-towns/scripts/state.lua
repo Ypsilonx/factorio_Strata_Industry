@@ -9,6 +9,7 @@ function M.init()
   storage.renders = storage.renders or {}
   storage.schedule = storage.schedule or {}
   storage.gui = storage.gui or {}
+  storage.gui_board = storage.gui_board or {}
   storage.next_town_id = storage.next_town_id or 1
   -- Doplnění polí ze starších verzí (0.1.0).
   for _, town in pairs(storage.towns) do
@@ -18,6 +19,9 @@ function M.init()
   end
   for _, node in pairs(storage.nodes) do
     if node.kind == "house" then node.level = node.level or 1 end
+  end
+  for _, depot in pairs(storage.depots) do
+    if depot.kind == "board" then depot.mode = depot.mode or "hall" end
   end
 end
 

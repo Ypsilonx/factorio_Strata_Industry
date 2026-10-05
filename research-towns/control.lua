@@ -6,6 +6,7 @@ local network = require("scripts.network")
 local depots = require("scripts.depots")
 local towns = require("scripts.towns")
 local gui = require("scripts.gui")
+local board = require("scripts.board")
 require("scripts.remote")
 
 --- Postavení domu nebo překladiště (hráč, robot, skript): připojí ho k městu.
@@ -15,7 +16,7 @@ local function on_built(event)
     towns.on_network_changed(network.add(entity, "house"))
     depots.resolve_unassigned()
   elseif depots.KINDS[entity.name] then
-    depots.add(entity)
+    depots.add(entity, event.tags)
   end
 end
 
@@ -44,6 +45,25 @@ local function on_object_destroyed(event)
     end
   elseif key and storage.depots[key] then
     depots.remove(key)
+  end
+end
+
+--- Shift+klik kopírování nastavení mezi tabulemi přenese režim.
+local function on_settings_pasted(event)
+  local source = storage.depots[event.source.unit_number]
+  local target = storage.depots[event.destination.unit_number]
+  if source and target and source.kind == "board" and target.kind == "board" then target.mode = source.mode end
+end
+
+--- Plán (blueprint) si u tabulí zapamatuje režim do tagu.
+local function on_setup_blueprint(event)
+  local player = game.get_player(event.player_index)
+  local stack = player.blueprint_to_setup
+  if not (stack and stack.valid_for_read) then stack = player.cursor_stack end
+  if not (stack and stack.valid_for_read and stack.is_blueprint) then return end
+  for index, entity in pairs(event.mapping.get()) do
+    local depot = entity.valid and storage.depots[entity.unit_number]
+    if depot and depot.kind == "board" then stack.set_blueprint_entity_tag(index, board.TAG, depot.mode) end
   end
 end
 
@@ -88,6 +108,9 @@ script.on_event(defines.events.on_gui_opened, gui.on_opened)
 script.on_event(defines.events.on_gui_closed, gui.on_closed)
 script.on_event(defines.events.on_gui_click, gui.on_click)
 script.on_event(defines.events.on_gui_confirmed, gui.on_confirmed)
+script.on_event(defines.events.on_gui_selection_state_changed, gui.on_selection_changed)
+script.on_event(defines.events.on_entity_settings_pasted, on_settings_pasted)
+script.on_event(defines.events.on_player_setup_blueprint, on_setup_blueprint)
 -- Obnova otevřených panelů; bez otevřeného okna jen jedna kontrola prázdné tabulky.
 script.on_nth_tick(gui.REFRESH_TICKS, gui.refresh)
 script.on_init(function()

@@ -1,6 +1,7 @@
---- GUI radnice: panel ukotvený vpravo od okna laboratoře, zobrazený jen u radnic.
+--- GUI: panel radnice (u okna laboratoře, jen u radnic) a volba režimu městské tabule (u okna kombinátoru).
 local towns = require("scripts.towns")
 local config = require("scripts.config")
+local board = require("scripts.board")
 
 local M = {}
 
@@ -21,6 +22,8 @@ M.NAMES = {
   upkeep_status = "rt_town_upkeep_status",
   upkeep = "rt_town_upkeep",
   upgrade = "rt_town_upgrade",
+  board_frame = "rt_board_frame",
+  board_mode = "rt_board_mode",
 }
 
 --- Vytvoří (znovu) prázdný panel hráči.
@@ -45,6 +48,16 @@ function M.ensure(player)
   frame.add({ type = "label", name = n.upkeep_status })
   frame.add({ type = "table", name = n.upkeep, column_count = 2 })
   frame.add({ type = "button", name = n.upgrade, caption = { "rt.gui-upgrade" } })
+  if relative[n.board_frame] then relative[n.board_frame].destroy() end
+  local board_frame = relative.add({
+    type = "frame", name = n.board_frame, direction = "vertical", caption = { "rt.gui-board-title" },
+    anchor = { gui = defines.relative_gui_type.constant_combinator_gui, position = defines.relative_gui_position.right,
+      names = { "rt-town-board" } },
+  })
+  board_frame.add({ type = "label", caption = { "rt.gui-board-mode" } })
+  local items = {}
+  for i, mode in ipairs(board.MODES) do items[i] = { "rt.board-mode-" .. mode } end
+  board_frame.add({ type = "drop-down", name = n.board_mode, items = items, selected_index = 1 })
 end
 
 --- Vytvoří panely všem hráčům.
@@ -110,8 +123,21 @@ local function fill(player, town)
   frame[n.upgrade].enabled = status.can_upgrade
 end
 
---- Otevření okna: u radnice si zapamatuje město a naplní panel (jméno jen při otevření – nepřepisuje psaní).
+--- Otevření okna: u tabule nastaví volbu režimu; u radnice si zapamatuje město a naplní panel
+--- (jméno jen při otevření – nepřepisuje psaní).
 function M.on_opened(event)
+  local entity = event.entity
+  if entity and entity.valid and entity.name == "rt-town-board" then
+    local depot = storage.depots[entity.unit_number]
+    local player = game.get_player(event.player_index)
+    if not player.gui.relative[M.NAMES.board_frame] then M.ensure(player) end
+    storage.gui_board[event.player_index] = entity.unit_number
+    local dropdown = player.gui.relative[M.NAMES.board_frame][M.NAMES.board_mode]
+    for i, mode in ipairs(board.MODES) do
+      if depot and depot.mode == mode then dropdown.selected_index = i end
+    end
+    return
+  end
   local town = town_of(event.entity)
   if not town then return end
   local player = game.get_player(event.player_index)
@@ -124,6 +150,7 @@ end
 --- Zavření okna.
 function M.on_closed(event)
   storage.gui[event.player_index] = nil
+  storage.gui_board[event.player_index] = nil
 end
 
 --- Klik na „Povýšit“.
@@ -151,6 +178,16 @@ function M.refresh()
     local town = storage.towns[id]
     if player and town and town.hall.valid then fill(player, town) else storage.gui[index] = nil end
   end
+end
+
+--- Volba režimu tabule v jejím okně; signály se přepíšou hned.
+function M.on_selection_changed(event)
+  if event.element.name ~= M.NAMES.board_mode then return end
+  local depot = storage.depots[storage.gui_board[event.player_index]]
+  if not depot then return end
+  depot.mode = board.MODES[event.element.selected_index]
+  local town = depot.town and storage.towns[depot.town]
+  if town and town.hall.valid then towns.refresh_boards(town) end
 end
 
 return M

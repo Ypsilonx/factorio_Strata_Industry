@@ -32,6 +32,16 @@ remote.add_interface("research-towns", {
     local node = storage.nodes[unit_number]
     return node and node.level
   end,
+  --- Režim městské tabule, nebo nil.
+  board_mode = function(unit_number)
+    local depot = storage.depots[unit_number]
+    return depot and depot.mode
+  end,
+  --- Nastaví režim městské tabule ("hall" | "house" | "upkeep").
+  set_board_mode = function(unit_number, mode)
+    local depot = storage.depots[unit_number]
+    if depot and depot.kind == "board" then depot.mode = mode end
+  end,
   --- Okamžitě zpracuje město (pro testy).
   process = function(id)
     local t = town(id)
