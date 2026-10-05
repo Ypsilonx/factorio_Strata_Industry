@@ -28,6 +28,19 @@ function M.house_requirements(house_level)
   return list
 end
 
+--- Požadavky splněných milníků města dané úrovně (1..level−1) pro průběžnou spotřebu.
+--- @return table[][]
+function M.completed_milestones(level)
+  local list = {}
+  for k = 1, level - 1 do list[k] = M.upgrade(k) end
+  return list
+end
+
+--- Startup násobič spotřeby.
+function M.upkeep_multiplier()
+  return settings.startup["rt-upkeep-multiplier"].value
+end
+
 --- Vědy, které přijímá radnice dané úrovně.
 function M.sciences(level)
   return data.sciences[tostring(levels.hall_tier(level, data.level_count))]

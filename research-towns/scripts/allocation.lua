@@ -13,16 +13,19 @@ function M.wanted(sinks, kind, name, available)
   return total
 end
 
---- Připíše skutečně odebrané množství příjemcům v pořadí priority.
+--- Připíše skutečně odebrané množství příjemcům v pořadí priority. Přebytek (předměty se odebírají po celých
+--- kusech, zásoba spotřeby chce zlomky) dostane první příjemce, který surovinu bral.
 function M.distribute(sinks, kind, name, amount)
-  local left = amount
+  local left, first = amount, nil
   for _, sink in ipairs(sinks) do
     local take = milestones.accept(sink.requirements, sink.progress, kind, name, left)
     if take > 0 then
       milestones.add(sink.progress, kind, name, take)
       left = left - take
+      first = first or sink
     end
   end
+  if first and left > 0 then milestones.add(first.progress, kind, name, left) end
 end
 
 return M

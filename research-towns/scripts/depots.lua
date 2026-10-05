@@ -119,7 +119,8 @@ function M.collect(town, sinks)
       if depot.kind == "goods" then
         local inventory = entity.get_inventory(defines.inventory.chest)
         for _, item in pairs(inventory.get_contents()) do
-          local take = allocation.wanted(sinks, "item", item.name, item.count)
+          -- Předměty jen po celých kusech; zlomek navíc připíše distribute zásobě spotřeby.
+          local take = math.ceil(allocation.wanted(sinks, "item", item.name, item.count) - 1e-9)
           if take > 0 then
             local removed = inventory.remove({ name = item.name, quality = item.quality, count = take })
             allocation.distribute(sinks, "item", item.name, removed)

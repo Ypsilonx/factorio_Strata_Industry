@@ -13,6 +13,8 @@ function M.init()
   -- Doplnění polí ze starších verzí (0.1.0).
   for _, town in pairs(storage.towns) do
     town.house_progress = town.house_progress or {}
+    town.stock = town.stock or {}
+    if town.upkeep_ok == nil then town.upkeep_ok = true end
   end
   for _, node in pairs(storage.nodes) do
     if node.kind == "house" then node.level = node.level or 1 end

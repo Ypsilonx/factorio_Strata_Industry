@@ -42,6 +42,12 @@ M.VARIANTS = 5
 --- (1 − PRODUCTIVITY_DECAY) ze zbývajícího rozdílu (klesající křivka).
 M.PRODUCTIVITY_MAX = 1
 M.PRODUCTIVITY_DECAY = 0.9
+--- Průběžná spotřeba: za minutu podíl množství každého splněného milníku (bez věd) × startup násobič.
+M.UPKEEP_RATE = 0.01
+--- Každý aktivní dům zvýší spotřebu o tento díl.
+M.HOUSE_UPKEEP_SHARE = 0.05
+--- Zásoba radnice na tolik sekund provozu; po jejím vyčerpání radnice stojí.
+M.UPKEEP_BUFFER_SECONDS = 60
 
 --- Pásma kandidátů surovin milníků od nejranějšího; tier_index je roztáhne na libovolný počet úrovní.
 --- Nad poslední vědou se používá poslední pásmo.

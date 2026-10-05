@@ -13,6 +13,8 @@ return {
     A.eq(storage.nodes[5].level, 1, "dům úroveň 1")
     A.eq(storage.nodes[6].level, nil, "radnice bez úrovně")
     A.truthy(storage.towns[1].house_progress, "postup vylepšení domů")
+    A.truthy(storage.towns[1].stock, "zásoba spotřeby")
+    A.eq(storage.towns[1].upkeep_ok, true, "spotřeba pokryta")
     storage = nil
   end },
 }

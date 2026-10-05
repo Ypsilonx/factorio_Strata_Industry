@@ -8,6 +8,7 @@ local network = require("scripts.network")
 local scheduler = require("scripts.scheduler")
 local story = require("shared.story")
 local houses = require("scripts.houses")
+local upkeep = require("scripts.upkeep")
 
 local M = {}
 
@@ -97,6 +98,7 @@ function M.create(surface, position, force)
   storage.next_town_id = id + 1
   local town = {
     id = id, name = names.generate(id), level = 1, hall = hall, progress = {}, house_progress = {},
+    stock = {}, upkeep_ok = true,
     depots = {}, houses = {}, power_ok = false,
   }
   storage.towns[id] = town
@@ -162,7 +164,7 @@ function M.set_level(town, level)
   if town.hall.name ~= name then replace_hall(town, name) end
   town.level = level
   town.progress = {}
-  town.hall.disabled_by_script = not town.power_ok
+  town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
   network.refresh_town_houses(town)
   depots.apply_town_power(town)
   M.update_bonus(town)
@@ -196,6 +198,21 @@ local function with_delivered(requirements, progress)
   return list
 end
 
+--- Spotřeba města za minutu.
+local function upkeep_rate(town, active_houses)
+  return upkeep.per_minute(config.completed_milestones(town.level), config.upkeep_multiplier(), active_houses)
+end
+
+--- Spotřeba se zásobou pro GUI/remote/tabuli.
+local function upkeep_status(town, active_houses)
+  local list = {}
+  for i, req in ipairs(upkeep_rate(town, active_houses)) do
+    list[i] = { type = req.type, name = req.name, per_minute = req.amount,
+      stock = town.stock[milestones.key(req.type, req.name)] or 0 }
+  end
+  return list
+end
+
 --- Stav města pro GUI a remote rozhraní.
 function M.status(town)
   local count = config.level_count()
@@ -213,16 +230,24 @@ function M.status(town)
     house_requirements = with_delivered(house_reqs, town.house_progress),
     houses_to_upgrade = houses.upgradable(candidates, math.min(town.level, count)),
     house_target_level = target and target.level,
+    upkeep = upkeep_status(town, #candidates), upkeep_ok = town.upkeep_ok,
   }
 end
 
---- Pravidelné zpracování: dodávky z překladišť (milník radnice → vylepšení domu), vylepšení domu,
---- kontrola elektřiny, zapnutí/vypnutí výzkumu.
+--- Chce radnice zkoumat? (rozběhnutý výzkum a nějaké balíčky) – jen tehdy se spotřebovává.
+local function wants_research(hall)
+  return hall.force.current_research ~= nil and not hall.get_inventory(defines.inventory.lab_input).is_empty()
+end
+
+--- Pravidelné zpracování: dodávky z překladišť (zásoba spotřeby → milník radnice → vylepšení domu),
+--- vylepšení domu, spotřeba zásoby, kontrola elektřiny a zapnutí/vypnutí výzkumu.
 function M.process(town)
   if not town.hall.valid then return end
   local candidates = network.house_candidates(town)
   local target, house_reqs = house_target(town, candidates)
+  local rate = upkeep_rate(town, #candidates)
   depots.collect(town, {
+    { requirements = upkeep.times(rate, levels.UPKEEP_BUFFER_SECONDS / 60), progress = town.stock },
     { requirements = config.upgrade(town.level), progress = town.progress },
     { requirements = house_reqs, progress = town.house_progress },
   })
@@ -233,9 +258,16 @@ function M.process(town)
     network.refresh_house(node)
     M.update_bonus(town)
   end
+  if wants_research(town.hall) then
+    local need = upkeep.times(rate, levels.TOWN_INTERVAL / 3600)
+    town.upkeep_ok = upkeep.covered(need, town.stock)
+    if town.upkeep_ok then upkeep.consume(need, town.stock) end
+  else
+    town.upkeep_ok = true
+  end
   if not (town.beacon and town.beacon.valid) then M.update_bonus(town) end
   town.power_ok = depots.power_ok(town)
-  town.hall.disabled_by_script = not town.power_ok
+  town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
 end
 
 --- Radnice zanikla. Plán 1: město zaniká, domy se odpojí a překladiště uvolní (ruina přijde v plánu 2).

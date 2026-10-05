@@ -82,4 +82,36 @@ function H.level_count()
   return H.levels_data().level_count
 end
 
+--- Zajistí rozběhnutý výzkum jen s červenou vědou (sdílená síla – jiné testy mohou výzkum dokončit).
+function H.research()
+  local force = game.forces.player
+  force.technologies["automation-science-pack"].researched = true
+  if force.current_research then return end
+  local names = {}
+  for name in pairs(force.technologies) do names[#names + 1] = name end
+  table.sort(names)
+  for _, name in ipairs(names) do
+    local tech = force.technologies[name]
+    local red_only = #tech.research_unit_ingredients == 1
+      and tech.research_unit_ingredients[1].name == "automation-science-pack"
+    if red_only and tech.enabled and not tech.researched and force.add_research(tech) then return end
+  end
+  error("není co zkoumat červenou vědou")
+end
+
+--- Vloží do překladiště každou surovinu spotřeby (status.upkeep) v daném množství; kapaliny přeskočí.
+function H.supply_upkeep(id, depot, count)
+  for _, item in ipairs(H.status(id).upkeep) do
+    if item.type == "item" then depot.insert({ name = item.name, count = count }) end
+  end
+end
+
+--- Zásoba spotřeby suroviny ve městě.
+function H.stock(id, name)
+  for _, item in ipairs(H.status(id).upkeep) do
+    if item.name == name then return item.stock end
+  end
+  return nil
+end
+
 return H

@@ -22,6 +22,15 @@ return {
     A.eq(first.progress["item/wood"], 95, "první")
     A.eq(second.progress["item/wood"], 0, "druhý nic")
   end },
+  { "přebytek po zaokrouhlení na celé kusy dostane první příjemce, který bral", function()
+    local stock = { requirements = { { type = "item", name = "wood", amount = 0.3 } }, progress = {} }
+    local milestone = sink(10, 10)
+    local sinks = { milestone, stock }
+    A.eq(allocation.wanted(sinks, "item", "wood", 5), 0.3, "chce zlomek")
+    allocation.distribute(sinks, "item", "wood", 1)
+    A.eq(stock.progress["item/wood"], 1, "celý kus ve zásobě")
+    A.eq(milestone.progress["item/wood"], 10, "splněný milník nic navíc")
+  end },
   { "příjemce bez požadavků a nepotřebná surovina", function()
     local sinks = { { requirements = nil, progress = {} }, sink(10, 0) }
     A.eq(allocation.wanted(sinks, "item", "wood", 1000), 10, "nil požadavky se přeskočí")
