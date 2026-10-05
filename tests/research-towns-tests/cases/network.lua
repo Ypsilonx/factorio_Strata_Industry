@@ -53,6 +53,54 @@ return {
     },
   },
   {
+    name = "bonus domů zrychluje radnici, beacon je nezničitelný a obnoví se",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      for _, dy in ipairs({ -6, -2, 2, 6 }) do H.house(ctx, 11, dy) end
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        local hall = H.hall(ctx.town)
+        local expected = levels.bonus_modules(1, 4) * levels.BONUS_STEP
+        local speed = hall.effects and hall.effects.speed or 0
+        H.check(math.abs(speed - expected) < 1e-6, "rychlost radnice: " .. speed .. " ≠ " .. expected)
+        local beacon = ctx.surface.find_entities_filtered({ name = "rt-hall-beacon", position = hall.position })[1]
+        H.check(beacon and not beacon.destructible, "beacon jde zničit")
+        beacon.destroy()
+        H.process(ctx.town)
+      end },
+      { ticks = 1, run = function(ctx)
+        local s = H.status(ctx.town)
+        H.check(s.beacon_modules == levels.bonus_modules(1, 4), "beacon se neobnovil: " .. s.beacon_modules)
+      end },
+    },
+  },
+  {
+    name = "zničení bez události (jiný mod) se uklidí",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      chain(ctx, 3)
+      ctx.depot = H.place(ctx, "rt-power-depot", -4, 10)
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        ctx.unit = ctx.houses[3].unit_number
+        ctx.houses[2].destroy()
+        ctx.depot.destroy()
+      end },
+      { ticks = 3, run = function(ctx)
+        H.check(remote.call(R, "town_of", ctx.unit) == nil, "dům za zničeným zůstal připojený")
+        H.process(ctx.town)
+        H.check(H.status(ctx.town).active_houses == 1, "aktivní domy po zničení")
+        H.hall(ctx.town).destroy()
+      end },
+      { ticks = 3, run = function(ctx)
+        H.check(remote.call(R, "town_status", ctx.town) == nil, "město přežilo zničení radnice")
+        H.check(remote.call(R, "town_of", ctx.houses[1].unit_number) == nil, "dům zůstal u zaniklého města")
+      end },
+    },
+  },
+  {
     name = "domy nad limit nedávají bonus",
     setup = function(ctx)
       ctx.town = H.town(ctx)

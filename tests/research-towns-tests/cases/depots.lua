@@ -65,6 +65,27 @@ return {
     end } },
   },
   {
+    name = "při přetížené síti město nebere elektřinu ostatním spotřebičům",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      H.place(ctx, "rt-power-depot", -4, 10)
+      H.power(ctx, -10, 13)
+      local usage = 1e6 / 60
+      -- Konkurenční spotřebič stejné priority (rozvodna mimo dosah města) chce 3× příkon města.
+      local other = H.place(ctx, "rt-power-depot", -16, 18)
+      other.power_usage = 3 * usage
+      other.electric_buffer_size = 6 * usage
+      -- Zdroj pokryje jen 60 % celkové poptávky.
+      local source = ctx.surface.find_entity("electric-energy-interface", { ctx.origin.x - 13.5, ctx.origin.y + 13.5 })
+      source.power_production = 0.6 * 4 * usage
+      source.electric_buffer_size = 0.6 * 4 * usage
+    end,
+    steps = { { ticks = 180, run = function(ctx)
+      H.process(ctx.town)
+      H.check(not H.status(ctx.town).power_ok, "elektřina hlášena jako pokrytá při přetížené síti")
+    end } },
+  },
+  {
     name = "bez elektřiny radnice nezkoumá",
     setup = function(ctx)
       ctx.town = H.town(ctx)

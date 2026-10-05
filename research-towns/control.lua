@@ -31,6 +31,22 @@ local function on_removed(event)
   end
 end
 
+--- Budova zmizela bez události (jiný mod, editor, smazání chunku); useful_id = unit_number.
+--- Už uklizené záznamy (běžné odstranění, výměna radnice) tu nic nenajdou.
+local function on_object_destroyed(event)
+  local key = event.useful_id
+  local node = key and storage.nodes[key]
+  if node then
+    if node.kind == "hall" then
+      towns.on_hall_removed(key)
+    else
+      towns.on_network_changed(network.remove(key))
+    end
+  elseif key and storage.depots[key] then
+    depots.remove(key)
+  end
+end
+
 --- Pravidelné zpracování města (suroviny, elektřina) a další naplánování.
 local function process(town)
   if not town.hall.valid then return end
@@ -66,6 +82,7 @@ end
 
 script.on_event(defines.events.on_tick, function(event) scheduler.run(event.tick, process) end)
 script.on_nth_tick(levels.TOWN_INTERVAL, depots.resolve_unassigned)
+script.on_event(defines.events.on_object_destroyed, on_object_destroyed)
 script.on_event(defines.events.on_player_created, function(event) gui.ensure(game.get_player(event.player_index)) end)
 script.on_event(defines.events.on_gui_opened, gui.on_opened)
 script.on_event(defines.events.on_gui_closed, gui.on_closed)

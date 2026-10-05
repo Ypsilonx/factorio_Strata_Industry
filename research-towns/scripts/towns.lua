@@ -34,10 +34,24 @@ local function draw_labels(town)
   }
 end
 
+--- Zajistí skrytý beacon radnice: nezničitelný; když přesto zmizí (jiný mod, editor), vytvoří ho znovu.
+--- @return LuaEntity|nil
+local function ensure_beacon(town)
+  local beacon = town.beacon
+  if not (beacon and beacon.valid) then
+    local hall = town.hall
+    if not hall.valid then return nil end
+    beacon = hall.surface.create_entity({ name = "rt-hall-beacon", position = hall.position, force = hall.force })
+    town.beacon = beacon
+  end
+  beacon.destructible = false
+  return beacon
+end
+
 --- Nastaví počet bonusových modulů ve skrytém beaconu podle aktivních domů.
 function M.update_bonus(town)
-  local beacon = town.beacon
-  if not (beacon and beacon.valid) then return end
+  local beacon = ensure_beacon(town)
+  if not beacon then return end
   local inventory = beacon.get_module_inventory()
   local wanted = levels.bonus_modules(town.level, network.active_houses(town))
   local have = inventory.get_item_count(BONUS_MODULE)
@@ -77,7 +91,6 @@ function M.create(surface, position, force)
     id = id, name = names.generate(id), level = 1, hall = hall, progress = {},
     depots = {}, houses = {}, power_ok = false,
   }
-  town.beacon = surface.create_entity({ name = "rt-hall-beacon", position = hall.position, force = force })
   storage.towns[id] = town
   -- Bez elektřiny radnice nezkoumá; zapne ji první zpracování (Task 7).
   hall.disabled_by_script = true
@@ -176,6 +189,7 @@ end
 function M.process(town)
   if not town.hall.valid then return end
   depots.collect(town)
+  if not (town.beacon and town.beacon.valid) then M.update_bonus(town) end
   town.power_ok = depots.power_ok(town)
   town.hall.disabled_by_script = not town.power_ok
 end

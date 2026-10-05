@@ -16,17 +16,18 @@ function M.names()
 end
 
 --- Nastaví odběr všech rozvoden města: příkon úrovně rozdělený rovným dílem; bez města nic.
---- Zásobník = 1 s odběru, takže výpadek sítě se projeví do pár sekund.
+--- Zásobník jen na 2 ticky odběru: větší zásobník by si při přetížené síti bral víc než svůj podíl
+--- (žádá se celý schodek) a kontrola v power_ok by pak selhala až při téměř nulové elektřině.
 function M.apply_town_power(town)
   local list = {}
   for key in pairs(town.depots) do
     local depot = storage.depots[key]
-    if depot and depot.kind == "power" then list[#list + 1] = depot end
+    if depot and depot.kind == "power" and depot.entity.valid then list[#list + 1] = depot end
   end
   for _, depot in ipairs(list) do
     local usage = levels.power_per_tick(town.level) / #list
     depot.entity.power_usage = usage
-    depot.entity.electric_buffer_size = usage * 60
+    depot.entity.electric_buffer_size = usage * 2
   end
 end
 
@@ -47,6 +48,8 @@ end
 --- Přiřadí překladiště k městu nejbližší kotvy v dosahu (remíza → nižší id města) a přepočte elektřinu.
 function M.resolve(depot)
   local entity = depot.entity
+  -- Zmizelo bez události – záznam uklidí jeho vlastní on_object_destroyed.
+  if not entity.valid then return end
   local box = entity.selection_box
   local best, best_gap
   local found = entity.surface.find_entities_filtered({ area = geometry.expand(box, levels.DEPOT_REACH), name = network.names() })
@@ -80,6 +83,8 @@ end
 function M.add(entity)
   local depot = { key = entity.unit_number, entity = entity, kind = M.KINDS[entity.name] }
   storage.depots[depot.key] = depot
+  -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
+  script.register_on_object_destroyed(entity)
   release_power(depot)
   M.resolve(depot)
   return depot
@@ -134,7 +139,7 @@ function M.collect(town)
   end
 end
 
---- Je spotřeba města pokrytá? (aspoň jedna rozvodna a každá má zásobník aspoň z poloviny plný)
+--- Je spotřeba města pokrytá? (aspoň jedna rozvodna a každá má v zásobníku aspoň jeden tick odběru)
 function M.power_ok(town)
   local any = false
   for key in pairs(town.depots) do
@@ -142,7 +147,7 @@ function M.power_ok(town)
     if depot and depot.kind == "power" then
       any = true
       local entity = depot.entity
-      if not entity.valid or entity.energy < 0.5 * entity.electric_buffer_size then return false end
+      if not entity.valid or entity.energy < entity.power_usage then return false end
     end
   end
   return any

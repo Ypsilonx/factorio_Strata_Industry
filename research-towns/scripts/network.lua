@@ -65,6 +65,7 @@ end
 
 --- Nastaví domu grafickou variantu podle úrovně města a ikonu „odpojeno“, když není aktivní.
 local function refresh_house(node)
+  if not node.entity.valid then return end
   local town = node.town and storage.towns[node.town]
   node.entity.graphics_variation = town and town.level or 1
   local active = M.is_active(node)
@@ -117,6 +118,8 @@ end
 function M.add(entity, kind, town_id)
   local node = { key = entity.unit_number, entity = entity, kind = kind, town = town_id, links = {} }
   storage.nodes[node.key] = node
+  -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
+  script.register_on_object_destroyed(entity)
   for _, other in ipairs(nodes_in_reach(entity)) do
     if not (kind == "hall" and other.kind == "hall") then link(node, other) end
   end
@@ -181,6 +184,7 @@ function M.replace_hall(old_key, entity)
   node.key = new_key
   node.entity = entity
   storage.nodes[new_key] = node
+  script.register_on_object_destroyed(entity)
 end
 
 return M
