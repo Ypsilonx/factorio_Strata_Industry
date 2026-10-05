@@ -1,0 +1,155 @@
+# Research Towns – návrh (v0.1)
+
+- Titul: **Research Towns**, interní jméno `research-towns` (ověřeno volné na portálu 2026-10-05), prefix `rt`.
+- Cílová hra: Factorio 2.0 base game i Space Age. **Kompatibilita s overhauly je požadavek**: vše, co závisí na
+  obsahu hry (vědy, suroviny, laboratoře), se odvozuje z `data.raw` v `data-final-fixes.lua`, nic natvrdo podle
+  jmen. Ověřuje se s Bob's a Pyanodonem (stažené u uživatele), Krastorio 2 až po stažení.
+
+## Cíl
+
+Na Nauvisu jsou roztroušená města (obyvatelé nejsou vidět). **Výzkum neprobíhá v laboratořích, ale v radnicích
+měst.** Města generuje generátor mapy, hráč je musí najít a převzít. Pak jim vozí vědecké balíčky, staví domy
+a přes překladiště dodává suroviny, kapaliny a elektřinu – tím město povyšuje. Vyšší úroveň = přijímá vyšší
+vědy a domy dávají větší bonus k rychlosti výzkumu. Rychlejší radnice potřebuje víc přívodů balíčků → hráč
+plánuje a přestavuje okolí.
+
+## Stavby
+
+| Stavba | Typ prototypu | Kdo ji staví | Role |
+|---|---|---|---|
+| **Radnice** | `lab` | generátor mapy | Jediné místo výzkumu. Jméno, úroveň 1–5, pevně 15×15, úroveň mění vzhled. Nejde vytěžit. |
+| **Ruina radnice** | `container` | skript | Vznikne po zničení radnice; po dodání materiálu se radnice obnoví. |
+| **Dům** | `simple-entity-with-owner` | hráč | Jeden předmět „dům“, obyčejný recept v montážním stroji. Úroveň a vzhled přebírá od města. Bonus k rychlosti výzkumu. |
+| **Překladiště zboží** | `container` | hráč | Dodávka pevných surovin pro milníky. |
+| **Překladiště kapalin** | `storage-tank` | hráč | Dodávka kapalin a plynů pro milníky. |
+| **Městská rozvodna** | `electric-energy-interface` | hráč | Odběr elektřiny města (trvalá spotřeba dle úrovně). |
+
+Odstraní se **všechny laboratoře** (vanilla i z jiných modů, např. biolab, laboratoře Bob's/Krastoria): skrytý
+recept, odebrané z výzkumu. Výzkumy se spouštěčem „vyrob/postav laboratoř“ (vanilla `automation-science-pack`!)
+se přesměrují na vyrobení domu, jinak by hra uvízla. Laboratoře v existujícím savu dál fungují.
+
+## Generování a objevení měst
+
+- Města vznikají při generování chunků na Nauvisu (`on_chunk_generated`), deterministicky ze seedu mapy.
+  Parametry jako startup nastavení: hustota (průměrná vzdálenost mezi městy) a minimální rozestup.
+- **Garantované první město** ve vzdálenosti cca 100–200 dlaždic od spawnu (jinak by nešlo začít zkoumat).
+- Místo pro město musí být souše bez útesů; stromy a kameny v půdorysu radnice a okolním pásu se odstraní.
+  Hnízda biterů v poloměru kolem města se při generování odstraní.
+- Nalezené město je **neutrální** (biteři na něj neútočí, nic nedělá). Hráč ho **převezme** tak, že k radnici
+  dojde (postava v dosahu N dlaždic) – město přejde na sílu hráče, dostane jméno a úroveň 1.
+  Od té chvíle je cílem biterů.
+- Přidání modu do existujícího savu: generátor projde už vygenerované chunky stejně, garantované město se
+  umístí do volného místa nejblíž spawnu.
+
+## Síť města
+
+- Síť tvoří **jen radnice a domy**. Dům se připojí k radnici nebo k jinému domu v dosahu (konstanta jako
+  u sloupů); spojení se vykreslí jako **visutý chodník** (`rendering`, bez kolize).
+- Dům smí být od radnice nejvýš **5 domů v sérii** (nejkratší cesta v grafu ≤ 5). Dál je neaktivní.
+- **Překladiště nejsou součástí sítě**, jen dodávají: připojí se k nejbližší budově města (radnice/dům)
+  ve svém dosahu, síť nerozšiřují. V dosahu dvou měst → bližší.
+- Síť je vlastní graf ve skriptu, nekříží se s elektrickou sítí.
+- Po odebrání nebo zničení domu se graf přepočítá od radnice; odpojené domy a překladiště jsou neaktivní
+  (ikona „odpojeno“) a po obnovení spojení se připojí samy.
+
+## Úrovně
+
+**Rozdělení věd do úrovní se počítá automaticky** z výzkumného stromu: každá věda dostane „hloubku“ (nejmělčí
+výzkum, který ji používá), nejranější věda(y) patří úrovni 1, ostatní se podle pořadí rovnoměrně rozdělí do úrovní
+2–5. Funguje tak s libovolným počtem věd (Pyanodon ~10, Space Age +5). Radnice přijímá všechny vědy své
+a nižších úrovní. Příklad pro vanillu:
+
+| Úroveň | Radnice přijímá (vanilla) | Max. domů s bonusem |
+|---|---|---|
+| 1 | automation | 4 |
+| 2 | + logistic, military | 8 |
+| 3 | + chemical | 12 |
+| 4 | + production, utility | 16 |
+| 5 | + space | 20 |
+
+(Počty domů = úroveň × 4, konstanta k ladění.) Domy navíc nad limit jsou připojené, ale nedávají bonus.
+
+**Povýšení na úroveň K+1** – hráč klikne v GUI „Povýšit“, jakmile je splněno:
+1. **Milník surovin:** do překladišť města dodáno požadované množství pevných surovin a kapalin pro danou
+   úroveň (jednorázově; skript je jednou za několik sekund vybere z překladišť a připíše k postupu, nad
+   potřebu nic neodebírá).
+2. **Domy:** připojeno aspoň tolik aktivních domů, kolik je limit současné úrovně.
+
+Povýšení vymění radnici za prototyp vyšší úrovně (stejný rozměr; přenese balíčky, jméno a stav) a všechny
+domy města za prototyp vyšší úrovně (jiný vzhled, větší bonus).
+
+Suroviny a množství jsou v jedné tabulce konstant. Každá surovina je **seznam kandidátů** (např.
+`{ "stone-brick", "concrete" }`); v `data-final-fixes` vyhraje první, který existuje a **je dostupný nejpozději
+vědami současné úrovně** (recept od začátku nebo výzkum, jehož vědy i vědy prerekvizit spadají do úrovně ≤ K;
+skryté recepty a vyprazdňování barelů se nepočítají). Když žádný kandidát nevyhoví, požadavek se vynechá a
+zaloguje. Výsledek jde do runtime přes prototyp `mod-data`.
+
+## Elektřina
+
+- Město má **trvalou spotřebu elektřiny** podle úrovně, výrazně rostoucí (např. 1 MW → 4 → 15 → 50 → 150 MW,
+  konstanty k ladění). Odebírá ji přes městské rozvodny (lze jich mít víc, spotřeba se mezi ně rozdělí).
+- Radnice sama elektřinu nepotřebuje (`energy_source = void`); **zkoumá jen, když je spotřeba města pokrytá**
+  za poslední interval. Jinak je vypnutá (`disabled_by_script`) a GUI ukáže „nedostatek elektřiny“.
+
+## Výzkum a bonusy
+
+- Rychlost = základ radnice dle úrovně + bonus za aktivní domy do limitu (bonus domu roste s úrovní města),
+  řešeno skrytým beaconem u radnice.
+- Vědecké balíčky jdou do radnice **přímo** (insertery). Rychlejší radnice spotřebuje víc balíčků → hlavní
+  prostorová hádanka modu.
+
+## Ruina
+
+- Radnici nejde vytěžit. Po zničení (biteři) vznikne na stejném místě **ruina**; město si drží jméno, úroveň
+  i postup milníku, ale nezkoumá a domy jsou neaktivní.
+- Ruina je bedna: hráč do ní dodá materiál na obnovu (cena roste s úrovní) a radnice se obnoví ve stejné úrovni.
+- Zničené domy a překladiště se obnovují běžně (duchové, roboti).
+
+## GUI radnice
+
+Relativní GUI ukotvené k oknu laboratoře, jen pro radnice: jméno (přejmenovatelné, popisek na mapě), úroveň,
+rychlost výzkumu a bonus z domů (aktivní / limit), stav elektřiny, checklist milníku (suroviny s postupem,
+domy) a tlačítko „Povýšit“. Ruina má obdobné GUI s cenou obnovy.
+
+## Runtime a výkon
+
+- Stav jen ve `storage`: `cities[id] = {name, hall, level, state, progress, houses, depots}`,
+  `nodes[unit_number] = {city, entity, neighbors, depth}`.
+- Výběr z překladišť, kontrola elektřiny a přepočet bonusu plánovačem jednou za několik sekund na město.
+- Pokryté všechny cesty stavby/odstranění (hráč, robot, `script_raised_*`, `on_entity_died`).
+- Remote interface s gettery stavu města (pro testy a jiné mody).
+
+## Mimo rozsah v0.1
+
+- Vlastní planeta rasy, města na jiných površích.
+- Průběžná spotřeba surovin, spokojenost a úpadek města (kromě elektřiny).
+- Nové předměty (jídlo, oblečení) – jen existující předměty hry.
+- Speciální mechaniky Space Age (biolab, výzkum na jiných planetách) – vědy SA se jen zařadí do úrovní.
+- Finální grafika – v0.1 tónované vanilla sprity.
+- Zakládání nových měst hráčem.
+
+## Klíčová rozhodnutí
+
+| Rozhodnutí | Volba | Důvod |
+|---|---|---|
+| Kde se zkoumá | Jen radnice (`lab`) | Výzkum počítá hra nativně, vědy zůstávají jak jsou. |
+| Odkud jsou města | Generátor mapy, hráč objeví a převezme | Průzkum mapy je součást hry. |
+| Úroveň odemyká vědy | Ano | Bez toho by stačilo jedno malé město na všechno. |
+| Síť města | Radnice + domy, max. 5 domů v sérii | Město drží tvar, nejde ho natáhnout přes mapu. |
+| Zásobování | Překladiště mimo síť, jednorázové milníky | Jednoduché, víc překladišť = víc přívodů. |
+| Elektřina | Trvalá spotřeba dle úrovně | Vysoká úroveň má stálou cenu v energetice. |
+| Domy | Jeden typ, úroveň dle města, limit bonusu | Bez nekonečného zrychlování; jednoduchá výroba. |
+| Ztráta radnice | Ruina s obnovou, nejde vytěžit | Útok biterů bolí, ale nemaže hodiny hraní. |
+| Rozměr radnice a domů | Pevný, úroveň mění jen vzhled | Výměna prototypu se vždy podaří. |
+| Kompatibilita | Vědy, suroviny a laboratoře odvozené z `data.raw` | Pyanodon, Bob's, Krastorio bez ruční údržby. |
+
+## Testování
+
+- Unit (Lua 5.3): graf sítě (připojení, hloubka ≤ 5, rozpad, nejbližší město), přiřazení překladišť,
+  postup a podmínky povýšení, limit domů, rozmístění měst (determinismus, rozestupy), locale en/cs.
+- Integrační headless (vanilla + Space Age): převzetí města, stavba/odstranění domů a překladišť, výběr
+  surovin, elektřina zapíná/vypíná výzkum, povýšení s výměnou radnice a domů, radnice zkoumá jen vědy své
+  úrovně, zničení → ruina → obnova.
+- Kompatibilita (`tools/run-tests.sh mods …`): Bob's, Pyanodon – radnice vzniknou, každá věda je v některé
+  úrovni, žádný výzkum nevyžaduje laboratoř, všechny požadavky milníků existují.
+- Výkon: N měst s plnými sítěmi, ms/tick proti prázdné mapě.
