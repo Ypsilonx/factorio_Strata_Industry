@@ -59,4 +59,17 @@ function H.house(ctx, dx, dy)
   return H.place(ctx, "rt-house", dx, dy)
 end
 
+--- Okamžitě zpracuje město (výběr z překladišť, elektřina) – nečeká na plánovač.
+function H.process(id)
+  remote.call(H.REMOTE, "process", id)
+end
+
+--- Kolik suroviny už město dostalo k dalšímu milníku (nil = surovina v milníku není).
+function H.delivered(id, kind, name)
+  for _, req in ipairs(H.status(id).requirements) do
+    if req.type == kind and req.name == name then return req.delivered end
+  end
+  return nil
+end
+
 return H

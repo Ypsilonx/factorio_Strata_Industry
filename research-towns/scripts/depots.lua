@@ -1,0 +1,151 @@
+--- Runtime překladiště: přiřazení k nejbližší budově města, výběr surovin pro milník, elektřina města.
+local levels = require("shared.levels")
+local config = require("scripts.config")
+local geometry = require("scripts.geometry")
+local milestones = require("scripts.milestones")
+local network = require("scripts.network")
+
+local M = {}
+
+--- Prototypy překladišť a jejich druh.
+M.KINDS = { ["rt-goods-depot"] = "goods", ["rt-fluid-depot"] = "fluid", ["rt-power-depot"] = "power" }
+
+--- Jména prototypů překladišť.
+function M.names()
+  return { "rt-goods-depot", "rt-fluid-depot", "rt-power-depot" }
+end
+
+--- Nastaví odběr všech rozvoden města: příkon úrovně rozdělený rovným dílem; bez města nic.
+--- Zásobník = 1 s odběru, takže výpadek sítě se projeví do pár sekund.
+function M.apply_town_power(town)
+  local list = {}
+  for key in pairs(town.depots) do
+    local depot = storage.depots[key]
+    if depot and depot.kind == "power" then list[#list + 1] = depot end
+  end
+  for _, depot in ipairs(list) do
+    local usage = levels.power_per_tick(town.level) / #list
+    depot.entity.power_usage = usage
+    depot.entity.electric_buffer_size = usage * 60
+  end
+end
+
+--- Vypne odběr rozvodny bez města.
+local function release_power(depot)
+  if depot.kind == "power" and depot.entity.valid then
+    depot.entity.power_usage = 0
+    depot.entity.electric_buffer_size = 1
+  end
+end
+
+--- Je uzel platnou kotvou překladiště? (radnice města nebo aktivní dům)
+local function anchors(node)
+  if node.kind == "hall" then return node.town ~= nil end
+  return network.is_active(node)
+end
+
+--- Přiřadí překladiště k městu nejbližší kotvy v dosahu (remíza → nižší id města) a přepočte elektřinu.
+function M.resolve(depot)
+  local entity = depot.entity
+  local box = entity.selection_box
+  local best, best_gap
+  local found = entity.surface.find_entities_filtered({ area = geometry.expand(box, levels.DEPOT_REACH), name = network.names() })
+  for _, other in pairs(found) do
+    local node = storage.nodes[other.unit_number]
+    if node and anchors(node) then
+      local gap = geometry.gap(box, other.selection_box)
+      if gap <= levels.DEPOT_REACH and (not best or gap < best_gap or (gap == best_gap and node.town < best.town)) then
+        best, best_gap = node, gap
+      end
+    end
+  end
+  local old = depot.town
+  depot.town = best and best.town
+  if old == depot.town then return end
+  local old_town = old and storage.towns[old]
+  if old_town then
+    old_town.depots[depot.key] = nil
+    M.apply_town_power(old_town)
+  end
+  if depot.town then
+    local town = storage.towns[depot.town]
+    town.depots[depot.key] = true
+    M.apply_town_power(town)
+  else
+    release_power(depot)
+  end
+end
+
+--- Zaeviduje nové překladiště.
+function M.add(entity)
+  local depot = { key = entity.unit_number, entity = entity, kind = M.KINDS[entity.name] }
+  storage.depots[depot.key] = depot
+  release_power(depot)
+  M.resolve(depot)
+  return depot
+end
+
+--- Vyřadí překladiště (vytěžení/zničení) a přepočte elektřinu jeho města.
+function M.remove(key)
+  local depot = storage.depots[key]
+  if not depot then return end
+  storage.depots[key] = nil
+  local town = depot.town and storage.towns[depot.town]
+  if town then
+    town.depots[key] = nil
+    M.apply_town_power(town)
+  end
+end
+
+--- Zkusí přiřadit překladiště bez města (po změnách sítě se nová kotva mohla objevit kdekoli).
+function M.resolve_unassigned()
+  for _, depot in pairs(storage.depots) do
+    if not depot.town and depot.entity.valid then M.resolve(depot) end
+  end
+end
+
+--- Vybere z překladišť města suroviny potřebné k dalšímu milníku (každá kvalita se počítá).
+function M.collect(town)
+  local requirements = config.upgrade(town.level)
+  if not requirements then return end
+  for key in pairs(town.depots) do
+    local depot = storage.depots[key]
+    local entity = depot and depot.entity
+    if entity and entity.valid then
+      if depot.kind == "goods" then
+        local inventory = entity.get_inventory(defines.inventory.chest)
+        for _, item in pairs(inventory.get_contents()) do
+          local take = milestones.accept(requirements, town.progress, "item", item.name, item.count)
+          if take > 0 then
+            local removed = inventory.remove({ name = item.name, quality = item.quality, count = take })
+            milestones.add(town.progress, "item", item.name, removed)
+          end
+        end
+      elseif depot.kind == "fluid" then
+        local fluid = entity.fluidbox[1]
+        if fluid then
+          local take = milestones.accept(requirements, town.progress, "fluid", fluid.name, fluid.amount)
+          if take > 0 then
+            milestones.add(town.progress, "fluid", fluid.name, entity.remove_fluid({ name = fluid.name, amount = take }))
+          end
+        end
+      end
+    end
+  end
+end
+
+--- Je spotřeba města pokrytá? (aspoň jedna rozvodna a každá má zásobník aspoň z poloviny plný)
+function M.power_ok(town)
+  local any = false
+  for key in pairs(town.depots) do
+    local depot = storage.depots[key]
+    if depot and depot.kind == "power" then
+      any = true
+      local entity = depot.entity
+      if not entity.valid or entity.energy < 0.5 * entity.electric_buffer_size then return false end
+    end
+  end
+  return any
+end
+
+return M

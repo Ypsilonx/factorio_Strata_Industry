@@ -27,6 +27,11 @@ remote.add_interface("research-towns", {
     local node = storage.nodes[unit_number]
     return node and node.depth
   end,
+  --- Okamžitě zpracuje město (pro testy).
+  process = function(id)
+    local t = town(id)
+    if t then towns.process(t) end
+  end,
   --- Přejmenuje město.
   rename = function(id, name)
     local t = town(id)

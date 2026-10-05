@@ -21,7 +21,8 @@ function M.create(level, sciences)
   hall.name = levels.hall_name(level)
   hall.icons = { { icon = base.icon, icon_size = base.icon_size, tint = M.TINTS[level] } }
   hall.icon = nil
-  hall.flags = { "not-blueprintable", "not-deconstructable", "not-rotatable" }
+  -- get-by-unit-number: remote town_status vrací unit_number radnice, jiné mody ji podle něj dohledají.
+  hall.flags = { "not-blueprintable", "not-deconstructable", "not-rotatable", "get-by-unit-number" }
   hall.minable = nil
   hall.placeable_by = nil
   hall.fast_replaceable_group = nil

@@ -81,5 +81,7 @@ if [ ! -f "$RUN/test.zip" ]; then
   exit 1
 fi
 "$FACTORIO" "${ARGS[@]}" --benchmark "$RUN_W/test.zip" --benchmark-ticks 1500 --disable-audio > "$RUN/bench.log" 2>&1 || true
+# Selhání v setup() vznikají už při --create (on_init), proto i create.log.
+grep -aE "RT-TEST FAIL" "$RUN/create.log" | sed "s/.*RT-TEST/RT-TEST/" || true
 grep -E "RT-TEST|Error" "$RUN/bench.log" | sed 's/.*RT-TEST/RT-TEST/'
 grep -q "RT-TEST DONE pass=[0-9]* fail=0 " "$RUN/bench.log"

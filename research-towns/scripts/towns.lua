@@ -1,6 +1,7 @@
 --- Runtime města: založení, popisky, bonus za domy, stav pro GUI/remote, zánik radnice.
 local levels = require("shared.levels")
 local config = require("scripts.config")
+local depots = require("scripts.depots")
 local milestones = require("scripts.milestones")
 local names = require("scripts.names")
 local network = require("scripts.network")
@@ -47,14 +48,17 @@ function M.update_bonus(town)
   end
 end
 
---- Po změně sítě: přestaví seznamy domů a přepočte bonus dotčených měst.
---- Task 7 sem doplní přepočet překladišť.
+--- Po změně sítě: přestaví seznamy domů, přiřazení překladišť a bonus dotčených měst.
 --- @param touched table<integer, true>
 function M.on_network_changed(touched)
   for id in pairs(touched) do
     local town = storage.towns[id]
     if town then
       network.rebuild_houses(town)
+      for key in pairs(town.depots) do
+        local depot = storage.depots[key]
+        if depot then depots.resolve(depot) end
+      end
       M.update_bonus(town)
     end
   end
@@ -111,8 +115,15 @@ function M.status(town)
   }
 end
 
---- Radnice zanikla. Plán 1: město zaniká, domy se odpojí (ruina přijde v plánu 2).
---- Task 7 doplní uvolnění překladišť.
+--- Pravidelné zpracování: suroviny z překladišť, kontrola elektřiny, zapnutí/vypnutí výzkumu.
+function M.process(town)
+  if not town.hall.valid then return end
+  depots.collect(town)
+  town.power_ok = depots.power_ok(town)
+  town.hall.disabled_by_script = not town.power_ok
+end
+
+--- Radnice zanikla. Plán 1: město zaniká, domy se odpojí a překladiště uvolní (ruina přijde v plánu 2).
 function M.on_hall_removed(key)
   local node = storage.nodes[key]
   if not node then return end
@@ -122,6 +133,10 @@ function M.on_hall_removed(key)
     if town.beacon and town.beacon.valid then town.beacon.destroy() end
     destroy_labels(town)
     storage.towns[town.id] = nil
+    for depot_key in pairs(town.depots) do
+      local depot = storage.depots[depot_key]
+      if depot then depots.resolve(depot) end
+    end
   end
   M.on_network_changed(touched)
 end

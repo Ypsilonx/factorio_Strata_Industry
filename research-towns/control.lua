@@ -3,14 +3,18 @@ local levels = require("shared.levels")
 local state = require("scripts.state")
 local scheduler = require("scripts.scheduler")
 local network = require("scripts.network")
+local depots = require("scripts.depots")
 local towns = require("scripts.towns")
 require("scripts.remote")
 
---- Postavení domu (hráč, robot, skript): připojí ho do sítě.
+--- Postavení domu nebo překladiště (hráč, robot, skript): připojí ho k městu.
 local function on_built(event)
   local entity = event.entity
   if entity.name == network.HOUSE then
     towns.on_network_changed(network.add(entity, "house"))
+    depots.resolve_unassigned()
+  elseif depots.KINDS[entity.name] then
+    depots.add(entity)
   end
 end
 
@@ -21,18 +25,25 @@ local function on_removed(event)
     towns.on_hall_removed(entity.unit_number)
   elseif entity.name == network.HOUSE then
     towns.on_network_changed(network.remove(entity.unit_number))
+  elseif depots.KINDS[entity.name] then
+    depots.remove(entity.unit_number)
   end
 end
 
---- Pravidelné zpracování města (Task 7 doplní suroviny a elektřinu) a další naplánování.
+--- Pravidelné zpracování města (suroviny, elektřina) a další naplánování.
 local function process(town)
   if not town.hall.valid then return end
+  towns.process(town)
   scheduler.schedule(town, game.tick + levels.TOWN_INTERVAL)
 end
 
 local built_filters = { { filter = "name", name = network.HOUSE } }
 local removed_filters = {}
 for _, name in ipairs(network.names()) do removed_filters[#removed_filters + 1] = { filter = "name", name = name } end
+for _, name in ipairs(depots.names()) do
+  built_filters[#built_filters + 1] = { filter = "name", name = name }
+  removed_filters[#removed_filters + 1] = { filter = "name", name = name }
+end
 
 for _, id in ipairs({
   defines.events.on_built_entity,
@@ -53,6 +64,7 @@ for _, id in ipairs({
 end
 
 script.on_event(defines.events.on_tick, function(event) scheduler.run(event.tick, process) end)
+script.on_nth_tick(levels.TOWN_INTERVAL, depots.resolve_unassigned)
 script.on_init(state.init)
 script.on_configuration_changed(function()
   state.init()
