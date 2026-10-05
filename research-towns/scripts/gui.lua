@@ -62,7 +62,8 @@ local function fill(player, town)
   local list = frame[n.requirements]
   list.clear()
   for _, req in ipairs(status.requirements) do
-    list.add({ type = "sprite", sprite = req.type .. "/" .. req.name })
+    -- elem_tooltip = nativní popup předmětu/kapaliny jako v inventáři.
+    list.add({ type = "sprite", sprite = req.type .. "/" .. req.name, elem_tooltip = { type = req.type, name = req.name } })
     list.add({ type = "label", caption = string.format("%d / %d", math.floor(req.delivered), req.amount) })
   end
   if #status.requirements == 0 then list.add({ type = "label", caption = { "rt.gui-max-level" } }) end
