@@ -19,6 +19,12 @@ return {
       previous = #proto.lab_inputs
     end
   end } } },
+  { name = "úroveň 1 přijímá nejvýš polovinu věd nejvyšší úrovně", steps = { { ticks = 1, run = function()
+    -- Hlídá pořadí final-fixes: když pásma vzniknou před dopočtem stromu overhaulu, skončí skoro vše na úrovni 1.
+    local first = #prototypes.entity[levels.hall_name(1)].lab_inputs
+    local top = #prototypes.entity[levels.hall_name(levels.MAX_LEVEL)].lab_inputs
+    H.check(first * 2 <= top, "úroveň 1: " .. first .. " věd, nejvyšší: " .. top)
+  end } } },
   { name = "nejvyšší radnice umí všechny vědy výzkumů", steps = { { ticks = 1, run = function()
     local top = set(prototypes.entity[levels.hall_name(levels.MAX_LEVEL)].lab_inputs)
     for name, tech in pairs(prototypes.technology) do
