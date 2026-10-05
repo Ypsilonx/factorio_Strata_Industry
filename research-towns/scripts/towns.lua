@@ -93,6 +93,63 @@ function M.rename(town, name)
   draw_labels(town)
 end
 
+--- Lze město povýšit? (není na max. úrovni, milník splněný, dost aktivních domů)
+function M.can_upgrade(town)
+  local requirements = config.upgrade(town.level)
+  return requirements ~= nil and milestones.complete(requirements, town.progress)
+    and network.active_houses(town) >= levels.get(town.level).house_limit
+end
+
+--- Přesune obsah inventáře entity do dočasného inventáře (zachová trvanlivost balíčků i moduly).
+local function take_inventory(entity, inventory_id)
+  local source = entity.get_inventory(inventory_id)
+  if not source then return nil end
+  local buffer = game.create_inventory(#source)
+  for i = 1, #source do buffer[i].transfer_stack(source[i]) end
+  return buffer
+end
+
+--- Vrátí obsah dočasného inventáře do entity a dočasný inventář zničí.
+local function restore_inventory(buffer, entity, inventory_id)
+  if not buffer then return end
+  local target = entity.get_inventory(inventory_id)
+  for i = 1, #buffer do
+    if buffer[i].valid_for_read then target.insert(buffer[i]) end
+  end
+  buffer.destroy()
+end
+
+--- Vymění radnici za prototyp dané úrovně (stejný půdorys), přenese obsah, přebarví domy,
+--- vynuluje postup milníku a přepočte elektřinu i bonus.
+function M.set_level(town, level)
+  local old = town.hall
+  local surface, position, force = old.surface, old.position, old.force
+  local packs = take_inventory(old, defines.inventory.lab_input)
+  local modules = take_inventory(old, defines.inventory.lab_modules)
+  local old_key = old.unit_number
+  old.destroy()
+  local hall = surface.create_entity({ name = levels.hall_name(level), position = position, force = force })
+  restore_inventory(packs, hall, defines.inventory.lab_input)
+  restore_inventory(modules, hall, defines.inventory.lab_modules)
+  network.replace_hall(old_key, hall)
+  town.hall = hall
+  town.level = level
+  town.progress = {}
+  hall.disabled_by_script = not town.power_ok
+  network.refresh_town_houses(town)
+  depots.apply_town_power(town)
+  M.update_bonus(town)
+  draw_labels(town)
+end
+
+--- Povýší město o úroveň, pokud to podmínky dovolí.
+--- @return boolean
+function M.upgrade(town)
+  if not M.can_upgrade(town) then return false end
+  M.set_level(town, town.level + 1)
+  return true
+end
+
 --- Stav města pro GUI a remote rozhraní.
 function M.status(town)
   local cfg = levels.get(town.level)
@@ -111,7 +168,7 @@ function M.status(town)
     bonus = levels.bonus_modules(town.level, active) * levels.BONUS_STEP,
     beacon_modules = beacon and beacon.valid and beacon.get_module_inventory().get_item_count(BONUS_MODULE) or 0,
     power_ok = town.power_ok, power_watts = cfg.power_mw * 1e6,
-    requirements = requirements, can_upgrade = M.can_upgrade and M.can_upgrade(town) or false,
+    requirements = requirements, can_upgrade = M.can_upgrade(town),
   }
 end
 

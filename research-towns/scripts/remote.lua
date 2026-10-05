@@ -32,6 +32,16 @@ remote.add_interface("research-towns", {
     local t = town(id)
     if t then towns.process(t) end
   end,
+  --- Povýší město, pokud jsou splněné podmínky.
+  upgrade = function(id)
+    local t = town(id)
+    return t ~= nil and towns.upgrade(t)
+  end,
+  --- Nastaví úroveň bez podmínek (testy, ladění).
+  set_level = function(id, level)
+    local t = town(id)
+    if t then towns.set_level(t, level) end
+  end,
   --- Přejmenuje město.
   rename = function(id, name)
     local t = town(id)
