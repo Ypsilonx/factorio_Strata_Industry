@@ -57,3 +57,5 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
    kombinátor), Shift+klik kopíruje režim na jinou tabuli, plán (blueprint) s tabulí si pamatuje režim.
 10. Nastavení modů → Startup: „Násobič spotřeby surovin“ (0 vypne spotřebu).
 11. Tipy a triky: kategorie Research Towns s aktualizovanými texty (úrovně, spotřeba, tabule).
+12. Nad poslední vědou (`/c remote.call("research-towns", "set_level", <id>, 8)`): Povýšit v panelu – okno zůstane
+    otevřené a panel ukáže novou úroveň a produktivitu.

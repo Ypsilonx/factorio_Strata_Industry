@@ -18,4 +18,12 @@ return {
     A.eq(houses.upgradable(CANDIDATES, 2), 3, "pod úrovní 2 jsou tři domy")
     A.eq(houses.upgradable(CANDIDATES, 1), 0, "na úrovni 1 nic")
   end },
+  { "požadavky domu bez vědy; bez surovin žádné vylepšení", function()
+    local upgrade = { { type = "item", name = "red", amount = 200, science = true }, { type = "item", name = "wood", amount = 5 } }
+    local list = houses.requirements(upgrade)
+    A.eq(#list, 1, "jen dřevo")
+    A.eq(list[1].name, "wood", "dřevo")
+    A.eq(houses.requirements({ upgrade[1] }), nil, "jen věda → nic")
+    A.eq(houses.requirements(nil), nil, "bez milníku")
+  end },
 }

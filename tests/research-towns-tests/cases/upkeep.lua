@@ -53,4 +53,22 @@ return {
       H.check(H.stock(ctx.town, name) == before, "prázdná radnice spotřebovala zásobu")
     end } },
   },
+  {
+    name = "bez elektřiny se nespotřebovává",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      remote.call(R, "set_level", ctx.town, 2)
+      ctx.depot = H.place(ctx, "rt-goods-depot", 0, 10)
+      H.supply_upkeep(ctx.town, ctx.depot, 1000)
+      H.hall(ctx.town).insert({ name = "automation-science-pack", count = 50 })
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      H.research()
+      H.process(ctx.town)
+      local name = H.status(ctx.town).upkeep[1].name
+      local before = H.stock(ctx.town, name)
+      H.process(ctx.town)
+      H.check(H.stock(ctx.town, name) == before, "radnice bez elektřiny spotřebovala zásobu")
+    end } },
+  },
 }

@@ -1,5 +1,6 @@
 --- Úrovně vyřešené v data stage (mod-data „rt-levels“): počet úrovní, vědy radnic a milníky.
 local levels = require("shared.levels")
+local houses = require("scripts.houses")
 
 local data = prototypes.mod_data["rt-levels"].data
 
@@ -21,11 +22,7 @@ end
 --- balíčků. Nil, když už dům nemá kam růst (poslední věda).
 function M.house_requirements(house_level)
   if house_level >= data.level_count then return nil end
-  local list = {}
-  for _, req in ipairs(data.upgrade[tostring(house_level)]) do
-    if not req.science then list[#list + 1] = req end
-  end
-  return list
+  return houses.requirements(data.upgrade[tostring(house_level)])
 end
 
 --- Požadavky splněných milníků města dané úrovně (1..level−1) pro průběžnou spotřebu.

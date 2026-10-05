@@ -42,6 +42,11 @@ remote.add_interface("research-towns", {
     local depot = storage.depots[unit_number]
     if depot and depot.kind == "board" then depot.mode = mode end
   end,
+  --- Srovná město s aktuálními vzorci (jako po změně konfigurace).
+  refresh_town = function(id)
+    local t = town(id)
+    if t then towns.refresh(t) end
+  end,
   --- Okamžitě zpracuje město (pro testy).
   process = function(id)
     local t = town(id)

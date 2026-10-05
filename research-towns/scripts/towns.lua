@@ -161,10 +161,17 @@ end
 --- Nastaví úroveň města: radnici vymění jen při změně prototypu (nad poslední vědou zůstává), vynuluje postup
 --- milníku a přepočte domy, elektřinu, bonus i popisky.
 function M.set_level(town, level)
-  local name = config.hall_name(level)
-  if town.hall.name ~= name then replace_hall(town, name) end
   town.level = level
   town.progress = {}
+  M.refresh(town)
+end
+
+--- Srovná město s aktuální úrovní, vzorci a prototypy bez ztráty postupu (po povýšení, po změně konfigurace
+--- nebo ve starém savu): prototyp radnice, vzhled domů, odběr rozvoden, moduly beaconu a popisky.
+function M.refresh(town)
+  if not town.hall.valid then return end
+  local name = config.hall_name(town.level)
+  if town.hall.name ~= name then replace_hall(town, name) end
   town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
   network.refresh_town_houses(town)
   depots.apply_town_power(town)
@@ -248,9 +255,15 @@ function M.refresh_boards(town)
   end
 end
 
---- Chce radnice zkoumat? (rozběhnutý výzkum a nějaké balíčky) – jen tehdy se spotřebovává.
+--- Může radnice zkoumat? (rozběhnutý výzkum a v radnici jsou všechny jeho vědy) – jen tehdy se spotřebovává.
 local function wants_research(hall)
-  return hall.force.current_research ~= nil and not hall.get_inventory(defines.inventory.lab_input).is_empty()
+  local research = hall.force.current_research
+  if not research or #research.research_unit_ingredients == 0 then return false end
+  local inventory = hall.get_inventory(defines.inventory.lab_input)
+  for _, ingredient in pairs(research.research_unit_ingredients) do
+    if inventory.get_item_count(ingredient.name) == 0 then return false end
+  end
+  return true
 end
 
 --- Pravidelné zpracování: dodávky z překladišť (zásoba spotřeby → milník radnice → vylepšení domu),
@@ -272,15 +285,16 @@ function M.process(town)
     network.refresh_house(node)
     M.update_bonus(town)
   end
-  if wants_research(town.hall) then
+  if not (town.beacon and town.beacon.valid) then M.update_bonus(town) end
+  -- Elektřina před spotřebou: radnice bez elektřiny nezkoumá, takže ani nespotřebovává.
+  town.power_ok = depots.power_ok(town)
+  if town.power_ok and wants_research(town.hall) then
     local need = upkeep.times(rate, levels.TOWN_INTERVAL / 3600)
     town.upkeep_ok = upkeep.covered(need, town.stock)
     if town.upkeep_ok then upkeep.consume(need, town.stock) end
   else
     town.upkeep_ok = true
   end
-  if not (town.beacon and town.beacon.valid) then M.update_bonus(town) end
-  town.power_ok = depots.power_ok(town)
   town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
   M.refresh_boards(town)
 end

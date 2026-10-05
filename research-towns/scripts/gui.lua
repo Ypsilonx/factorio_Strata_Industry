@@ -157,7 +157,13 @@ end
 function M.on_click(event)
   if event.element.name ~= M.NAMES.upgrade then return end
   local town = storage.towns[storage.gui[event.player_index]]
-  if town and towns.upgrade(town) then
+  if not town then return end
+  local hall = town.hall
+  if not towns.upgrade(town) then return end
+  if town.hall == hall then
+    -- Nad poslední vědou zůstává stejná radnice a okno zůstává otevřené – jen obnovit panel.
+    fill(game.get_player(event.player_index), town)
+  else
     -- Povýšení vyměnilo entitu radnice – okno staré radnice se zavřelo, panel znovu otevře hráč.
     storage.gui[event.player_index] = nil
   end

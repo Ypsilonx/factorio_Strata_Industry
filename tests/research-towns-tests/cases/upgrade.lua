@@ -118,4 +118,21 @@ return {
       end },
     },
   },
+  {
+    name = "obnova města (změna konfigurace) srovná příkon a bonus s aktuálními vzorci",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      ctx.depot = H.place(ctx, "rt-power-depot", -4, 10)
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      -- Napodobí starý save: jiný odběr a moduly navíc.
+      ctx.depot.power_usage = 1
+      local beacon = ctx.surface.find_entities_filtered({ name = "rt-hall-beacon", position = H.hall(ctx.town).position })[1]
+      beacon.get_module_inventory().insert({ name = "rt-bonus-module", count = 50 })
+      remote.call(R, "refresh_town", ctx.town)
+      local expected = levels.power_per_tick(1, H.level_count())
+      H.check(math.abs(ctx.depot.power_usage - expected) < 1e-6, "odběr " .. ctx.depot.power_usage .. " ≠ " .. expected)
+      H.check(H.status(ctx.town).beacon_modules == 0, "moduly navíc zůstaly")
+    end } },
+  },
 }

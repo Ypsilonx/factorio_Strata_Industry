@@ -121,7 +121,11 @@ script.on_configuration_changed(function()
   state.init()
   scheduler.clear()
   for _, town in pairs(storage.towns) do
-    if town.hall.valid then scheduler.schedule(town, game.tick + 1) end
+    if town.hall.valid then
+      -- Vzorce, počet úrovní (jiné mody) i prototypy se mohly změnit – srovnat bez ztráty postupu.
+      towns.refresh(town)
+      scheduler.schedule(town, game.tick + 1)
+    end
   end
   gui.rebuild_all()
 end)

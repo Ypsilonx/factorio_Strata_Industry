@@ -26,4 +26,15 @@ function M.upgradable(candidates, max_level)
   return count
 end
 
+--- Suroviny na vylepšení domu z milníku radnice: bez vědeckých balíčků. Nil, když nic nezbude
+--- (prázdný seznam by znamenal vylepšení zadarmo).
+--- @param upgrade table[]|nil požadavky milníku
+function M.requirements(upgrade)
+  local list = {}
+  for _, req in ipairs(upgrade or {}) do
+    if not req.science then list[#list + 1] = req end
+  end
+  return #list > 0 and list or nil
+end
+
 return M

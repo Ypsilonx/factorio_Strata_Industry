@@ -71,4 +71,24 @@ return {
       H.check(remote.call(R, "board_mode", ctx.board.unit_number) == "upkeep", "režim z tagu")
     end } },
   },
+  {
+    name = "tabule posílá i kapaliny milníku",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      for level = 1, H.level_count() - 1 do
+        for _, req in ipairs(H.levels_data().upgrade[tostring(level)]) do
+          if req.type == "fluid" and not ctx.fluid then
+            ctx.fluid = req
+            remote.call(R, "set_level", ctx.town, level)
+          end
+        end
+      end
+      H.check(ctx.fluid, "žádný milník nechce kapalinu")
+      ctx.board = H.place(ctx, "rt-town-board", 2, 9)
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      H.process(ctx.town)
+      H.check(signals(ctx.board)[ctx.fluid.name] == ctx.fluid.amount, "kapalina: " .. serpent.line(signals(ctx.board)))
+    end } },
+  },
 }
