@@ -64,11 +64,10 @@ function M.is_active(node)
   return node.town ~= nil and node.depth ~= nil and node.depth <= levels.MAX_HOUSE_DEPTH
 end
 
---- Nastaví domu grafickou variantu podle úrovně města a ikonu „odpojeno“, když není aktivní.
-local function refresh_house(node)
+--- Nastaví domu grafickou variantu podle jeho úrovně a ikonu „odpojeno“, když není aktivní.
+function M.refresh_house(node)
   if not node.entity.valid then return end
-  local town = node.town and storage.towns[node.town]
-  node.entity.graphics_variation = levels.variant(town and town.level or 1, config.level_count())
+  node.entity.graphics_variation = levels.variant(node.level, config.level_count())
   local active = M.is_active(node)
   if active and node.warning then
     if node.warning.valid then node.warning.destroy() end
@@ -106,7 +105,7 @@ function M.recompute(keys)
       node.town = result and result.town
       node.depth = result and result.depth
       if node.town then touched[node.town] = true end
-      refresh_house(node)
+      M.refresh_house(node)
     end
   end
   return touched
@@ -117,7 +116,8 @@ end
 --- @param town_id integer|nil jen pro radnici
 --- @return table<integer, true> dotčená města
 function M.add(entity, kind, town_id)
-  local node = { key = entity.unit_number, entity = entity, kind = kind, town = town_id, links = {} }
+  local node = { key = entity.unit_number, entity = entity, kind = kind, town = town_id, links = {},
+    level = kind == "house" and 1 or nil }
   storage.nodes[node.key] = node
   -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
   script.register_on_object_destroyed(entity)
@@ -162,13 +162,23 @@ function M.active_houses(town)
   return count
 end
 
---- Úrovně aktivních domů města (zatím mají domy úroveň města).
+--- Úrovně aktivních domů města.
 --- @return integer[]
 function M.active_house_levels(town)
   local list = {}
   for key in pairs(town.houses) do
     local node = storage.nodes[key]
-    if node and M.is_active(node) then list[#list + 1] = town.level end
+    if node and M.is_active(node) then list[#list + 1] = node.level end
+  end
+  return list
+end
+
+--- Aktivní domy města jako kandidáti vylepšení { key, level, depth }.
+function M.house_candidates(town)
+  local list = {}
+  for key in pairs(town.houses) do
+    local node = storage.nodes[key]
+    if node and M.is_active(node) then list[#list + 1] = { key = key, level = node.level, depth = node.depth } end
   end
   return list
 end
@@ -177,7 +187,7 @@ end
 function M.refresh_town_houses(town)
   for key in pairs(town.houses) do
     local node = storage.nodes[key]
-    if node then refresh_house(node) end
+    if node then M.refresh_house(node) end
   end
 end
 

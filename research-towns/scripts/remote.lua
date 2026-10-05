@@ -27,6 +27,11 @@ remote.add_interface("research-towns", {
     local node = storage.nodes[unit_number]
     return node and node.depth
   end,
+  --- Úroveň domu, nebo nil.
+  house_level = function(unit_number)
+    local node = storage.nodes[unit_number]
+    return node and node.level
+  end,
   --- Okamžitě zpracuje město (pro testy).
   process = function(id)
     local t = town(id)

@@ -1,8 +1,8 @@
---- Runtime překladiště: přiřazení k nejbližší budově města, výběr surovin pro milník, elektřina města.
+--- Runtime překladiště: přiřazení k nejbližší budově města, výběr surovin podle priority, elektřina města.
 local levels = require("shared.levels")
 local config = require("scripts.config")
 local geometry = require("scripts.geometry")
-local milestones = require("scripts.milestones")
+local allocation = require("scripts.allocation")
 local network = require("scripts.network")
 
 local M = {}
@@ -109,10 +109,9 @@ function M.resolve_unassigned()
   end
 end
 
---- Vybere z překladišť města suroviny potřebné k dalšímu milníku (každá kvalita se počítá).
-function M.collect(town)
-  local requirements = config.upgrade(town.level)
-  if not requirements then return end
+--- Vybere z překladišť města suroviny pro příjemce v pořadí priority (každá kvalita se počítá).
+--- @param sinks table[] { {requirements = table[]|nil, progress = table} } – viz scripts/allocation.lua
+function M.collect(town, sinks)
   for key in pairs(town.depots) do
     local depot = storage.depots[key]
     local entity = depot and depot.entity
@@ -120,18 +119,18 @@ function M.collect(town)
       if depot.kind == "goods" then
         local inventory = entity.get_inventory(defines.inventory.chest)
         for _, item in pairs(inventory.get_contents()) do
-          local take = milestones.accept(requirements, town.progress, "item", item.name, item.count)
+          local take = allocation.wanted(sinks, "item", item.name, item.count)
           if take > 0 then
             local removed = inventory.remove({ name = item.name, quality = item.quality, count = take })
-            milestones.add(town.progress, "item", item.name, removed)
+            allocation.distribute(sinks, "item", item.name, removed)
           end
         end
       elseif depot.kind == "fluid" then
         local fluid = entity.fluidbox[1]
         if fluid then
-          local take = milestones.accept(requirements, town.progress, "fluid", fluid.name, fluid.amount)
+          local take = allocation.wanted(sinks, "fluid", fluid.name, fluid.amount)
           if take > 0 then
-            milestones.add(town.progress, "fluid", fluid.name, entity.remove_fluid({ name = fluid.name, amount = take }))
+            allocation.distribute(sinks, "fluid", fluid.name, entity.remove_fluid({ name = fluid.name, amount = take }))
           end
         end
       end

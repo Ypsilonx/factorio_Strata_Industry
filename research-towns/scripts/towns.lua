@@ -7,6 +7,7 @@ local names = require("scripts.names")
 local network = require("scripts.network")
 local scheduler = require("scripts.scheduler")
 local story = require("shared.story")
+local houses = require("scripts.houses")
 
 local M = {}
 
@@ -95,7 +96,7 @@ function M.create(surface, position, force)
   local id = storage.next_town_id
   storage.next_town_id = id + 1
   local town = {
-    id = id, name = names.generate(id), level = 1, hall = hall, progress = {},
+    id = id, name = names.generate(id), level = 1, hall = hall, progress = {}, house_progress = {},
     depots = {}, houses = {}, power_ok = false,
   }
   storage.towns[id] = town
@@ -177,16 +178,29 @@ function M.upgrade(town)
   return true
 end
 
+--- Dům, který se právě vylepšuje, a jeho požadavky (nil, nil = nic k vylepšení).
+local function house_target(town, candidates)
+  local target = houses.pick(candidates, math.min(town.level, config.level_count()))
+  return target, target and config.house_requirements(target.level)
+end
+
+--- Požadavky s dodaným množstvím pro GUI/remote/tabuli.
+local function with_delivered(requirements, progress)
+  local list = {}
+  for _, req in ipairs(requirements or {}) do
+    list[#list + 1] = {
+      type = req.type, name = req.name, amount = req.amount,
+      delivered = math.min(req.amount, progress[milestones.key(req.type, req.name)] or 0),
+    }
+  end
+  return list
+end
+
 --- Stav města pro GUI a remote rozhraní.
 function M.status(town)
   local count = config.level_count()
-  local requirements = {}
-  for _, req in ipairs(config.upgrade(town.level) or {}) do
-    requirements[#requirements + 1] = {
-      type = req.type, name = req.name, amount = req.amount,
-      delivered = math.min(req.amount, town.progress[milestones.key(req.type, req.name)] or 0),
-    }
-  end
+  local candidates = network.house_candidates(town)
+  local target, house_reqs = house_target(town, candidates)
   local beacon = town.beacon
   return {
     id = town.id, name = town.name, level = town.level, level_count = count, hall = town.hall.unit_number,
@@ -195,14 +209,30 @@ function M.status(town)
     productivity = levels.productivity_modules(town.level, count) * levels.BONUS_STEP,
     beacon_modules = beacon and beacon.valid and beacon.get_module_inventory().get_item_count(BONUS_MODULE) or 0,
     power_ok = town.power_ok, power_watts = levels.power_mw(town.level, count) * 1e6,
-    requirements = requirements, can_upgrade = M.can_upgrade(town),
+    requirements = with_delivered(config.upgrade(town.level), town.progress), can_upgrade = M.can_upgrade(town),
+    house_requirements = with_delivered(house_reqs, town.house_progress),
+    houses_to_upgrade = houses.upgradable(candidates, math.min(town.level, count)),
+    house_target_level = target and target.level,
   }
 end
 
---- Pravidelné zpracování: suroviny z překladišť, kontrola elektřiny, zapnutí/vypnutí výzkumu.
+--- Pravidelné zpracování: dodávky z překladišť (milník radnice → vylepšení domu), vylepšení domu,
+--- kontrola elektřiny, zapnutí/vypnutí výzkumu.
 function M.process(town)
   if not town.hall.valid then return end
-  depots.collect(town)
+  local candidates = network.house_candidates(town)
+  local target, house_reqs = house_target(town, candidates)
+  depots.collect(town, {
+    { requirements = config.upgrade(town.level), progress = town.progress },
+    { requirements = house_reqs, progress = town.house_progress },
+  })
+  if house_reqs and milestones.complete(house_reqs, town.house_progress) then
+    local node = storage.nodes[target.key]
+    node.level = node.level + 1
+    town.house_progress = {}
+    network.refresh_house(node)
+    M.update_bonus(town)
+  end
   if not (town.beacon and town.beacon.valid) then M.update_bonus(town) end
   town.power_ok = depots.power_ok(town)
   town.hall.disabled_by_script = not town.power_ok

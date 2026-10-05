@@ -50,8 +50,8 @@ return {
         H.check(hall.get_item_count("automation-science-pack") == 5, "balíčky se ztratily")
         H.check(hall.insert({ name = "logistic-science-pack", count = 1 }) == 1, "úroveň 2 nepřijme zelenou")
         for _, req in ipairs(s.requirements) do H.check(req.delivered == 0, "postup se nevynuloval") end
-        H.check(ctx.houses[1].graphics_variation == levels.variant(2, H.level_count()), "dům nemá vzhled úrovně 2")
-        H.check(s.beacon_modules == levels.bonus_modules(2, { 2, 2, 2, 2 }), "bonus po povýšení: " .. s.beacon_modules)
+        H.check(ctx.houses[1].graphics_variation == levels.variant(1, H.level_count()), "dům změnil vzhled bez vylepšení")
+        H.check(s.beacon_modules == levels.bonus_modules(2, { 1, 1, 1, 1 }), "bonus po povýšení: " .. s.beacon_modules)
         H.check(remote.call(R, "town_of", ctx.depot.unit_number) == ctx.town, "překladiště ztratilo město")
       end },
     },

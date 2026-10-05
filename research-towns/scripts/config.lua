@@ -17,6 +17,17 @@ function M.upgrade(level)
   return levels.scaled(data.infinite, level)
 end
 
+--- Suroviny na vylepšení domu z úrovně house_level: stejné jako milník radnice house_level → +1, bez vědeckých
+--- balíčků. Nil, když už dům nemá kam růst (poslední věda).
+function M.house_requirements(house_level)
+  if house_level >= data.level_count then return nil end
+  local list = {}
+  for _, req in ipairs(data.upgrade[tostring(house_level)]) do
+    if not req.science then list[#list + 1] = req end
+  end
+  return list
+end
+
 --- Vědy, které přijímá radnice dané úrovně.
 function M.sciences(level)
   return data.sciences[tostring(levels.hall_tier(level, data.level_count))]
