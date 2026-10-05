@@ -6,6 +6,7 @@ local milestones = require("scripts.milestones")
 local names = require("scripts.names")
 local network = require("scripts.network")
 local scheduler = require("scripts.scheduler")
+local story = require("shared.story")
 
 local M = {}
 
@@ -160,6 +161,7 @@ end
 function M.upgrade(town)
   if not M.can_upgrade(town) then return false end
   M.set_level(town, town.level + 1)
+  town.hall.force.print({ story.upgrade_message(town.level), town.name, town.level })
   return true
 end
 

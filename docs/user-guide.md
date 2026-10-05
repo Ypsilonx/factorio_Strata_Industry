@@ -1,6 +1,10 @@
 # Research Towns – návod
 
-Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst.
+> *Nauvis nikdy nebyl prázdný. V jeho údolích žijí lidé odnepaměti – znají každou řeku, každé roční období a vědí,
+> jak s planetou žít. Ty znáš stroje. Dodávej jejich městům suroviny a know-how a vyrostou v centra plná
+> výzkumníků. Jejich pokrok je tvým pokrokem a tvůj jejich.*
+
+Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod je i ve hře v okně **Tipy a triky**.
 
 1. **Radnice** zkoumá jako laboratoř, ale přijímá jen vědy úrovně svého města (úroveň 1 = první věda).
 2. **Domy** (vyrobíš v montážním stroji) postav do dosahu radnice nebo jiného domu – propojí se visutým

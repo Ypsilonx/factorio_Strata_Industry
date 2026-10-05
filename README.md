@@ -2,6 +2,7 @@
 
 Mod do Factoria 2.0: laboratoře nahrazují radnice měst, která rostou podle toho, co jim dodáváš.
 Kompatibilní s overhauly (vědy, suroviny i laboratoře se odvozují z obsahu hry).
+Příběh: obyvatelé Nauvisu znají planetu, ty znáš stroje – partnerství, ze kterého mají užitek obě strany.
 
 - Návod: [docs/user-guide.md](docs/user-guide.md)
 - Vývoj: [docs/development.md](docs/development.md)
