@@ -4,3 +4,7 @@ Date: 2026-10-05
   Features:
     - Town halls replace labs; towns level up from goods, fluids and power delivered through depots.
     - Story: the people of Nauvis as research partners – flavour texts, town upgrade messages and Tips and tricks.
+    - Each town level opens one science pack; infinite levels beyond the last science add research productivity.
+    - Houses have their own level and are upgraded with surplus deliveries; total speed bonus capped at +120 %.
+    - Towns continuously consume the materials of completed milestones (startup setting to adjust).
+    - Town board sends the town's requests to the circuit network.
