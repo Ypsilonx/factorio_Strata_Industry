@@ -35,4 +35,28 @@ function H.power(ctx, dx, dy)
   return H.place(ctx, "substation", dx, dy)
 end
 
+
+--- Založí město s radnicí uprostřed výřezu testu.
+--- @return integer id města
+function H.town(ctx)
+  local id = remote.call(H.REMOTE, "create_town", ctx.surface.name, { x = ctx.origin.x + 0.5, y = ctx.origin.y + 0.5 })
+  if not id then error("radnici nelze postavit", 2) end
+  return id
+end
+
+--- Stav města z remote rozhraní.
+function H.status(id)
+  return remote.call(H.REMOTE, "town_status", id)
+end
+
+--- Entita radnice města.
+function H.hall(id)
+  return game.get_entity_by_unit_number(H.status(id).hall)
+end
+
+--- Postaví dům (3×3) na (dx, dy) od počátku; radnice zabírá -7..+8, dům na dx=11 má mezeru 2.
+function H.house(ctx, dx, dy)
+  return H.place(ctx, "rt-house", dx, dy)
+end
+
 return H
