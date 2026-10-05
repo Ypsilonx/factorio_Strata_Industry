@@ -104,18 +104,25 @@ function M.tech_levels(raw, bands)
   return level
 end
 
---- Počítá se recept pro dostupnost? (skryté recepty – např. recyklace – a vyprazdňování barelů ne)
-local function counts(recipe)
-  return not recipe.hidden and recipe.subgroup ~= "empty-barrel"
-end
-
---- Zapíše úroveň k surovině, pokud je nižší než dosavadní.
+--- Zapíše úroveň k surovině, pokud je nižší než dosavadní; vrací true při změně.
 local function lower(result, key, level)
-  if not result[key] or level < result[key] then result[key] = level end
+  if not result[key] or level < result[key] then
+    result[key] = level
+    return true
+  end
+  return false
 end
 
---- Nejnižší úroveň města, od které je předmět/kapalina získatelná (recept nebo svět).
---- @return table<string, integer> klíč "item/<jméno>" | "fluid/<jméno>" → úroveň
+--- Klíč suroviny ("item/<jméno>" | "fluid/<jméno>").
+local function key_of(entry)
+  return (entry.type or "item") .. "/" .. entry.name
+end
+
+--- Nejnižší úroveň města, od které je předmět/kapalina získatelná (svět nebo recept).
+--- Výrobek receptu je dostupný na max(úroveň odemčení, dostupnost všech ingrediencí) – počítá se jako pevný bod,
+--- takže vyprázdnění obalu (barel, kanystr Py) nemůže být dřív než naplnění, bez ohledu na jména podskupin.
+--- Skryté recepty (např. recyklace) se nepočítají.
+--- @return table<string, integer>
 function M.availability(raw, tech_levels)
   local unlocks = {}
   for name, tech in pairs(raw.technology) do
@@ -126,29 +133,44 @@ function M.availability(raw, tech_levels)
     end
   end
   local result = {}
-  for name, recipe in pairs(raw.recipe) do
-    if counts(recipe) then
-      local level = recipe.enabled ~= false and 1 or unlocks[name]
-      if level then
-        for _, product in ipairs(recipe.results or {}) do
-          lower(result, (product.type or "item") .. "/" .. product.name, level)
-        end
-      end
-    end
-  end
   for _, entity_type in ipairs(WORLD_TYPES) do
     for _, entity in pairs(raw[entity_type] or {}) do
       local minable = entity.minable
       if minable then
         if minable.result then lower(result, "item/" .. minable.result, 1) end
-        for _, product in ipairs(minable.results or {}) do
-          lower(result, (product.type or "item") .. "/" .. product.name, 1)
-        end
+        for _, product in ipairs(minable.results or {}) do lower(result, key_of(product), 1) end
       end
     end
   end
   for _, tile in pairs(raw.tile or {}) do
     if tile.fluid then lower(result, "fluid/" .. tile.fluid, 1) end
+  end
+  -- Recepty, které se dají odemknout, s jejich úrovní odemčení.
+  local recipes = {}
+  for name, recipe in pairs(raw.recipe) do
+    local level = recipe.enabled ~= false and 1 or unlocks[name]
+    if not recipe.hidden and level then recipes[#recipes + 1] = { recipe = recipe, level = level } end
+  end
+  -- Relaxace do pevného bodu: úrovně jen klesají, takže cyklus skončí.
+  local changed = true
+  while changed do
+    changed = false
+    for _, entry in ipairs(recipes) do
+      local level = entry.level
+      for _, ingredient in ipairs(entry.recipe.ingredients or {}) do
+        local at = result[key_of(ingredient)]
+        if not at then
+          level = nil
+          break
+        end
+        if at > level then level = at end
+      end
+      if level then
+        for _, product in ipairs(entry.recipe.results or {}) do
+          if lower(result, key_of(product), level) then changed = true end
+        end
+      end
+    end
   end
   return result
 end

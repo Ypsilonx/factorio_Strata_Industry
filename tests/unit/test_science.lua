@@ -17,15 +17,26 @@ local function raw()
   tech("t-mil", { "t-green" }, { "red", "green", "mil" })
   tech("t-secret", {}, { "secret" }, nil, true)
   r.technology["t-trigger"] = { name = "t-trigger", prerequisites = { "t-blue" }, research_trigger = { type = "craft-item", item = "gear" } }
-  for _, name in ipairs({ "steel", "gear", "secret-item", "wood", "iron-ore", "barrel" }) do r.item[name] = { name = name } end
+  for _, name in ipairs({ "steel", "gear", "secret-item", "wood", "iron-ore", "barrel", "lube-barrel", "frame" }) do
+    r.item[name] = { name = name }
+  end
   r.item["hidden-thing"] = { name = "hidden-thing", hidden = true }
   r.fluid.water = { name = "water" }
   r.fluid.lube = { name = "lube" }
   r.recipe.steel = { name = "steel", enabled = false, results = { { type = "item", name = "steel", amount = 1 } } }
   r.recipe.gear = { name = "gear", results = { { type = "item", name = "gear", amount = 1 } } }
   r.recipe.recycle = { name = "recycle", hidden = true, results = { { type = "item", name = "secret-item", amount = 1 } } }
-  r.recipe["empty-lube-barrel"] = { name = "empty-lube-barrel", subgroup = "empty-barrel",
+  -- Vyprázdnění obalu bez vanilla podskupiny (jako kanystry v Py): plný obal jde vyrobit jen z té kapaliny.
+  r.recipe["empty-lube-barrel"] = { name = "empty-lube-barrel",
+    ingredients = { { type = "item", name = "lube-barrel", amount = 1 } },
     results = { { type = "fluid", name = "lube", amount = 50 }, { type = "item", name = "barrel", amount = 1 } } }
+  r.recipe["fill-lube-barrel"] = { name = "fill-lube-barrel",
+    ingredients = { { type = "fluid", name = "lube", amount = 50 }, { type = "item", name = "barrel", amount = 1 } },
+    results = { { type = "item", name = "lube-barrel", amount = 1 } } }
+  r.recipe.barrel = { name = "barrel", results = { { type = "item", name = "barrel", amount = 1 } } }
+  -- Recept od začátku, ale s ingrediencí dostupnou až na úrovni 3.
+  r.recipe.frame = { name = "frame", ingredients = { { type = "item", name = "steel", amount = 2 } },
+    results = { { type = "item", name = "frame", amount = 1 } } }
   r.resource["iron-ore"] = { name = "iron-ore", minable = { result = "iron-ore" } }
   r.tree.tree = { name = "tree", minable = { results = { { type = "item", name = "wood", amount = 4 } } } }
   r.tile.water = { name = "water", fluid = "water" }
@@ -61,6 +72,11 @@ return {
     A.eq(avail["item/iron-ore"], 1, "ruda")
     A.eq(avail["item/wood"], 1, "strom")
     A.eq(avail["fluid/water"], 1, "kapalina z dlaždice")
+  end },
+  { "dostupnost respektuje ingredience receptu", function()
+    local r = raw()
+    local avail = science.availability(r, science.tech_levels(r, science.bands(r, 5)))
+    A.eq(avail["item/frame"], 3, "výrobek nejde dřív než jeho ingredience")
   end },
   { "skryté recepty a barely se nepočítají", function()
     local r = raw()
