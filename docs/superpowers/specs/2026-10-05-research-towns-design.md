@@ -203,5 +203,6 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
     (hráč si násobí aritmetickým kombinátorem).
   - Režim se volí v GUI tabule; víc tabulí = víc režimů naráz. Pořadí „nejdřív radnice, pak domy“ plyne z toho,
     že požadavky domů vzniknou až po povýšení radnice.
-- Varianta k zvážení: překladiště zboží jako logistický požadavkový kontejner, kterému skript nastavuje požadavky
-  podle milníku → roboti dovážejí sami.
+  - Kapaliny jdou jako signály kapalin. Elektřina: virtuální signály „potřebný příkon (MW)“ a „pokrytí elektřiny
+    (%)“ – trvalá spotřeba se nedodává do překladiště, takže tabule ukazuje jen stav.
+- Varianta s logistickou požadavkovou bednou zamítnuta (neřeší kapaliny ani elektřinu).
