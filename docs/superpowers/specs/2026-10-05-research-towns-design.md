@@ -206,3 +206,11 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   - Kapaliny jdou jako signály kapalin. Elektřina: virtuální signály „potřebný příkon (MW)“ a „pokrytí elektřiny
     (%)“ – trvalá spotřeba se nedodává do překladiště, takže tabule ukazuje jen stav.
 - Varianta s logistickou požadavkovou bednou zamítnuta (neřeší kapaliny ani elektřinu).
+
+### Domy v nekonečných úrovních (plán 1b)
+- Úroveň domu sleduje úrovně města (počet úrovní = počet věd), ne pevných 5.
+- Bonus domů k **rychlosti** roste do poslední vědecké úrovně a je zastropovaný na **+120 %** celkem.
+- V nekonečných úrovních se domy dál vylepšují (vylepšení všech domů je součást ceny úrovně), ale odměnou je
+  jen **produktivita výzkumu radnice** (jeden zdroj, klesající křivka kvůli stropu produktivity) – domy samy
+  produktivitu nepřidávají.
+- Grafické varianty domu (cca 5) se rozloží rovnoměrně na všechny úrovně; nad poslední vědou zůstává poslední.
