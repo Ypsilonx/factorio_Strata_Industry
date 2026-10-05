@@ -1,5 +1,4 @@
 --- GUI radnice: panel ukotvený vpravo od okna laboratoře, zobrazený jen u radnic.
-local levels = require("shared.levels")
 local towns = require("scripts.towns")
 local config = require("scripts.config")
 
@@ -14,8 +13,13 @@ M.NAMES = {
   name = "rt_town_name",
   level = "rt_town_level",
   houses = "rt_town_houses",
+  productivity = "rt_town_productivity",
   power = "rt_town_power",
   requirements = "rt_town_requirements",
+  house_upgrade = "rt_town_house_upgrade",
+  house_requirements = "rt_town_house_requirements",
+  upkeep_status = "rt_town_upkeep_status",
+  upkeep = "rt_town_upkeep",
   upgrade = "rt_town_upgrade",
 }
 
@@ -23,18 +27,24 @@ M.NAMES = {
 function M.ensure(player)
   local relative = player.gui.relative
   if relative[M.NAMES.frame] then relative[M.NAMES.frame].destroy() end
+  local n = M.NAMES
   local frame = relative.add({
-    type = "frame", name = M.NAMES.frame, direction = "vertical", caption = { "rt.gui-title" },
+    type = "frame", name = n.frame, direction = "vertical", caption = { "rt.gui-title" },
     anchor = { gui = defines.relative_gui_type.lab_gui, position = defines.relative_gui_position.right,
       names = config.hall_names() },
   })
-  frame.add({ type = "textfield", name = M.NAMES.name, tooltip = { "rt.gui-rename" } })
-  frame.add({ type = "label", name = M.NAMES.level })
-  frame.add({ type = "label", name = M.NAMES.houses })
-  frame.add({ type = "label", name = M.NAMES.power })
+  frame.add({ type = "textfield", name = n.name, tooltip = { "rt.gui-rename" } })
+  frame.add({ type = "label", name = n.level })
+  frame.add({ type = "label", name = n.houses })
+  frame.add({ type = "label", name = n.productivity })
+  frame.add({ type = "label", name = n.power })
   frame.add({ type = "label", caption = { "rt.gui-requirements" } })
-  frame.add({ type = "table", name = M.NAMES.requirements, column_count = 2 })
-  frame.add({ type = "button", name = M.NAMES.upgrade, caption = { "rt.gui-upgrade" } })
+  frame.add({ type = "table", name = n.requirements, column_count = 2 })
+  frame.add({ type = "label", name = n.house_upgrade })
+  frame.add({ type = "table", name = n.house_requirements, column_count = 2 })
+  frame.add({ type = "label", name = n.upkeep_status })
+  frame.add({ type = "table", name = n.upkeep, column_count = 2 })
+  frame.add({ type = "button", name = n.upgrade, caption = { "rt.gui-upgrade" } })
 end
 
 --- Vytvoří panely všem hráčům.
@@ -49,6 +59,27 @@ local function town_of(entity)
   return node and node.kind == "hall" and storage.towns[node.town]
 end
 
+--- Naplní tabulku řádky „ikona s nativním popupem + popisek“.
+--- @param rows { type: string, name: string, caption: LocalisedString }[]
+local function fill_list(list, rows)
+  list.clear()
+  for _, row in ipairs(rows) do
+    -- elem_tooltip = nativní popup předmětu/kapaliny jako v inventáři.
+    list.add({ type = "sprite", sprite = row.type .. "/" .. row.name, elem_tooltip = { type = row.type, name = row.name } })
+    list.add({ type = "label", caption = row.caption })
+  end
+end
+
+--- Řádky „dodáno / potřeba“ z požadavků se stavem dodání.
+local function progress_rows(requirements)
+  local rows = {}
+  for i, req in ipairs(requirements) do
+    rows[i] = { type = req.type, name = req.name,
+      caption = string.format("%d / %d", math.floor(req.delivered), req.amount) }
+  end
+  return rows
+end
+
 --- Naplní panel hráče stavem města.
 local function fill(player, town)
   local frame = player.gui.relative[M.NAMES.frame]
@@ -58,16 +89,24 @@ local function fill(player, town)
   frame[n.level].caption = { "rt.gui-level", status.level, math.min(status.level, status.level_count), status.level_count }
   frame[n.houses].caption = { "rt.gui-houses", status.active_houses, status.house_limit,
     string.format("%d", math.floor(status.bonus * 100 + 0.5)) }
+  local productivity = math.floor(status.productivity * 100 + 0.5)
+  frame[n.productivity].visible = productivity > 0
+  frame[n.productivity].caption = { "rt.gui-productivity", productivity }
   local megawatts = string.format("%.0f", status.power_watts / 1e6)
   frame[n.power].caption = status.power_ok and { "rt.gui-power-ok", megawatts } or { "rt.gui-power-missing", megawatts }
-  local list = frame[n.requirements]
-  list.clear()
-  for _, req in ipairs(status.requirements) do
-    -- elem_tooltip = nativní popup předmětu/kapaliny jako v inventáři.
-    list.add({ type = "sprite", sprite = req.type .. "/" .. req.name, elem_tooltip = { type = req.type, name = req.name } })
-    list.add({ type = "label", caption = string.format("%d / %d", math.floor(req.delivered), req.amount) })
+  fill_list(frame[n.requirements], progress_rows(status.requirements))
+  frame[n.house_upgrade].caption = status.house_target_level
+    and { "rt.gui-house-upgrade", status.houses_to_upgrade, status.house_target_level + 1 }
+    or { "rt.gui-house-upgrade-none" }
+  fill_list(frame[n.house_requirements], progress_rows(status.house_requirements))
+  local upkeep_rows = {}
+  for i, item in ipairs(status.upkeep) do
+    upkeep_rows[i] = { type = item.type, name = item.name,
+      caption = { "rt.gui-upkeep-row", string.format("%.1f", item.per_minute), math.floor(item.stock) } }
   end
-  if #status.requirements == 0 then list.add({ type = "label", caption = { "rt.gui-max-level" } }) end
+  frame[n.upkeep_status].caption = #upkeep_rows == 0 and { "rt.gui-upkeep-none" }
+    or (status.upkeep_ok and { "rt.gui-upkeep-ok" } or { "rt.gui-upkeep-missing" })
+  fill_list(frame[n.upkeep], upkeep_rows)
   frame[n.upgrade].enabled = status.can_upgrade
 end
 
