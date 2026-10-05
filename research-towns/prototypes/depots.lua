@@ -1,6 +1,8 @@
 --- Překladiště: zboží (bedna), kapaliny (nádrž) a městská rozvodna (spotřebič elektřiny).
 --- Odvozené z vanilla prototypů; skript je přiřadí k nejbližšímu městu.
 local placeholder = require("prototypes.placeholder")
+local levels = require("shared.levels")
+local reach = require("prototypes.reach")
 
 local TINT = { r = 0.9, g = 0.75, b = 0.5 }
 
@@ -17,6 +19,7 @@ local function derive(source, name)
   entity.icon = nil
   entity.fast_replaceable_group = nil
   entity.next_upgrade = nil
+  entity.radius_visualisation_specification = reach.spec(entity, levels.DEPOT_REACH)
   return entity
 end
 

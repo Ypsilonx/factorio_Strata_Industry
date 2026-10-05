@@ -186,3 +186,22 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
 ### Generátor měst (plán 2)
 - Vlastní `autoplace-control` „Města“ v okně nové mapy (četnost, velikost – jako biteři); generátor z něj čte hustotu
   a rozestupy. Měst má být na mapě hodně.
+
+### Balanc domů po prvním hraní (2026-10-05)
+- **Hotovo:** bonus za dům = (úroveň + 1) % (dřív 10–30 %), krok bonusu 1 %; překladiště a dům ukazují dosah
+  (`radius_visualisation_specification`).
+- **Plán 1b – vylepšování domů:** domy s městem nepovyšují automaticky. Po povýšení města se vylepšují postupně
+  jeden po druhém (od radnice podle hloubky) z „materiálu pro domy“ dodaného do překladišť města. Cena vylepšení
+  jednoho domu ≈ 2× odpovídající podíl milníku (konstanta k ladění). Bonus domu se řídí **jeho** úrovní.
+  Jednotlivé domy se dál nezásobují.
+
+### Obvodová síť (plán 1b)
+- Kontejner ve Factoriu do sítě vždy posílá svůj obsah, vlastní signály neumí – proto nová budova
+  **Městská tabule** (`constant-combinator`) v dosahu města, kterou skript plní:
+  - režim **Radnice**: zbývající množství milníku radnice (signály předmětů/kapalin),
+  - režim **Dům**: požadavek na vylepšení **jednoho** domu + virtuální signál „počet domů k vylepšení“
+    (hráč si násobí aritmetickým kombinátorem).
+  - Režim se volí v GUI tabule; víc tabulí = víc režimů naráz. Pořadí „nejdřív radnice, pak domy“ plyne z toho,
+    že požadavky domů vzniknou až po povýšení radnice.
+- Varianta k zvážení: překladiště zboží jako logistický požadavkový kontejner, kterému skript nastavuje požadavky
+  podle milníku → roboti dovážejí sami.

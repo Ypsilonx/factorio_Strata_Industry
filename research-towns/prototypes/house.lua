@@ -1,5 +1,6 @@
 --- Dům: jedna entita, úroveň města určuje grafickou variantu (graphics_variation = úroveň).
 local levels = require("shared.levels")
+local reach = require("prototypes.reach")
 
 --- Odstín variant podle úrovně (dočasná grafika).
 local TINTS = {
@@ -7,6 +8,8 @@ local TINTS = {
   { r = 1, g = 0.85, b = 0.6 }, { r = 1, g = 0.7, b = 1 },
 }
 local ICON = "__base__/graphics/icons/stone-furnace.png"
+--- Výběrový obdélník domu 3×3 (sdílí ho i vizualizace dosahu).
+local SELECTION = { { -1.5, -1.5 }, { 1.5, 1.5 } }
 
 local pictures = {}
 for level = 1, levels.MAX_LEVEL do
@@ -23,9 +26,10 @@ data:extend({
     max_health = 400,
     corpse = "medium-remnants",
     collision_box = { { -1.4, -1.4 }, { 1.4, 1.4 } },
-    selection_box = { { -1.5, -1.5 }, { 1.5, 1.5 } },
+    selection_box = SELECTION,
     render_layer = "object",
     pictures = pictures,
+    radius_visualisation_specification = reach.spec({ selection_box = SELECTION }, levels.HOUSE_REACH),
   },
   {
     type = "item", name = "rt-house", icon = ICON, subgroup = "rt-town", order = "a",

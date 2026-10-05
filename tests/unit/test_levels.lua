@@ -39,6 +39,12 @@ return {
   { "příkon v joulech za tick", function()
     A.eq(levels.power_per_tick(1), levels.get(1).power_mw * 1e6 / 60, "power_per_tick")
   end },
+  { "bonus za dům je (úroveň + 1) %", function()
+    for level = 1, levels.MAX_LEVEL do
+      local bonus = levels.bonus_modules(level, 1) * levels.BONUS_STEP
+      A.truthy(math.abs(bonus - (level + 1) / 100) < 1e-9, "bonus domu na úrovni " .. level .. ": " .. bonus)
+    end
+  end },
   { "bonusové moduly se stropem limitu domů", function()
     local cfg = levels.get(1)
     A.eq(levels.bonus_modules(1, 0), 0, "bez domů")
