@@ -198,7 +198,7 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   - Domy se vylepšují postupně jeden po druhém, od radnice podle hloubky v síti. Jednotlivé domy se nezásobují –
     suroviny jdou do překladišť města.
   - **Pořadí rozdělení surovin z překladišť:** 1) aktuální milník radnice, 2) vylepšení domů, 3) co nikdo
-    nepotřebuje, zůstane v překladišti. Přepínač „pro radnici / pro domy“ v GUI překladiště jen případně později.
+    nepotřebuje, zůstane v překladišti. (Před milník se řadí průběžná spotřeba – viz níže.) Přepínač „pro radnici / pro domy“ v GUI překladiště jen případně později.
 
 ### Obvodová síť (plán 1b)
 - Kontejner ve Factoriu do sítě vždy posílá svůj obsah, vlastní signály neumí – proto nová budova
@@ -220,9 +220,36 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   +120 %; samy produktivitu nepřidávají.
 - Grafické varianty domu (cca 5) se rozloží rovnoměrně na všechny úrovně; nad poslední vědou zůstává poslední.
 
+### Průběžná spotřeba surovin (plán 1b, potvrzeno 2026-10-05)
+- Město kromě elektřiny trvale spotřebovává **suroviny všech dosud splněných milníků** (kumulativně, bez
+  vědeckých balíčků). Hráč tak linky postavené na milníky využije i dál. Úroveň 1 (bez milníku) spotřebovává
+  jen elektřinu. Desítky druhů surovin jsou záměr – město je velké a překladišť se vejde dost.
+- **Množství:** za minutu podíl z množství příslušného milníku × koeficient; každý aktivní dům přidá menší díl.
+  V nekonečných úrovních se nepřidávají nové druhy, jen roste množství. Konstanty v `shared/levels.lua`,
+  globální **koeficient spotřeby jako startup nastavení** (ladění pro Pyanodon a jiné overhauly).
+- Spotřebovává se **jen když radnice zkoumá**. Radnice drží malou zásobu (~1 min provozu); když dojde kterákoli
+  surovina, radnice se zastaví jako bez elektřiny (při částečném zásobování běží poměrnou část času).
+  Zpracování v rámci `process` (interval `TOWN_INTERVAL`), žádná práce navíc za tick.
+- **Pořadí rozdělení surovin z překladišť (mění sekci „Balanc domů“):** 1) spotřeba (doplnění zásoby),
+  2) milník radnice, 3) vylepšení domů, 4) zbytek zůstává v překladišti.
+- **GUI a tabule:** panel ukáže spotřebu za minutu a stav zásoby; tabule má režim **Spotřeba** (požadavek za
+  minutu, signály předmětů/kapalin).
+
+### Příběh (hotovo 2026-10-05)
+- **Legenda:** Nauvis nikdy nebyl prázdný; jeho obyvatelé znají planetu, hráč zná stroje. Dodávky a know-how
+  rozjedou technologický rozvoj měst – pokrok pomáhá oběma stranám.
+- **Tón: partnerství rovného s rovným.** Obyvatelé mají vlastní znalosti (planeta, místní postupy) a vracejí je
+  hráči. Žádné „primitivní/divoši“, žádné „přinášíme civilizaci“, nepoužívat „tribes“ (v EN „the people of
+  Nauvis“, „townsfolk“, „local scholars“). Platí i pro budoucí texty (ruiny, specializace, převzetí měst).
+- **Kde je:** popis modu (`info.json`, locale `mod-description`), popisky entit a předmětů, zpráva při založení
+  města, zprávy při povýšení (`shared/story.lua`, klíče `rt.town-upgraded-N`, poslední se opakuje v dalších
+  úrovních), kategorie v **Tipech a tricích** (`prototypes/tips.lua`), úvod `docs/user-guide.md`.
+- Doplnit později: věty k ruinám a obnově (plán 2), specializacím (plán 2), popis pro portál (plán 3).
+
 ## Další kroky (stav 2026-10-05)
 1. **Plán 1b – úrovně:** úroveň = věda (milník = nová věda + suroviny), nekonečné úrovně s produktivitou radnice,
-   dobrovolné vylepšování domů (pořadí radnice → domy), strop rychlosti +120 %, městská tabule pro obvodovou síť.
+   dobrovolné vylepšování domů (pořadí radnice → domy), strop rychlosti +120 %, průběžná spotřeba surovin
+   milníků, městská tabule pro obvodovou síť.
 2. **Plán 2 – svět:** posuvníky „Města“ v generátoru mapy, generování a převzetí měst, ruiny, specializace měst,
    pohlcování znečištění.
 3. **Plán 3 – grafika a vydání:** modely z Blenderu (radnice, domy, překladiště, chodník, tabule), portál.
