@@ -287,6 +287,27 @@ def brick(name="RT_Brick", base=None):
     return mat
 
 
+def concrete(name="RT_Concrete", base=(0.17, 0.165, 0.155)):
+    """Betonové desky: čtvercová mřížka spár (Brick Texture se čtvercovými cihlami), skvrny, šmouhy."""
+    mat, nt, bsdf = _new(name)
+    coords, crevice, edge = _masks(nt)
+    tex = nt.nodes.new("ShaderNodeTexBrick")
+    tex.offset = 0.0
+    tex.inputs["Scale"].default_value = 1.0
+    tex.inputs["Brick Width"].default_value = 1.0
+    tex.inputs["Row Height"].default_value = 1.0
+    tex.inputs["Mortar Size"].default_value = 0.012
+    tex.inputs["Color1"].default_value = (*base, 1.0)
+    tex.inputs["Color2"].default_value = (*(c * 0.88 for c in base), 1.0)
+    tex.inputs["Mortar"].default_value = (*(c * 0.45 for c in base), 1.0)
+    nt.links.new(coords, tex.inputs["Vector"])
+    stains = noise(nt, coords, 2.0, detail=8.0)
+    color = mix(nt, math(nt, "MULTIPLY", ramp(nt, stains, 0.45, 0.75), 0.4), tex.outputs["Color"], GRIME)
+    _finish(nt, bsdf, color, crevice, grime=0.4, roughness=0.9)
+    _bump(nt, bsdf, math(nt, "SUBTRACT", 1.0, tex.outputs["Fac"]), 0.4)
+    return mat
+
+
 def corrugated(name="RT_Corrugated", base=None):
     """Vlnitý plech: vlny po spádu, zašlý zinek se skvrnami rzi a stékajícími šmouhami."""
     base = base or PALETTE["metal"]
@@ -380,6 +401,8 @@ def library():
         "brick": brick(),
         "corrugated": corrugated(),
         "iron": corrugated("RT_Iron", PALETTE["iron"]),
+        "concrete": concrete(),
+        "glass": glow("RT_Glass", (0.1, 0.18, 0.24), base=(0.03, 0.04, 0.05)),
         "earth": packed_earth(),
         "window": glow("RT_Window", PALETTE["window"]),
         "fire": glow("RT_Fire", PALETTE["fire"], base=(0.03, 0.02, 0.015)),

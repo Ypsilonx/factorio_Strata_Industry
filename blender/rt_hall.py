@@ -16,7 +16,7 @@ import bmesh
 import bpy
 from mathutils import Matrix, Vector
 
-import rt_trees
+import rt_sprites
 
 #: Polovina půdorysu radnice (dlaždice).
 HALF = 7.5
@@ -211,9 +211,41 @@ def crate(b, x, y, rng, z=0.06):
 
 
 def tree(b, x, y, rng):
-    """Vanilla strom Factoria (sprite na ploše ke kameře, viz rt_trees) s patou v místním bodě (x, y)."""
+    """Vanilla strom Factoria (svislá plocha se spritem, viz rt_sprites) s patou v místním bodě (x, y)."""
+    sprite = rt_sprites.tree(rng.randrange(len(rt_sprites.TREES)), rng.randrange(len(rt_sprites.LEAF_COLORS)))
+    place_sprite(b, x, y, sprite, "RT_Tree")
+
+
+def place_sprite(b, x, y, sprite, name="RT_Machine"):
+    """Vloží vanilla sprite (rt_sprites.machine / tree) s patou v místním bodě (x, y) stavby."""
     p = b.matrix @ Vector((x, y, 0.0))
-    rt_trees.billboard(b.collection, p.x, p.y * math.sqrt(2.0), rng)
+    return rt_sprites.card(b.collection, p.x, p.y * math.sqrt(2.0), sprite, name=name)
+
+
+def machine(b, x, y, name):
+    """Vanilla stroj z výzkumu (parní stroj, sloup, nádrž, roboport…) s patou v místním bodě (x, y)."""
+    return place_sprite(b, x, y, rt_sprites.machine(name), "RT_" + name)
+
+
+def wire(b, p0, p1, sag=0.35):
+    """Elektrický drát mezi dvěma body (x, y, z) – prověšený, z krátkých trámků."""
+    steps = 8
+    points = []
+    for i in range(steps + 1):
+        t = i / steps
+        points.append(tuple(p0[k] + (p1[k] - p0[k]) * t for k in range(3)))
+        points[-1] = (points[-1][0], points[-1][1], points[-1][2] - sag * 4 * t * (1 - t))
+    for a, c in zip(points, points[1:]):
+        b.beam("RT_Wire", a, c, 0.025, "iron")
+
+
+def pole_line(b, poles, kind="small-pole"):
+    """Řada elektrických sloupů (vanilla sprite) s dráty mezi sousedy; poles = [(x, y)]."""
+    top = rt_sprites.POLE_TOP[kind]
+    for x, y in poles:
+        machine(b, x, y, kind)
+    for (x0, y0), (x1, y1) in zip(poles, poles[1:]):
+        wire(b, (x0, y0, top), (x1, y1, top))
 
 
 def lamp_post(b, x, y):
@@ -265,7 +297,12 @@ def upgraded_roof(b, roof, up):
 def house(b, rng, sx, sy, up):
     """Dům sx × sy se středem v počátku: 1–2 patra, kamenné, omítnuté nebo (od vzhledu 2) cihlové přízemí,
     hrázděné vyložené patro, střecha z došků, šindele, břidlice nebo plechu, okna s okenicemi, dveře, komín.
-    rng = tvar domu (stejný ve všech vzhledech), up = vylepšení podle vzhledu."""
+    rng = tvar domu (stejný ve všech vzhledech), up = vylepšení podle vzhledu. Od vzhledu 3 se část domů
+    přestaví na činžák (od 4 další)."""
+    rebuild_roll = up.random()
+    if (b.variant >= 3 and rebuild_roll < 0.35) or (b.variant >= 4 and rebuild_roll < 0.6):
+        tenement(b, sx, sy, rng)
+        return
     two = rng.random() < 0.6
     floor_h = rng.uniform(1.25, 1.45)
     ground_base = "stone_wall" if rng.random() < 0.45 else rng.choice(PLASTERS)
@@ -360,6 +397,140 @@ def smithy(b, rng):
     barrel(b, 1.0, face - 0.3, rng)
 
 
+#: Elektrické sloupy od elektrárny kolem náměstí a podél ulice (od vzhledu 2).
+POLES = [(3.3, 3.2), (2.9, 1.0), (2.6, -1.6), (1.6, -3.6), (1.25, -5.4), (1.25, -7.0)]
+
+
+def power_plant(b):
+    """Elektrárna: vzhled 2–4 vanilla parní kotel a parní stroj (automatizace), vzhled 5 solární pole
+    s akumulátory (město vědy)."""
+    b.box("RT_PlantYard", (5.0, 5.4, 0.06), (4.8, 4.0, 0.03), "concrete" if b.variant >= 4 else "cobble", bevel=0.02)
+    if b.variant >= 5:
+        machine(b, 3.9, 6.1, "solar-panel")
+        machine(b, 6.5, 6.1, "solar-panel")
+        machine(b, 4.4, 3.9, "accumulator")
+        machine(b, 6.1, 3.9, "accumulator")
+        return
+    machine(b, 4.6, 6.2, "steam-engine")
+    machine(b, 5.6, 3.9, "boiler")
+    for i in range(2):
+        barrel(b, 2.9 + i * 0.35, 4.0, random.Random(90 + i))
+    wire(b, (5.6, 3.9, 1.6), (3.3, 3.2, rt_sprites.POLE_TOP[pole_kind(b)]))
+
+
+def pole_kind(b):
+    """Sloupy elektrického vedení: dřevěné ve všech věcích (ocelové příhradové jsou na město moc velké)."""
+    return "small-pole"
+
+
+def warehouse(b):
+    """Sklad (od vzhledu 3 – logistika): dlouhá hala z cihel s plechovou střechou, vrata, bedny a kontejnery."""
+    with b.at(-5.2, -5.3, math.radians(20)):
+        sx, sy = 3.6, 2.2
+        b.box("RT_Warehouse", (0, 0, 0.04), (sx, sy, 1.6), "brick")
+        b.gable("RT_WarehouseRoof", (0, 0, 1.64), (sx, sy), 0.6, "corrugated", ridge="x", overhang=0.15)
+        for dx in (-1.0, 0.4):
+            b.box("RT_Gate", (dx, -sy / 2 - 0.04, 0.06), (0.9, 0.08, 1.15), "iron", bevel=0.01)
+        rng = random.Random(3000)
+        for i in range(4):
+            crate(b, -1.5 + i * 0.32, -sy / 2 - 0.5, rng)
+        machine(b, 1.3, -sy / 2 - 0.6, "iron-chest")
+        machine(b, 1.75, -sy / 2 - 0.6, "iron-chest")
+
+
+def water_tower(b):
+    """Vodárenská věž (od vzhledu 3): železné nohy, válcová nádrž z plechu, kuželová stříška."""
+    x, y = 6.0, -1.6
+    for dx in (-0.45, 0.45):
+        for dy in (-0.45, 0.45):
+            b.beam("RT_TowerLeg", (x + dx, y + dy, 0.06), (x + dx * 0.7, y + dy * 0.7, 2.6), 0.1, "iron")
+    b.cylinder("RT_TowerTank", (x, y, 2.6), 0.75, 1.1, "corrugated", segments=24)
+    b.cylinder("RT_TowerRoof", (x, y, 3.7), 0.85, 0.5, "iron", top_radius=0.05, segments=24)
+
+
+def tank_farm(b):
+    """Nádrže (od vzhledu 4 – chemie): dvě vanilla nádrže a potrubí k badatelně."""
+    machine(b, 4.0, -5.6, "storage-tank")
+    machine(b, 5.6, -3.6, "storage-tank")
+    for p0, p1 in (((4.6, -4.4, 0.3), (4.6, -2.2, 0.3)), ((4.6, -2.2, 0.3), (2.0, 1.6, 0.3)),
+                   ((6.2, -2.6, 0.3), (4.6, -2.2, 0.3))):
+        b.beam("RT_Pipe", p0, p1, 0.16, "iron")
+
+
+def radar_site(b):
+    """Radar (od vzhledu 4) na betonové ploše; ve vzhledu 5 ho nahradí roboport s roboty."""
+    b.box("RT_Pad", (-5.6, 0.4, 0.06), (2.6, 2.6, 0.04), "concrete", bevel=0.02)
+    if b.variant >= 5:
+        machine(b, -5.6, 0.4, "roboport")
+    else:
+        machine(b, -5.6, 0.4, "radar")
+
+
+#: Stavby nových věků: (x, y, poloměr zóny, od vzhledu, stavitel). Domy se středem v zóně od daného vzhledu
+#: zmizí (zbořeny kvůli stavbě). Náhoda domů se spotřebuje stejně, zbytek města se nepohne.
+ERA_SITES = [
+    (5.0, 5.0, 2.7, 2, power_plant),
+    (-4.9, 3.4, 1.1, 2, None),  # dvůr manufaktury (montážní stroj a bedny)
+    (-5.2, -5.3, 2.3, 3, warehouse),
+    (6.0, -1.6, 1.0, 3, water_tower),
+    (5.3, -4.8, 2.0, 4, tank_farm),
+    (-5.6, 0.4, 2.1, 4, radar_site),
+]
+
+
+def rebuilt(b, x, y):
+    """Padne místo (x, y) do zóny přestavby aktivní v tomto vzhledu?"""
+    return any(b.variant >= since and math.hypot(x - zx, y - zy) < r for zx, zy, r, since, _ in ERA_SITES)
+
+
+def tenement(b, sx, sy, rng):
+    """Činžák (od vzhledu 3) na místě starého domu: 3 patra cihel (od 4 omítnutý beton, od 5 čtyři patra),
+    mřížka oken na obou stranách, plochá střecha s atikou a komíny; ve vzhledu 5 zahrada
+    na střeše."""
+    floors = 4 if b.variant >= 5 else 3
+    floor_h = 1.05
+    wall = "brick" if b.variant == 3 else "plaster_grey"
+    b.box("RT_Tenement", (0, 0, 0.04), (sx, sy, floors * floor_h), wall)
+    top = 0.04 + floors * floor_h
+    for f in range(floors):
+        z = 0.35 + f * floor_h
+        for side in (0, math.pi):
+            with b.at(0, 0, side):
+                for wx in (-sx * 0.3, 0.0, sx * 0.3):
+                    window(b, wx, -sy / 2, z, rng, w=0.26, h=0.45, shutters=False)
+        if f > 0:
+            b.box("RT_Ledge", (0, 0, z - 0.25), (sx + 0.06, sy + 0.06, 0.06), "stone", bevel=0.01)
+    door(b, 0.0, -sy / 2, w=0.5, h=0.85)
+    b.box("RT_Roof", (0, 0, top), (sx, sy, 0.08), "concrete", bevel=0.01)
+    for side in (-1, 1):
+        b.box("RT_Parapet", (0, side * (sy / 2 - 0.05), top), (sx, 0.1, 0.25), wall, bevel=0.01)
+        b.box("RT_Parapet", (side * (sx / 2 - 0.05), 0, top), (0.1, sy, 0.25), wall, bevel=0.01)
+    b.box("RT_Chimney", (sx * 0.3, sy * 0.2, top), (0.3, 0.3, 0.6), "brick")
+    if b.variant >= 5:
+        # Město vědy: zahrada na střeše (keře stojí na střeše – blob ve výšce střechy).
+        b.box("RT_RoofGarden", (0, 0, top + 0.08), (sx - 0.3, sy - 0.3, 0.12), "grass", bevel=0.03)
+        for _ in range(3):
+            b.blob("RT_RoofBush", (rng.uniform(-sx * 0.3, sx * 0.3), rng.uniform(-sy * 0.3, sy * 0.3), top + 0.3),
+                   rng.uniform(0.2, 0.32), "foliage", rng, squash=0.7)
+
+
+def manufactory(b, rng):
+    """Manufaktura (od vzhledu 2): cihlová hala s pilovou střechou, vrata, montážní stroj a bedny na dvoře."""
+    sx, sy = 3.0, 2.6
+    b.box("RT_Factory", (0, 0, 0.04), (sx, sy, 1.7), "brick")
+    for i in range(3):
+        y = -sy / 2 + sy / 3 * (i + 0.5)
+        b.gable("RT_Saw", (0, y, 1.74), (sx, sy / 3), 0.55, "corrugated", ridge="x", overhang=0.05)
+    face = -sy / 2
+    b.box("RT_FactoryDoor", (-0.5, face - 0.04, 0.06), (1.0, 0.08, 1.2), "iron", bevel=0.01)
+    for wx in (0.6, 1.1):
+        window(b, wx, face, 0.7, rng, w=0.3, h=0.6, shutters=False)
+    b.cylinder("RT_Chimney", (1.1, 0.7, 1.0), 0.3, 3.6, "brick", top_radius=0.24)
+    machine(b, -0.6, face - 1.4, "assembler-2" if b.variant >= 4 else "assembler-1")
+    for i in range(3):
+        machine(b, 0.6 + i * 0.5, face - 0.9, "iron-chest")
+
+
 def research_hall(b, rng):
     """Badatelna: dvoupatrová kamenná budova s hrázděným patrem, vraty, prapory a kulatou věží
     s vyhlídkou, lucernou a kuželovou stříškou (rotor)."""
@@ -396,17 +567,29 @@ def research_hall(b, rng):
               (0.08, 0.08, 0.7), "wood_beam", bevel=0.01)
     b.cylinder("RT_DeckRail", (tx, ty, 6.2), tr + 0.28, 0.07, "wood_beam", segments=24, bevel=0)
     b.cylinder("RT_Lantern", (tx, ty, 5.58), 0.32, 0.5, "window", segments=12, bevel=0.02)
-    rotor = b.cylinder("RT_Hall_Rotor", (tx, ty, 6.25), tr + 0.55, 1.1, "corrugated" if dilny else "shingle",
-                       top_radius=0.06, segments=24, bevel=0.04)
+    if b.variant >= 4:
+        # Chemie a dál: prosklená kopule observatoře s teleskopem (rotor), ocelový prstenec.
+        rotor = b.dome("RT_Hall_Rotor", (tx, ty, 5.58), tr + 0.3, 1.1, "glass")
+        b.cylinder("RT_DomeRing", (tx, ty, 5.55), tr + 0.38, 0.12, "iron", segments=24, bevel=0.01)
+        b.beam("RT_Telescope", (tx - 0.2, ty - 0.2, 6.2), (tx + 0.5, ty - 0.6, 7.0), 0.18, "iron")
+    else:
+        rotor = b.cylinder("RT_Hall_Rotor", (tx, ty, 6.25), tr + 0.55, 1.1, "corrugated" if dilny else "shingle",
+                           top_radius=0.06, segments=24, bevel=0.04)
+        b.cylinder("RT_Spire", (tx, ty, 7.3), 0.05, 0.5, "wood_beam", segments=8, bevel=0)
     rotor.name = "RT_Hall_Rotor"
-    b.cylinder("RT_Spire", (tx, ty, 7.3), 0.05, 0.5, "wood_beam", segments=8, bevel=0)
+    if b.variant >= 5:
+        # Město vědy: velká prosklená kopule nad badatelnou s prstencem a anténou.
+        b.dome("RT_GreatDome", (-0.2, 0.0, 3.1), 1.9, 1.5, "glass")
+        b.cylinder("RT_GreatRing", (-0.2, 0.0, 3.05), 2.0, 0.15, "iron", segments=32, bevel=0.01)
+        b.cylinder("RT_Antenna", (-0.2, 0.0, 4.6), 0.04, 1.4, "iron", segments=8, bevel=0)
 
 
 def square(b, rng):
     """Kulaté náměstí a ulice od brány: dlažba, studna, tržní stánky, vatra, strom a keře."""
     cx, cy = SQUARE
-    b.cylinder("RT_Square", (cx, cy, 0.06), SQUARE_R, 0.03, "cobble", segments=48, bevel=0.02)
-    b.box("RT_Street", (0.0, -5.6, 0.06), (1.8, 3.8, 0.03), "cobble", bevel=0.02)
+    paving = "concrete" if b.variant >= 4 else "cobble"
+    b.cylinder("RT_Square", (cx, cy, 0.06), SQUARE_R, 0.03, paving, segments=48, bevel=0.02)
+    b.box("RT_Street", (0.0, -5.6, 0.06), (1.8, 3.8, 0.03), paving, bevel=0.02)
     b.cylinder("RT_Well", (cx, cy, 0.06), 0.6, 0.5, "stone", segments=24)
     b.cylinder("RT_WellWater", (cx, cy, 0.4), 0.45, 0.17, "slate", segments=24, bevel=0)
     for side in (-1, 1):
@@ -465,26 +648,40 @@ def gate(b, rng):
 def build(collection, parent, mats, variant=1):
     """Postaví celý areál radnice daného vzhledu. Vrátí počet dílů."""
     b = Builder(collection, parent, mats, variant)
-    b.box("RT_Plaza", (0, 0, 0), (2 * HALF - 0.05, 2 * HALF - 0.05, 0.06), "earth", bevel=0.04)
-    # Pevné seedy (ne podle vzhledu): město ve všech vzhledech stejně rozložené, mění se jen vybavení.
-    rng = random.Random(1000)
+    b.box("RT_Plaza", (0, 0, 0), (2 * HALF - 0.05, 2 * HALF - 0.05, 0.06), "concrete" if variant >= 4 else "earth",
+          bevel=0.04)
+    # Pevné seedy (ne podle vzhledu) a každá část vlastní generátor: město je ve všech vzhledech stejně
+    # rozložené a přestavba jedné části (kovárna → manufaktura) nepohne stromy ani domy jinde.
     with b.at(-0.6, 4.6):
-        research_hall(b, rng)
+        research_hall(b, random.Random(1100))
     with b.at(-4.4, 5.3, math.radians(-12)):
-        smithy(b, rng)
+        if variant >= 2:
+            manufactory(b, random.Random(1200))
+        else:
+            smithy(b, random.Random(1200))
+    for _, _, _, since, builder in ERA_SITES:
+        if builder and variant >= since:
+            builder(b)
+    if variant >= 2:
+        pole_line(b, POLES, pole_kind(b))
     # Pevné stavby a volné plochy (x, y, poloměr): badatelna, věž, kovárna, náměstí, ulice, brána.
     cx, cy = SQUARE
     # (-0.6, 2.0) = volné prostranství před průčelím badatelny – stromy by ho zakryly.
     occupied = [(-0.6, 4.6, 2.6), (1.7, 5.5, 1.3), (-4.4, 5.3, 1.6), (cx, cy, SQUARE_R + 0.3), (-0.6, 2.0, 2.0),
                 (0.0, -5.0, 1.0), (0.0, -6.6, 1.3)]
     houses = place_houses(b, variant, occupied)
-    square(b, rng)
+    square(b, random.Random(1300))
+    rng = random.Random(1400)
     for x, y in GROVES:
         if not any(math.hypot(x - ox, y - oy) < orad + 0.4 for ox, oy, orad in occupied):
             grove(b, x, y, rng)
             occupied.append((x, y, 1.2))
-    fill_greenery(b, rng, occupied)
-    gate(b, rng)
+    if variant >= 2:
+        # Elektrárna a sloupy: stromy a keře se tam nesmí dostat.
+        occupied += [(zx, zy, r) for zx, zy, r, since, _ in ERA_SITES if variant >= since]
+        occupied += [(x, y, 0.4) for x, y in POLES]
+    fill_greenery(b, random.Random(1500), occupied)
+    gate(b, random.Random(1600))
     print(f"RADNICE: {houses} domů a chýší")
     return b.count
 
@@ -516,6 +713,10 @@ def place_houses(b, variant, occupied):
             continue
         local = random.Random(1001 + count)
         up = random.Random(5001 + count)
+        occupied.append((x, y, radius))
+        count += 1
+        if rebuilt(b, x, y):
+            continue  # dům zbořen kvůli stavbě nové éry (místo zůstane obsazené, pořadí domů stejné)
         # Čelo stavby k náměstí, s malou náhodnou odchylkou.
         facing = math.atan2(cy - y, cx - x) + math.pi / 2 + local.uniform(-0.25, 0.25)
         with b.at(x, y, facing):
@@ -525,8 +726,6 @@ def place_houses(b, variant, occupied):
                 house(b, local, sx, sy, up)
         if b.variant >= 2:
             cobbled_path(b, x, y, radius)
-        occupied.append((x, y, radius))
-        count += 1
     return count
 
 

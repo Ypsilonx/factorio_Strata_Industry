@@ -7,6 +7,7 @@ Přepínače:
     --calibrate   zkušební deska 3×3 se sloupky přes vanilla laboratoř → blender/renders/calibration.png
     --variant N   vzhled radnice N (1–5): vrstvy a náhled blender/renders/preview-N.png
     --draft       rychlý náhled (méně vzorků)
+    --overview    všech 5 vzhledů z modu vedle sebe → blender/renders/preview-all.png
     --install     vrstvy a ikonu zapsat do modu (research-towns/graphics, prototypes/hall_sprites.lua);
                   vzhledy bez vlastního renderu dočasně dostanou kopii
 
@@ -246,10 +247,25 @@ def fill_missing(source):
         print(f"RADNICE {variant}: dočasně kopie vzhledu {source}")
 
 
+def overview():
+    """Všech 5 vzhledů z modu vedle sebe na trávě (zmenšeno na polovinu) → blender/renders/preview-all.png."""
+    tiles = []
+    for variant in range(1, VARIANTS + 1):
+        base = R.load_pixels(ENTITY_DIR / f"hall-{variant}-base.png")
+        shadow = R.load_pixels(ENTITY_DIR / f"hall-{variant}-shadow.png")
+        shadow[..., 3] *= 0.55
+        tile = np.zeros_like(base)
+        tile[...] = (0.30, 0.31, 0.19, 1.0)
+        tiles.append(R.downsample(R.over(R.over(tile, shadow), base), 2))
+    R.save_pixels(np.concatenate(tiles, axis=1), RENDERS / "preview-all.png")
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if "--calibrate" in args:
         calibrate()
+    if "--overview" in args:
+        overview()
     if "--draft" in args:
         # Rychlý náhled při ladění modelu: méně vzorků (šum odstraní denoiser).
         R.CONFIG["render"]["samples"] = 16
