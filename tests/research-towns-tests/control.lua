@@ -11,6 +11,7 @@ runner.register(require("cases.houses"))
 runner.register(require("cases.upkeep"))
 runner.register(require("cases.board"))
 runner.register(require("cases.takeover"))
+runner.register(require("cases.worldgen"))
 
 script.on_init(runner.on_init)
 script.on_event(defines.events.on_tick, runner.on_tick)

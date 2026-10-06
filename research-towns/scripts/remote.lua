@@ -2,6 +2,7 @@
 local towns = require("scripts.towns")
 local board = require("scripts.board")
 local config = require("scripts.config")
+local worldgen = require("scripts.worldgen")
 
 --- Město podle id, nebo nil.
 local function town(id)
@@ -68,6 +69,10 @@ remote.add_interface("research-towns", {
       end
     end
     return list
+  end,
+  --- Zopakuje doplnění měst do vygenerovaných chunků a první město (testy rozehrané hry).
+  worldgen_ensure = function(again)
+    worldgen.ensure(again)
   end,
   --- Srovná město s aktuálními vzorci (jako po změně konfigurace).
   refresh_town = function(id)
