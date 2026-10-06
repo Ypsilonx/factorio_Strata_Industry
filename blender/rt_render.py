@@ -42,14 +42,42 @@ def root(collection):
     return empty
 
 
-def setup_render(scene, tiles_w, tiles_h, extra_top):
-    """Cycles, průhledné pozadí, rozlišení podle velikosti v dlaždicích (× supersampling)."""
+def frame(footprint, top, bottom=0.0, side=0.0):
+    """Záběr kolem čtvercového půdorysu: (šířka, výška, posun středu nahoru) v dlaždicích.
+    top = místo nad půdorysem pro výšku budov, bottom/side = okraje (stín). Posun středu je zároveň
+    posun spritu ve hře: shift = {0, -posun}."""
+    width = footprint + 2 * side
+    height = footprint + top + bottom
+    return width, height, (top - bottom) / 2.0
+
+
+def use_gpu(scene):
+    """Render na grafické kartě (OptiX, pak CUDA, HIP, oneAPI), jinak zůstane CPU."""
+    prefs = bpy.context.preferences.addons["cycles"].preferences
+    for kind in ("OPTIX", "CUDA", "HIP", "ONEAPI"):
+        try:
+            prefs.compute_device_type = kind
+            prefs.get_devices()
+        except TypeError:
+            continue
+        devices = [d for d in prefs.devices if d.type == kind]
+        if devices:
+            for device in devices:
+                device.use = True
+            scene.cycles.device = "GPU"
+            return kind
+    return "CPU"
+
+
+def setup_render(scene, width, height):
+    """Cycles, průhledné pozadí, rozlišení podle velikosti záběru v dlaždicích (× supersampling)."""
     scene.render.engine = "CYCLES"
     scene.cycles.samples = CONFIG["render"]["samples"]
+    use_gpu(scene)
     scene.cycles.use_denoising = True
     scene.render.film_transparent = True
-    scene.render.resolution_x = int(round(tiles_w * PX * SS))
-    scene.render.resolution_y = int(round((tiles_h + extra_top) * PX * SS))
+    scene.render.resolution_x = int(round(width * PX * SS))
+    scene.render.resolution_y = int(round(height * PX * SS))
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
@@ -68,20 +96,19 @@ def setup_render(scene, tiles_w, tiles_h, extra_top):
     scene.world = world
 
 
-def setup_camera(scene, collection, tiles_w, tiles_h, extra_top):
-    """Ortho kamera pod 45° z jihu. Záběr: půdorys tiles_w × tiles_h a nad ním extra_top dlaždic na výšku budovy.
-    Střed záběru je o extra_top/2 výš než střed entity – to je posun spritu ve hře (shift = {0, -extra_top/2})."""
+def setup_camera(scene, collection, width, height, center_up):
+    """Ortho kamera pod 45° z jihu se záběrem width × height dlaždic, střed o center_up výš než střed entity
+    (viz frame)."""
     elevation = math.radians(CAM["elevation_deg"])
     data = bpy.data.cameras.new("RT_Camera")
     data.type = "ORTHO"
-    height = tiles_h + extra_top
-    data.ortho_scale = max(tiles_w, height)
+    data.ortho_scale = max(width, height)
     data.sensor_fit = "AUTO"
     camera = bpy.data.objects.new("RT_Camera", data)
     camera.rotation_euler = (math.pi / 2 - elevation, 0.0, 0.0)
     up = (0.0, math.sin(elevation), math.cos(elevation))
     back = (0.0, -math.cos(elevation), math.sin(elevation))
-    d, dist = extra_top / 2.0, 60.0
+    d, dist = center_up, 60.0
     camera.location = tuple(up[i] * d + back[i] * dist for i in range(3))
     collection.objects.link(camera)
     scene.camera = camera
