@@ -263,6 +263,7 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
 1. ~~**Plán 1b – úrovně**~~ – hotovo 2026-10-05, plán `docs/superpowers/plans/2026-10-05-research-towns-levels.md`: úroveň = věda (milník = nová věda + suroviny), nekonečné úrovně s produktivitou radnice,
    dobrovolné vylepšování domů (pořadí radnice → domy), strop rychlosti +120 %, průběžná spotřeba surovin
    milníků, městská tabule pro obvodovou síť.
-2. **Plán 2 – svět:** posuvníky „Města“ v generátoru mapy, generování a převzetí měst, ruiny, specializace měst,
-   pohlcování znečištění.
+2. **Plán 2 – svět**, rozdělený (2026-10-06): **2a** města na mapě a převzetí
+   (`2026-10-06-research-towns-world-design.md`), **2b** pohlcování znečištění (radnice + domy úrovně 5),
+   **2c** ruiny a obnova, **2d** specializace měst.
 3. **Plán 3 – grafika a vydání:** modely z Blenderu (radnice, domy, překladiště, chodník, tabule), portál.
