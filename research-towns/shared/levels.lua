@@ -25,6 +25,8 @@ M.SPEED_LAST = 10
 --- Domy s bonusem: HOUSES_PER_LEVEL × úroveň, nejvýš HOUSE_LIMIT_MAX. Stejný počet je podmínkou povýšení.
 M.HOUSES_PER_LEVEL = 4
 M.HOUSE_LIMIT_MAX = 20
+--- Nejvyšší úroveň domu (20 domů × (5 + 1) % = strop rychlosti SPEED_BONUS_CAP).
+M.HOUSE_LEVEL_MAX = 5
 --- Strop bonusu k rychlosti ze všech domů dohromady (+120 %).
 M.SPEED_BONUS_CAP = 1.2
 --- Příkon města (MW) na první a na poslední vědecké úrovni (mezi nimi geometricky).
@@ -181,6 +183,17 @@ function M.bonus_modules(level, house_levels)
   local bonus = 0
   for i = 1, math.min(#sorted, M.house_limit(level)) do bonus = bonus + M.house_bonus(sorted[i]) end
   return math.floor(math.min(bonus, M.SPEED_BONUS_CAP) / M.BONUS_STEP + 0.5)
+end
+
+--- Nejvyšší úroveň, na kterou lze dům vylepšit ve městě dané úrovně (úroveň města, poslední věda, HOUSE_LEVEL_MAX).
+function M.house_level_max(level, count)
+  return math.min(level, count, M.HOUSE_LEVEL_MAX)
+end
+
+--- Dávají domy už plný bonus k rychlosti (SPEED_BONUS_CAP)? Pak další vylepšování nic nepřidá.
+--- @param house_levels integer[] úrovně aktivních domů
+function M.bonus_full(level, house_levels)
+  return M.bonus_modules(level, house_levels) >= math.floor(M.SPEED_BONUS_CAP / M.BONUS_STEP + 0.5)
 end
 
 --- Produktivita výzkumu radnice (0.1 = +10 %); jen nad poslední vědou.

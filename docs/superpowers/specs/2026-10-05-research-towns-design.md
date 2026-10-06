@@ -213,8 +213,11 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
 - Varianta s logistickou požadavkovou bednou zamítnuta (neřeší kapaliny ani elektřinu).
 
 ### Domy v nekonečných úrovních (plán 1b)
-- Úroveň domu sleduje úrovně města (počet úrovní = počet věd), ne pevných 5.
-- Bonus domů k **rychlosti** roste do poslední vědecké úrovně a je zastropovaný na **+120 %** celkem.
+- **Úroveň domu je nejvýš 5** (`HOUSE_LEVEL_MAX`) a zároveň nejvýš úroveň města (rozhodnuto 2026-10-06; dřív
+  sledovala všechny vědecké úrovně). 20 domů × (5 + 1) % = přesně strop rychlosti, výš by vylepšení nic nepřidalo.
+- Bonus domů k **rychlosti** je zastropovaný na **+120 %** celkem. Při plném stropu se vylepšování zastaví
+  (pojistka pro jiné hodnoty konstant), aby se suroviny neplýtvaly.
+- **Domy úrovně 5 pohlcují znečištění** (plán 2, spolu s pohlcováním u radnice) – to je smysl domů po stropu.
 - V nekonečných úrovních dává **produktivitu výzkumu jen radnice** za svůj milník (jeden zdroj, klesající křivka
   kvůli stropu produktivity). Domy se vylepšují dobrovolně stejně jako dřív a přidávají jen rychlost do stropu
   +120 %; samy produktivitu nepřidávají.
@@ -248,6 +251,13 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   města, zprávy při povýšení (`shared/story.lua`, klíče `rt.town-upgraded-N`, poslední se opakuje v dalších
   úrovních), kategorie v **Tipech a tricích** (`prototypes/tips.lua`), úvod `docs/user-guide.md`.
 - Doplnit později: věty k ruinám a obnově (plán 2), specializacím (plán 2), popis pro portál (plán 3).
+
+### Nápady do budoucna (2026-10-06, neschváleno do plánu)
+- **Cestování obyvatel:** po získání aspoň 2 měst se zapojí obyvatelé a převážejí suroviny (nebo sebe) mezi
+  městy. Navázat na příběh – partnerství přerůstá v síť měst.
+- **Zásada pro další rozšíření:** držet lineární příběh, kde každá nová mechanika navazuje na předchozí
+  (vlastní město → domy → spotřeba a tabule → objevená a převzatá města → ruiny → síť měst a cestování),
+  a dělat mod atraktivní pro hráče portálu (silný první dojem, jasný cíl, screenshoty).
 
 ## Další kroky (stav 2026-10-05)
 1. ~~**Plán 1b – úrovně**~~ – hotovo 2026-10-05, plán `docs/superpowers/plans/2026-10-05-research-towns-levels.md`: úroveň = věda (milník = nová věda + suroviny), nekonečné úrovně s produktivitou radnice,

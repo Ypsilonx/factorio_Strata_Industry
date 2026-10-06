@@ -188,9 +188,18 @@ function M.upgrade(town)
   return true
 end
 
---- Dům, který se právě vylepšuje, a jeho požadavky (nil, nil = nic k vylepšení).
+--- Dávají aktivní domy města plný bonus k rychlosti?
+local function house_bonus_full(town, candidates)
+  local list = {}
+  for i, house in ipairs(candidates) do list[i] = house.level end
+  return levels.bonus_full(town.level, list)
+end
+
+--- Dům, který se právě vylepšuje, a jeho požadavky (nil, nil = nic k vylepšení, i když je bonus plný –
+--- suroviny by se utratily zbytečně).
 local function house_target(town, candidates)
-  local target = houses.pick(candidates, math.min(town.level, config.level_count()))
+  if house_bonus_full(town, candidates) then return nil, nil end
+  local target = houses.pick(candidates, levels.house_level_max(town.level, config.level_count()))
   return target, target and config.house_requirements(target.level)
 end
 
@@ -246,8 +255,9 @@ function M.status(town)
     power_percent = depots.power_percent(town),
     requirements = with_delivered(config.upgrade(town.level), town.progress), can_upgrade = M.can_upgrade(town),
     house_requirements = with_delivered(house_reqs, town.house_progress),
-    houses_to_upgrade = houses.upgradable(candidates, math.min(town.level, count)),
+    houses_to_upgrade = target and houses.upgradable(candidates, levels.house_level_max(town.level, count)) or 0,
     house_target_level = target and target.level,
+    house_bonus_full = house_bonus_full(town, candidates),
     level_progress = level_progress(town),
     house_upgrade_progress = milestones.fraction(house_reqs, town.house_progress),
     upkeep = upkeep_status(town, #candidates), upkeep_ok = town.upkeep_ok,

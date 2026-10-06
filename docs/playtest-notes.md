@@ -18,15 +18,22 @@
 
 Vyřešeno 2026-10-06: spotřeba zaokrouhlená nahoru na celé kusy, číslo úrovně nad domem v Alt režimu.
 
+- [x] **Panel radnice se překrýval.** Progress bary s procenty se nevešly. Suroviny jsou teď sloty jako v inventáři
+  (číslo = kolik chybí), postup v % v záhlaví sekce.
+- [x] **Ikony signálů postupu.** Složené ikony: radnice/dům + symbol % (dočasné do plánu 3).
+- [x] **Vylepšování domů po stropu bonusu nic nepřináší.** Na úrovni 5 dá 20 domů × 6 % = +120 % = strop. Vylepšování
+  se teď při plném bonusu zastaví a domy mají strop úrovně 5. Smysl po stropu: domy úrovně 5 budou pohlcovat
+  znečištění (plán 2).
+
 ### Co funguje
 
 - Městská tabule je super. Režimy i signály v obvodové síti fungují podle očekávání.
 
 ## Odložené drobnosti z review plánu 1b
 
-- [ ] Knihovní plán (blueprint) a `event.stack`/`record` u tagu režimu tabule.
-- [ ] Logistická skupina nebo vypnutá sekce u tabule.
-- [ ] Zlomky kusů v postupu milníku.
-- [ ] Zpoždění obnovy tabule po Shift+klik (vložení nastavení).
-- [ ] Remote `set_board_mode` nekontroluje platnost režimu.
-- [ ] Rozhodnout verzi: 0.1.0, nebo 0.2.0.
+- [x] Knihovní plán (blueprint) a `event.stack`/`record` u tagu režimu tabule. Tagy se zapisují i do záznamu v knihovně (`event.record`).
+- [x] Logistická skupina nebo vypnutá sekce u tabule. Tabule sekci odpojí od skupiny a zapne.
+- [x] Zlomky kusů v postupu milníku. Předměty se dělí po celých kusech (`scripts/allocation.lua`).
+- [x] Zpoždění obnovy tabule po Shift+klik (vložení nastavení). Signály se přepíšou hned.
+- [x] Remote `set_board_mode` nekontroluje platnost režimu. Neplatný režim vyhodí chybu, neplatný tag z plánu → Radnice.
+- [x] Verze: zůstává 0.1.0 (mod zatím nebyl vydaný).

@@ -76,6 +76,18 @@ return {
     A.eq(levels.bonus_modules(5, many), math.floor(levels.SPEED_BONUS_CAP / levels.BONUS_STEP + 0.5), "strop")
     A.truthy(levels.bonus_modules(5, many) <= levels.BONUS_SLOTS, "vejde se do beaconu")
   end },
+  { "plný bonus domů: 20 domů úrovně 5 = 120 %", function()
+    local fives, fours = {}, {}
+    for i = 1, 20 do fives[i], fours[i] = 5, 4 end
+    A.truthy(levels.bonus_full(5, fives), "20 × 6 % = strop")
+    A.truthy(not levels.bonus_full(5, fours), "20 × 5 % pod stropem")
+    A.truthy(not levels.bonus_full(1, { 1 }), "jeden dům")
+  end },
+  { "úroveň domu nejvýš úroveň města, poslední věda a 5", function()
+    A.eq(levels.house_level_max(3, 7), 3, "město 3")
+    A.eq(levels.house_level_max(9, 7), levels.HOUSE_LEVEL_MAX, "nad 5")
+    A.eq(levels.house_level_max(9, 4), 4, "jen 4 vědy")
+  end },
   { "produktivita jen nad poslední vědou, klesající přírůstky pod stropem", function()
     A.eq(levels.productivity(7, 7), 0, "poslední věda")
     local p1, p2, p3 = levels.productivity(8, 7), levels.productivity(9, 7), levels.productivity(10, 7)

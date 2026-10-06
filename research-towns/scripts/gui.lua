@@ -2,11 +2,15 @@
 local towns = require("scripts.towns")
 local config = require("scripts.config")
 local board = require("scripts.board")
+local levels = require("shared.levels")
 
 local M = {}
 
 --- Jak často se obnoví otevřené panely (ticky).
 M.REFRESH_TICKS = 30
+--- Počet slotů surovin na řádek a šířka progress baru v záhlaví sekce (px).
+M.SLOT_COLUMNS = 8
+M.BAR_WIDTH = 100
 
 --- Jména prvků (prefix rt_, nesmí kolidovat s vlastnostmi LuaGuiElement – hlídá test_gui_names).
 M.NAMES = {
@@ -16,17 +20,36 @@ M.NAMES = {
   houses = "rt_town_houses",
   productivity = "rt_town_productivity",
   power = "rt_town_power",
+  level_header = "rt_town_level_header",
   requirements = "rt_town_requirements",
-  level_progress = "rt_town_level_progress",
-  house_upgrade = "rt_town_house_upgrade",
-  house_progress = "rt_town_house_progress",
+  house_header = "rt_town_house_header",
   house_requirements = "rt_town_house_requirements",
   upkeep_status = "rt_town_upkeep_status",
   upkeep = "rt_town_upkeep",
   upgrade = "rt_town_upgrade",
   board_frame = "rt_board_frame",
   board_mode = "rt_board_mode",
+  -- Uvnitř záhlaví sekce (flow).
+  header_caption = "rt_header_caption",
+  header_bar = "rt_header_bar",
+  header_percent = "rt_header_percent",
 }
+
+--- Přidá záhlaví sekce: popisek vlevo, progress bar s procenty vpravo.
+local function add_header(frame, name)
+  local n = M.NAMES
+  local flow = frame.add({ type = "flow", name = name, direction = "horizontal" })
+  flow.style.vertical_align = "center"
+  flow.add({ type = "label", name = n.header_caption })
+  flow.add({ type = "empty-widget" }).style.horizontally_stretchable = true
+  flow.add({ type = "progressbar", name = n.header_bar }).style.width = M.BAR_WIDTH
+  flow.add({ type = "label", name = n.header_percent })
+end
+
+--- Přidá mřížku slotů surovin.
+local function add_slots(frame, name)
+  frame.add({ type = "table", name = name, column_count = M.SLOT_COLUMNS, style = "filter_slot_table" })
+end
 
 --- Vytvoří (znovu) prázdný panel hráči.
 function M.ensure(player)
@@ -43,14 +66,12 @@ function M.ensure(player)
   frame.add({ type = "label", name = n.houses })
   frame.add({ type = "label", name = n.productivity })
   frame.add({ type = "label", name = n.power })
-  frame.add({ type = "label", caption = { "rt.gui-requirements" } })
-  frame.add({ type = "progressbar", name = n.level_progress }).style.horizontally_stretchable = true
-  frame.add({ type = "table", name = n.requirements, column_count = 2 })
-  frame.add({ type = "label", name = n.house_upgrade })
-  frame.add({ type = "progressbar", name = n.house_progress }).style.horizontally_stretchable = true
-  frame.add({ type = "table", name = n.house_requirements, column_count = 2 })
+  add_header(frame, n.level_header)
+  add_slots(frame, n.requirements)
+  add_header(frame, n.house_header)
+  add_slots(frame, n.house_requirements)
   frame.add({ type = "label", name = n.upkeep_status })
-  frame.add({ type = "table", name = n.upkeep, column_count = 2 })
+  add_slots(frame, n.upkeep)
   frame.add({ type = "button", name = n.upgrade, caption = { "rt.gui-upgrade" } })
   if relative[n.board_frame] then relative[n.board_frame].destroy() end
   local board_frame = relative.add({
@@ -76,32 +97,48 @@ local function town_of(entity)
   return node and node.kind == "hall" and storage.towns[node.town]
 end
 
---- Naplní tabulku řádky „ikona s nativním popupem + popisek“.
---- @param rows { type: string, name: string, caption: LocalisedString }[]
-local function fill_list(list, rows)
-  list.clear()
-  for _, row in ipairs(rows) do
-    -- elem_tooltip = nativní popup předmětu/kapaliny jako v inventáři.
-    list.add({ type = "sprite", sprite = row.type .. "/" .. row.name, elem_tooltip = { type = row.type, name = row.name } })
-    list.add({ type = "label", caption = row.caption })
+--- Naplní mřížku sloty surovin: ikona s nativním popupem, číslo v rohu a vlastní tooltip.
+--- @param slots { type: string, name: string, number: number|nil, style: string, tooltip: LocalisedString }[]
+local function fill_slots(grid, slots)
+  grid.clear()
+  for _, slot in ipairs(slots) do
+    -- elem_tooltip = nativní popup předmětu/kapaliny jako v inventáři; tooltip se ukáže pod ním.
+    grid.add({ type = "sprite-button", sprite = slot.type .. "/" .. slot.name, style = slot.style, number = slot.number,
+      elem_tooltip = { type = slot.type, name = slot.name }, tooltip = slot.tooltip })
   end
 end
 
---- Řádky „dodáno / potřeba“ z požadavků se stavem dodání.
-local function progress_rows(requirements)
-  local rows = {}
+--- Sloty požadavků: číslo = kolik ještě chybí, splněné zeleně bez čísla.
+local function requirement_slots(requirements)
+  local slots = {}
   for i, req in ipairs(requirements) do
-    rows[i] = { type = req.type, name = req.name,
-      caption = string.format("%d / %d", math.floor(req.delivered), req.amount) }
+    local missing = math.ceil(req.amount - req.delivered - 1e-3)
+    slots[i] = { type = req.type, name = req.name,
+      number = missing > 0 and missing or nil, style = missing > 0 and "slot" or "green_slot",
+      tooltip = { "rt.gui-slot-delivered", math.floor(req.delivered), req.amount } }
   end
-  return rows
+  return slots
 end
 
---- Nastaví progress bar s popiskem v procentech; bez čeho plnit (nil) ho skryje.
-local function set_progress(bar, fraction)
-  bar.visible = fraction ~= nil
-  bar.value = fraction or 0
-  bar.caption = { "rt.gui-progress", board.percent(fraction) }
+--- Sloty spotřeby: číslo = spotřeba za minutu, červeně když zásoba nepokryje ani jedno zpracování.
+local function upkeep_slots(upkeep)
+  local slots = {}
+  for i, item in ipairs(upkeep) do
+    local short = item.stock + 1e-6 < item.per_minute * levels.TOWN_INTERVAL / 3600
+    slots[i] = { type = item.type, name = item.name, number = item.per_minute, style = short and "red_slot" or "slot",
+      tooltip = { "rt.gui-upkeep-slot", item.per_minute, math.floor(item.stock), math.ceil(item.buffer - 1e-6) } }
+  end
+  return slots
+end
+
+--- Nastaví záhlaví sekce; bez postupu (nil) skryje progress bar i procenta.
+local function set_header(header, caption, fraction)
+  local n = M.NAMES
+  header[n.header_caption].caption = caption
+  header[n.header_bar].visible = fraction ~= nil
+  header[n.header_bar].value = fraction or 0
+  header[n.header_percent].visible = fraction ~= nil
+  header[n.header_percent].caption = { "rt.gui-progress", board.percent(fraction) }
 end
 
 --- Naplní panel hráče stavem města.
@@ -118,21 +155,19 @@ local function fill(player, town)
   frame[n.productivity].caption = { "rt.gui-productivity", productivity }
   local megawatts = string.format("%.0f", status.power_watts / 1e6)
   frame[n.power].caption = status.power_ok and { "rt.gui-power-ok", megawatts } or { "rt.gui-power-missing", megawatts }
-  fill_list(frame[n.requirements], progress_rows(status.requirements))
-  set_progress(frame[n.level_progress], status.level_progress)
-  set_progress(frame[n.house_progress], status.house_upgrade_progress)
-  frame[n.house_upgrade].caption = status.house_target_level
-    and { "rt.gui-house-upgrade", status.houses_to_upgrade, status.house_target_level + 1 }
-    or { "rt.gui-house-upgrade-none" }
-  fill_list(frame[n.house_requirements], progress_rows(status.house_requirements))
-  local upkeep_rows = {}
-  for i, item in ipairs(status.upkeep) do
-    upkeep_rows[i] = { type = item.type, name = item.name,
-      caption = { "rt.gui-upkeep-row", item.per_minute, math.floor(item.stock), math.ceil(item.buffer - 1e-6) } }
+  set_header(frame[n.level_header], { "rt.gui-requirements" }, status.level_progress)
+  fill_slots(frame[n.requirements], requirement_slots(status.requirements))
+  local house_caption = { "rt.gui-house-upgrade-none" }
+  if status.house_target_level then
+    house_caption = { "rt.gui-house-upgrade", status.houses_to_upgrade, status.house_target_level + 1 }
+  elseif status.house_bonus_full then
+    house_caption = { "rt.gui-house-upgrade-full" }
   end
-  frame[n.upkeep_status].caption = #upkeep_rows == 0 and { "rt.gui-upkeep-none" }
+  set_header(frame[n.house_header], house_caption, status.house_upgrade_progress)
+  fill_slots(frame[n.house_requirements], requirement_slots(status.house_requirements))
+  frame[n.upkeep_status].caption = #status.upkeep == 0 and { "rt.gui-upkeep-none" }
     or (status.upkeep_ok and { "rt.gui-upkeep-ok" } or { "rt.gui-upkeep-missing" })
-  fill_list(frame[n.upkeep], upkeep_rows)
+  fill_slots(frame[n.upkeep], upkeep_slots(status.upkeep))
   frame[n.upgrade].enabled = status.can_upgrade
 end
 

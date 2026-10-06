@@ -24,6 +24,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Pořadí věd → úrovně (algoritmus) | `prototypes/science.lua` → `bands` |
 | Recepty domu, překladišť a tabule | `prototypes/house.lua`, `prototypes/depots.lua` |
 | Barvy dočasné grafiky, počet variant | `prototypes/hall.lua` → `TINTS`, `prototypes/house.lua` → `TINTS`, `shared/levels.lua` → `VARIANTS` |
+| Panel radnice: slotů na řádek, šířka progress baru | `scripts/gui.lua` → `SLOT_COLUMNS`, `BAR_WIDTH` |
 | Barva chodníků a popisků | `scripts/network.lua` → `LINK_COLOR`, `scripts/towns.lua` → `LABEL_COLOR` |
 
 ## Kompatibilita
@@ -53,11 +54,14 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 6. Dodat milník (vč. zelené vědy) + 4 domy → Povýšit → radnice změní barvu, panel ukazuje úroveň 2; domy si drží vlastní úroveň.
 7. Výzkum „Automation science pack“ se spustí vyrobením domu.
 8. Panel radnice: úroveň s počtem věd, produktivita (jen nad poslední vědou), domy k vylepšení s požadavky,
-   spotřeba v celých kusech za minutu a zásoba „X / plná“; ikony mají popup suroviny. Progress bar k další úrovni
-   (suroviny, věda, domy) a k vylepšení domu (skrytý, když není co vylepšovat).
+   suroviny jako sloty (číslo = kolik chybí, splněné zeleně, tooltip „Dodáno X / Y“ pod popupem suroviny), spotřeba
+   jako sloty (číslo = za minutu, tooltip se zásobou, červeně když dojde). Záhlaví „Další úroveň“ a „Domy k vylepšení“
+   s progress barem a procenty vpravo – nic se nepřekrývá. Při plném bonusu domů hláška „Domy dávají plný bonus“.
 9. Městská tabule: okno s volbou režimu (Radnice / Dům / Spotřeba), signály v obvodové síti (připojit lampu nebo
    kombinátor; Spotřeba = celá zásoba na 5 minut; signály postupu úrovně a domu v %), Shift+klik kopíruje režim
-   na jinou tabuli, plán (blueprint) s tabulí si pamatuje režim.
+   na jinou tabuli, plán (blueprint) s tabulí si pamatuje režim. Taky: přeplánovat plán v knihovně
+   (Znovu vybrat oblast) si režim zachová; Shift+klik z obyčejného kombinátoru na tabuli – signály tabule se hned
+   obnoví; přiřadit sekci tabule do logistické skupiny – tabule ji odpojí a skupina u jiných kombinátorů zůstane.
 10. Nastavení modů → Startup: „Násobič spotřeby surovin“ (0 vypne spotřebu).
 11. Tipy a triky: kategorie Research Towns s aktualizovanými texty (úrovně, spotřeba, tabule).
 12. Nad poslední vědou (`/c remote.call("research-towns", "set_level", <id>, 8)`): Povýšit v panelu – okno zůstane
