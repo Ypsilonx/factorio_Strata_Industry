@@ -45,10 +45,12 @@ class Builder:
     """Skládá díly modelu do kolekce pod společný kořen (natažení osy Y v rt_render.root).
     matrix = aktuální transformace místních souřadnic stavby (Builder.at)."""
 
-    def __init__(self, collection, parent, mats):
+    def __init__(self, collection, parent, mats, variant=1):
         self.collection = collection
         self.parent = parent
         self.mats = mats
+        #: Vzhled 1 (osada) … 5 (město vědy) – díly podle něj mění materiály a vybavení.
+        self.variant = variant
         self.count = 0
         self.matrix = Matrix.Identity(4)
 
@@ -214,6 +216,14 @@ def tree(b, x, y, rng):
     rt_trees.billboard(b.collection, p.x, p.y * math.sqrt(2.0), rng)
 
 
+def lamp_post(b, x, y):
+    """Olejová lampa na železném sloupu (od vzhledu 2): sloup, rameno, svítící lucerna se stříškou."""
+    b.cylinder("RT_LampBase", (x, y, 0.06), 0.1, 0.15, "stone", segments=10)
+    b.cylinder("RT_LampPost", (x, y, 0.2), 0.04, 1.35, "iron", segments=8, bevel=0)
+    b.box("RT_Lamp", (x, y, 1.45), (0.16, 0.16, 0.22), "window", bevel=0.01)
+    b.cylinder("RT_LampCap", (x, y, 1.66), 0.13, 0.1, "iron", top_radius=0.02, segments=8, bevel=0)
+
+
 def bush(b, x, y, rng):
     """Keř."""
     b.blob("RT_Bush", (x, y, 0.2), rng.uniform(0.22, 0.38), "foliage", rng, squash=0.7)
@@ -232,12 +242,34 @@ def props(b, sx, face, door_x, rng):
 # ---------------------------------------------------------------------------------------------------- stavby
 
 
-def house(b, rng, sx, sy):
-    """Středověký dům sx × sy se středem v počátku: 1–2 patra, kamenné nebo omítnuté přízemí, hrázděné
-    vyložené patro, střecha z došků, šindele nebo břidlice, okna s okenicemi, dveře, komín, sudy."""
+def upgraded_wall(b, mat, up):
+    """Zeď podle vzhledu: od vzhledu 2 část omítnutých zdí nahradí cihly (up = generátor vylepšení domu –
+    stejný pro všechny vzhledy, takže co jednou zcihlovatělo, zůstane cihlové)."""
+    roll = up.random()
+    if mat in PLASTERS and b.variant >= 2 and roll < 0.45:
+        return "brick"
+    return mat
+
+
+def upgraded_roof(b, roof, up):
+    """Střecha podle vzhledu: od vzhledu 2 část doškových střech nahradí vlnitý plech, část šindel."""
+    roll = up.random()
+    if roof == "thatch" and b.variant >= 2:
+        if roll < 0.45:
+            return "corrugated"
+        if roll < 0.7:
+            return "shingle"
+    return roof
+
+
+def house(b, rng, sx, sy, up):
+    """Dům sx × sy se středem v počátku: 1–2 patra, kamenné, omítnuté nebo (od vzhledu 2) cihlové přízemí,
+    hrázděné vyložené patro, střecha z došků, šindele, břidlice nebo plechu, okna s okenicemi, dveře, komín.
+    rng = tvar domu (stejný ve všech vzhledech), up = vylepšení podle vzhledu."""
     two = rng.random() < 0.6
     floor_h = rng.uniform(1.25, 1.45)
-    ground_mat = "stone_wall" if rng.random() < 0.45 else rng.choice(PLASTERS)
+    ground_base = "stone_wall" if rng.random() < 0.45 else rng.choice(PLASTERS)
+    ground_mat = upgraded_wall(b, ground_base, up)
     b.box("RT_House", (0, 0, 0.04), (sx, sy, floor_h), ground_mat)
     face = -sy / 2
     top = 0.04 + floor_h
@@ -245,13 +277,20 @@ def house(b, rng, sx, sy):
     if two:
         jetty = rng.uniform(0.1, 0.2)
         upper_h = rng.uniform(1.1, 1.3)
-        b.box("RT_Upper", (0, -jetty / 2, top), (sx, sy + jetty, upper_h), rng.choice(PLASTERS))
-        timber_frame(b, -sx / 2 + 0.05, sx / 2 - 0.05, face - jetty, top, top + upper_h, rng)
+        upper_mat = upgraded_wall(b, rng.choice(PLASTERS), up)
+        b.box("RT_Upper", (0, -jetty / 2, top), (sx, sy + jetty, upper_h), upper_mat)
+        if upper_mat != "brick":
+            timber_frame(b, -sx / 2 + 0.05, sx / 2 - 0.05, face - jetty, top, top + upper_h, rng)
+        else:
+            rng.random()  # stejná spotřeba náhody jako hrázdění – další detaily domu zůstanou jako u osady
         for wx in (-sx * 0.25, sx * 0.25):
             window(b, wx, face - jetty, top + 0.35, rng)
         top += upper_h
-    elif ground_mat != "stone_wall":
-        timber_frame(b, -sx / 2 + 0.05, sx / 2 - 0.05, face, 0.1, top, rng)
+    elif ground_base in PLASTERS:
+        if ground_mat in PLASTERS:
+            timber_frame(b, -sx / 2 + 0.05, sx / 2 - 0.05, face, 0.1, top, rng)
+        else:
+            rng.random()  # viz výše
     door_x = rng.uniform(-sx * 0.25, sx * 0.25)
     door(b, door_x, face, w=rng.uniform(0.42, 0.55), h=rng.uniform(0.8, 0.95))
     for wx in (-sx * 0.33, sx * 0.33):
@@ -263,23 +302,24 @@ def house(b, rng, sx, sy):
             window(b, wx, -sy / 2 - (jetty if two else 0.0), 0.55, rng, w=0.26, h=0.34)
         if two:
             window(b, rng.uniform(-sx * 0.2, sx * 0.2), -sy / 2, top - 0.75, rng, w=0.28, h=0.38)
-    roof = pick(rng, ROOFS)
+    roof = upgraded_roof(b, pick(rng, ROOFS), up)
     roof_h = sy * rng.uniform(0.4, 0.55)
     hip = rng.uniform(0.3, 0.8) if rng.random() < 0.35 else 0.0
     b.gable("RT_Roof", (0, -jetty / 2, top), (sx, sy + jetty), roof_h, roof, ridge="x", hip=hip,
             overhang=rng.uniform(0.15, 0.3))
     if rng.random() < 0.6:
         cx = rng.choice((-1, 1)) * sx * rng.uniform(0.2, 0.35)
-        b.cylinder("RT_Chimney", (cx, sy * 0.15, top - 0.3), 0.18, roof_h + 0.7,
-                   "stone" if rng.random() < 0.6 else "stone_wall", segments=12)
+        chimney = "stone" if rng.random() < 0.6 else "stone_wall"
+        b.cylinder("RT_Chimney", (cx, sy * 0.15, top - 0.3), 0.18, roof_h + 0.7 + (0.4 if b.variant >= 2 else 0.0),
+                   "brick" if b.variant >= 2 else chimney, segments=12)
     props(b, sx, face, door_x, rng)
 
 
-def roundhouse(b, rng, r):
-    """Kulatá chýše místních o poloměru zdi r: kamenná nebo omítnutá válcová zeď, kuželová došková střecha
-    se zaobleným vrcholem, dveře a okénko na čele."""
+def roundhouse(b, rng, r, up):
+    """Kulatá chýše místních o poloměru zdi r: kamenná, omítnutá nebo (od vzhledu 2) cihlová válcová zeď,
+    kuželová došková střecha se zaobleným vrcholem (místní tradice zůstává), dveře a okénka po obvodu."""
     wall_h = rng.uniform(1.0, 1.3)
-    wall = "stone_wall" if rng.random() < 0.5 else rng.choice(PLASTERS)
+    wall = upgraded_wall(b, "stone_wall" if rng.random() < 0.5 else rng.choice(PLASTERS), up)
     b.cylinder("RT_RoundWall", (0, 0, 0.04), r, wall_h, wall, segments=24)
     if wall != "stone_wall":
         b.cylinder("RT_RoundBase", (0, 0, 0.04), r + 0.03, 0.3, "stone_wall", segments=24)
@@ -303,8 +343,16 @@ def smithy(b, rng):
     sx, sy = 2.6, 2.4
     b.box("RT_Smithy", (0, 0, 0.04), (sx, sy, 1.6), "stone_wall")
     face = -sy / 2
-    b.gable("RT_SmithyRoof", (0, 0, 1.64), (sx, sy), 1.1, "slate", ridge="x")
-    b.cylinder("RT_Chimney", (0.6, 0.5, 1.0), 0.32, 2.8, "stone", top_radius=0.26)
+    dilny = b.variant >= 2
+    b.gable("RT_SmithyRoof", (0, 0, 1.64), (sx, sy), 1.1, "corrugated" if dilny else "slate", ridge="x")
+    b.cylinder("RT_Chimney", (0.6, 0.5, 1.0), 0.32, 3.6 if dilny else 2.8, "brick" if dilny else "stone",
+               top_radius=0.26)
+    if dilny:
+        # Dílny: přístavek s plechovou stříškou a sudy oleje.
+        b.box("RT_Shed", (-sx / 2 - 0.5, 0.2, 0.04), (0.9, 1.6, 1.0), "planks")
+        b.gable("RT_ShedRoof", (-sx / 2 - 0.5, 0.2, 1.04), (0.9, 1.6), 0.3, "corrugated", ridge="y", overhang=0.1)
+        for i in range(3):
+            barrel(b, -sx / 2 - 0.4 + i * 0.32, -sy / 2 - 0.3, random.Random(77 + i))
     b.box("RT_Forge", (-0.3, face - 0.05, 0.3), (0.7, 0.08, 0.5), "fire", bevel=0)
     b.cylinder("RT_ForgeArch", (-0.3, face - 0.02, 0.78), 0.45, 0.1, "stone", segments=16, bevel=0)
     b.box("RT_Anvil", (0.6, face - 0.45, 0.06), (0.35, 0.18, 0.3), "slate", bevel=0.02)
@@ -316,11 +364,19 @@ def research_hall(b, rng):
     """Badatelna: dvoupatrová kamenná budova s hrázděným patrem, vraty, prapory a kulatou věží
     s vyhlídkou, lucernou a kuželovou stříškou (rotor)."""
     sx, sy = 4.6, 3.4
+    dilny = b.variant >= 2
     b.box("RT_HallStone", (0, 0, 0.04), (sx, sy, 1.6), "stone_wall")
-    b.box("RT_HallUpper", (0, -0.1, 1.64), (sx, sy + 0.2, 1.3), "plaster")
+    b.box("RT_HallUpper", (0, -0.1, 1.64), (sx, sy + 0.2, 1.3), "brick" if dilny else "plaster")
     face = -sy / 2
-    timber_frame(b, -sx / 2 + 0.05, sx / 2 - 0.05, face - 0.2, 1.64, 2.94, rng)
+    if dilny:
+        rng.random()  # stejná spotřeba náhody jako hrázdění
+        b.box("RT_HallCornice", (0, -0.1, 2.9), (sx + 0.1, sy + 0.3, 0.12), "stone")
+    else:
+        timber_frame(b, -sx / 2 + 0.05, sx / 2 - 0.05, face - 0.2, 1.64, 2.94, rng)
     b.gable("RT_HallRoof", (0, -0.1, 2.94), (sx, sy + 0.2), 1.6, "slate", ridge="x", hip=0.7)
+    if dilny:
+        for cx in (-1.5, 0.9):
+            b.box("RT_HallChimney", (cx, 0.4, 2.6), (0.35, 0.35, 2.2), "brick")
     door(b, -0.5, face, w=1.0, h=1.25)
     for wx in (-1.9, 0.6, 1.5):
         window(b, wx, face, 0.6, rng, w=0.32, h=0.5)
@@ -340,8 +396,8 @@ def research_hall(b, rng):
               (0.08, 0.08, 0.7), "wood_beam", bevel=0.01)
     b.cylinder("RT_DeckRail", (tx, ty, 6.2), tr + 0.28, 0.07, "wood_beam", segments=24, bevel=0)
     b.cylinder("RT_Lantern", (tx, ty, 5.58), 0.32, 0.5, "window", segments=12, bevel=0.02)
-    rotor = b.cylinder("RT_Hall_Rotor", (tx, ty, 6.25), tr + 0.55, 1.1, "shingle", top_radius=0.06, segments=24,
-                       bevel=0.04)
+    rotor = b.cylinder("RT_Hall_Rotor", (tx, ty, 6.25), tr + 0.55, 1.1, "corrugated" if dilny else "shingle",
+                       top_radius=0.06, segments=24, bevel=0.04)
     rotor.name = "RT_Hall_Rotor"
     b.cylinder("RT_Spire", (tx, ty, 7.3), 0.05, 0.5, "wood_beam", segments=8, bevel=0)
 
@@ -356,6 +412,16 @@ def square(b, rng):
     for side in (-1, 1):
         b.box("RT_WellPost", (cx + side * 0.5, cy, 0.06), (0.1, 0.1, 1.15), "wood_beam", bevel=0.01)
     b.gable("RT_WellRoof", (cx, cy, 1.2), (1.2, 0.9), 0.4, "shingle", ridge="x", overhang=0.1)
+    if b.variant >= 2:
+        # Dílny: železná ruční pumpa u studny a olejové lampy kolem náměstí a podél ulice.
+        b.cylinder("RT_Pump", (cx + 0.75, cy + 0.2, 0.06), 0.09, 0.8, "iron", segments=10)
+        b.box("RT_PumpArm", (cx + 0.75, cy + 0.05, 0.75), (0.06, 0.4, 0.06), "iron", bevel=0.01)
+        for angle in (20, 100, 200, 280):
+            a = math.radians(angle)
+            lamp_post(b, cx + math.cos(a) * (SQUARE_R - 0.15), cy + math.sin(a) * (SQUARE_R - 0.15))
+        for ly in (-4.4, -6.2):
+            for lx in (-1.05, 1.05):
+                lamp_post(b, lx, ly)
     for angle, cloth in ((150, "cloth_red"), (330, "cloth_blue")):
         a = math.radians(angle)
         with b.at(cx + math.cos(a) * 1.7, cy + math.sin(a) * 1.7, a + math.pi / 2):
@@ -398,9 +464,10 @@ def gate(b, rng):
 
 def build(collection, parent, mats, variant=1):
     """Postaví celý areál radnice daného vzhledu. Vrátí počet dílů."""
-    b = Builder(collection, parent, mats)
+    b = Builder(collection, parent, mats, variant)
     b.box("RT_Plaza", (0, 0, 0), (2 * HALF - 0.05, 2 * HALF - 0.05, 0.06), "earth", bevel=0.04)
-    rng = random.Random(1000 * variant)
+    # Pevné seedy (ne podle vzhledu): město ve všech vzhledech stejně rozložené, mění se jen vybavení.
+    rng = random.Random(1000)
     with b.at(-0.6, 4.6):
         research_hall(b, rng)
     with b.at(-4.4, 5.3, math.radians(-12)):
@@ -430,7 +497,7 @@ OVERLAP = 0.45
 
 def place_houses(b, variant, occupied):
     """Zaplní areál domy a chýšemi: náhodná místa, stavba čelem k náměstí, jen kde je volno. Vrátí počet."""
-    rng = random.Random(7919 * variant)
+    rng = random.Random(7919)
     cx, cy = SQUARE
     count = 0
     for _ in range(PLACE_ATTEMPTS):
@@ -447,17 +514,33 @@ def place_houses(b, variant, occupied):
         y = rng.uniform(-HALF + radius * 0.75, HALF - radius * 0.75)
         if any(math.hypot(x - ox, y - oy) < radius + orad - OVERLAP for ox, oy, orad in occupied):
             continue
-        local = random.Random(1000 * variant + count + 1)
+        local = random.Random(1001 + count)
+        up = random.Random(5001 + count)
         # Čelo stavby k náměstí, s malou náhodnou odchylkou.
         facing = math.atan2(cy - y, cx - x) + math.pi / 2 + local.uniform(-0.25, 0.25)
         with b.at(x, y, facing):
             if round_hut:
-                roundhouse(b, local, wall_r)
+                roundhouse(b, local, wall_r, up)
             else:
-                house(b, local, sx, sy)
+                house(b, local, sx, sy, up)
+        if b.variant >= 2:
+            cobbled_path(b, x, y, radius)
         occupied.append((x, y, radius))
         count += 1
     return count
+
+
+def cobbled_path(b, x, y, radius):
+    """Dlážděná cestička od domu (x, y) k okraji náměstí (od vzhledu 2)."""
+    cx, cy = SQUARE
+    dx, dy = cx - x, cy - y
+    dist = math.hypot(dx, dy)
+    start, end = radius * 0.55, dist - SQUARE_R + 0.15
+    if end <= start:
+        return
+    mid = (start + end) / 2
+    with b.at(x + dx / dist * mid, y + dy / dist * mid, math.atan2(dy, dx)):
+        b.box("RT_Path", (0, 0, 0.06), (end - start, 0.55, 0.025), "cobble", bevel=0.01)
 
 
 def fill_greenery(b, rng, occupied):

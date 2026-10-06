@@ -29,6 +29,10 @@ PALETTE = {
     "hay": (0.30, 0.23, 0.10),
     "cloth_red": (0.22, 0.07, 0.05),
     "cloth_blue": (0.07, 0.10, 0.15),
+    "brick": (0.20, 0.085, 0.05),
+    "metal": (0.085, 0.085, 0.08),
+    "iron": (0.06, 0.06, 0.062),
+    "rust": (0.17, 0.065, 0.025),
     "glass_off": (0.02, 0.022, 0.025),
     "fire": (1.0, 0.45, 0.12),
     "window": (1.0, 0.68, 0.32),
@@ -264,6 +268,46 @@ def shingles(name, base, scale=9.0):
     return mat
 
 
+def brick(name="RT_Brick", base=None):
+    """Cihlové zdivo: vazba cihel (Brick Texture), tmavá malta, každá cihla jiný odstín, okoralé hrany."""
+    base = base or PALETTE["brick"]
+    mat, nt, bsdf = _new(name)
+    coords, crevice, edge = _masks(nt)
+    tex = nt.nodes.new("ShaderNodeTexBrick")
+    tex.inputs["Scale"].default_value = 9.0
+    tex.inputs["Mortar Size"].default_value = 0.025
+    tex.inputs["Color1"].default_value = (*base, 1.0)
+    tex.inputs["Color2"].default_value = (*(c * 0.72 for c in base), 1.0)
+    tex.inputs["Mortar"].default_value = (0.09, 0.085, 0.075, 1.0)
+    nt.links.new(coords, tex.inputs["Vector"])
+    soot = ramp(nt, noise(nt, coords, 3.0), 0.6, 0.8)
+    color = mix(nt, math(nt, "MULTIPLY", soot, 0.4), tex.outputs["Color"], GRIME)
+    _finish(nt, bsdf, color, crevice, grime=0.6)
+    _bump(nt, bsdf, math(nt, "SUBTRACT", 1.0, tex.outputs["Fac"]), 0.6)
+    return mat
+
+
+def corrugated(name="RT_Corrugated", base=None):
+    """Vlnitý plech: vlny po spádu, zašlý zinek se skvrnami rzi a stékajícími šmouhami."""
+    base = base or PALETTE["metal"]
+    mat, nt, bsdf = _new(name)
+    coords, crevice, edge = _masks(nt)
+    wave = nt.nodes.new("ShaderNodeTexWave")
+    wave.wave_type = "BANDS"
+    wave.bands_direction = "X"
+    wave.wave_profile = "SIN"
+    wave.inputs["Scale"].default_value = 30.0
+    nt.links.new(coords, wave.inputs["Vector"])
+    rust = ramp(nt, noise(nt, coords, 4.0, detail=8.0), 0.55, 0.7)
+    streaks = ramp(nt, noise(nt, coords, 6.0, stretch=(8.0, 8.0, 0.4)), 0.6, 0.75)
+    color = mix(nt, math(nt, "MULTIPLY", wave.outputs["Fac"], 0.25), base, tuple(c * 1.25 for c in base))
+    color = mix(nt, math(nt, "ADD", rust, math(nt, "MULTIPLY", streaks, 0.5), clamp=True), color, PALETTE["rust"])
+    _finish(nt, bsdf, color, crevice, grime=0.5, roughness=0.6)
+    bsdf.inputs["Metallic"].default_value = 0.4
+    _bump(nt, bsdf, wave.outputs["Fac"], 0.5)
+    return mat
+
+
 def foliage(name="RT_Foliage", base=None, dark=None, scale=6.0):
     """Listí, keře, tráva: shluky lístků (šum) s tmavými mezerami a světlejšími okraji."""
     base, dark = base or PALETTE["foliage"], dark or PALETTE["foliage_dark"]
@@ -333,6 +377,9 @@ def library():
         "hay": thatch(),
         "cloth_red": cloth("RT_ClothRed", PALETTE["cloth_red"]),
         "cloth_blue": cloth("RT_ClothBlue", PALETTE["cloth_blue"]),
+        "brick": brick(),
+        "corrugated": corrugated(),
+        "iron": corrugated("RT_Iron", PALETTE["iron"]),
         "earth": packed_earth(),
         "window": glow("RT_Window", PALETTE["window"]),
         "fire": glow("RT_Fire", PALETTE["fire"], base=(0.03, 0.02, 0.015)),
