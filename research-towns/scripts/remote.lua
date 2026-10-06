@@ -1,5 +1,6 @@
 --- Remote rozhraní „research-towns“ (pro testy a jiné mody) a ladicí příkaz /rt-create-town.
 local towns = require("scripts.towns")
+local board = require("scripts.board")
 
 --- Město podle id, nebo nil.
 local function town(id)
@@ -37,10 +38,14 @@ remote.add_interface("research-towns", {
     local depot = storage.depots[unit_number]
     return depot and depot.mode
   end,
-  --- Nastaví režim městské tabule ("hall" | "house" | "upkeep").
+  --- Nastaví režim městské tabule ("hall" | "house" | "upkeep") a hned přepíše její signály.
   set_board_mode = function(unit_number, mode)
+    if not board.is_mode(mode) then error("research-towns: neplatný režim tabule: " .. tostring(mode)) end
     local depot = storage.depots[unit_number]
-    if depot and depot.kind == "board" then depot.mode = mode end
+    if not (depot and depot.kind == "board") then return end
+    depot.mode = mode
+    local t = depot.town and town(depot.town)
+    if t and t.hall.valid then towns.refresh_boards(t) end
   end,
   --- Srovná město s aktuálními vzorci (jako po změně konfigurace).
   refresh_town = function(id)

@@ -39,6 +39,11 @@ return {
     A.eq(find(list, "wood").count, 15, "dřevo na celou zásobu")
     A.eq(find(list, "wood").type, "item", "typ")
   end },
+  { "platné režimy", function()
+    A.truthy(board.is_mode("upkeep"), "upkeep")
+    A.truthy(not board.is_mode("bogus"), "neznámý")
+    A.truthy(not board.is_mode(nil), "nil")
+  end },
   { "postup v procentech ve všech režimech, bez vylepšení domu vynechán", function()
     for _, mode in ipairs(board.MODES) do
       A.eq(find(board.signals(mode, STATUS), "rt-signal-level-progress").count, 62, mode)

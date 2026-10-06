@@ -48,22 +48,42 @@ local function on_object_destroyed(event)
   end
 end
 
---- Shift+klik kopírování nastavení mezi tabulemi přenese režim.
+--- Shift+klik kopírování nastavení mezi tabulemi přenese režim; signály se přepíšou hned
+--- (vložení přepsalo i signály kombinátoru signály zdrojové tabule).
 local function on_settings_pasted(event)
   local source = storage.depots[event.source.unit_number]
   local target = storage.depots[event.destination.unit_number]
-  if source and target and source.kind == "board" and target.kind == "board" then target.mode = source.mode end
+  if not (target and target.kind == "board") then return end
+  if source and source.kind == "board" then target.mode = source.mode end
+  local town = target.town and storage.towns[target.town]
+  if town and town.hall.valid then
+    towns.refresh_boards(town)
+  else
+    board.write(target.entity, {})
+  end
+end
+
+--- Plán, do kterého se zapisují tagy: záznam v knihovně, předmět plánu, nebo plán v přípravě (starší cesty).
+--- @return LuaRecord|LuaItemStack|nil
+local function blueprint_target(event, player)
+  local record = event.record
+  if record and record.valid and record.type == "blueprint" then return record end
+  local candidates = { event.stack, player.blueprint_to_setup, player.cursor_stack }
+  -- Pole s nil uprostřed – ipairs by skončil u prvního nil.
+  for i = 1, 3 do
+    local stack = candidates[i]
+    if stack and stack.valid_for_read and stack.is_blueprint then return stack end
+  end
+  return nil
 end
 
 --- Plán (blueprint) si u tabulí zapamatuje režim do tagu.
 local function on_setup_blueprint(event)
-  local player = game.get_player(event.player_index)
-  local stack = player.blueprint_to_setup
-  if not (stack and stack.valid_for_read) then stack = player.cursor_stack end
-  if not (stack and stack.valid_for_read and stack.is_blueprint) then return end
+  local target = blueprint_target(event, game.get_player(event.player_index))
+  if not target then return end
   for index, entity in pairs(event.mapping.get()) do
     local depot = entity.valid and storage.depots[entity.unit_number]
-    if depot and depot.kind == "board" then stack.set_blueprint_entity_tag(index, board.TAG, depot.mode) end
+    if depot and depot.kind == "board" then target.set_blueprint_entity_tag(index, board.TAG, depot.mode) end
   end
 end
 

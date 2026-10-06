@@ -88,7 +88,11 @@ end
 --- @param tags table|nil
 function M.add(entity, tags)
   local depot = { key = entity.unit_number, entity = entity, kind = M.KINDS[entity.name] }
-  if depot.kind == "board" then depot.mode = tags and tags[board.TAG] or "hall" end
+  if depot.kind == "board" then
+    -- Tag z importovaného plánu může nést cokoli.
+    local mode = tags and tags[board.TAG]
+    depot.mode = board.is_mode(mode) and mode or "hall"
+  end
   storage.depots[depot.key] = depot
   -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
   script.register_on_object_destroyed(entity)
@@ -126,8 +130,7 @@ function M.collect(town, sinks)
       if depot.kind == "goods" then
         local inventory = entity.get_inventory(defines.inventory.chest)
         for _, item in pairs(inventory.get_contents()) do
-          -- Předměty jen po celých kusech; zlomek navíc připíše distribute zásobě spotřeby.
-          local take = math.ceil(allocation.wanted(sinks, "item", item.name, item.count) - 1e-9)
+          local take = allocation.wanted(sinks, "item", item.name, item.count)
           if take > 0 then
             local removed = inventory.remove({ name = item.name, quality = item.quality, count = take })
             allocation.distribute(sinks, "item", item.name, removed)

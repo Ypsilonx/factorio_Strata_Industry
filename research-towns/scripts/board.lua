@@ -6,6 +6,14 @@ M.MODES = { "hall", "house", "upkeep" }
 --- Tag režimu v plánu (blueprintu).
 M.TAG = "rt_board_mode"
 
+--- Je hodnota platný režim tabule?
+function M.is_mode(mode)
+  for _, known in ipairs(M.MODES) do
+    if known == mode then return true end
+  end
+  return false
+end
+
 --- Zaokrouhlí kladné množství nahoru (tolerance kvůli kapalinám).
 local function ceil(value)
   return math.ceil(value - 1e-6)
@@ -39,9 +47,12 @@ function M.signals(mode, status)
 end
 
 --- Zapíše signály do první sekce konstantního kombinátoru (přepíše, co tam hráč nastavil).
+--- Sekci odpojí od logistické skupiny (jinak by se přepsala skupina u všech kombinátorů) a zapne ji.
 function M.write(entity, list)
   local behavior = entity.get_or_create_control_behavior()
   local section = behavior.get_section(1) or behavior.add_section()
+  if section.group ~= "" then section.group = "" end
+  section.active = true
   local filters = {}
   for i, signal in ipairs(list) do
     local value = { type = signal.type, name = signal.name }
