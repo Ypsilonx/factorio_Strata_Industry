@@ -5,8 +5,10 @@ local levels = require("shared.levels")
 local reach = require("prototypes.reach")
 
 local TINT = { r = 0.9, g = 0.75, b = 0.5 }
+--- Odznak města v rohu ikony (ikona domu) – v inventáři je hned vidět, že jde o stavbu pro město.
+local BADGE = { icon = "__research-towns__/graphics/icons/house-1.png", icon_size = 64, scale = 0.28, shift = { -8, -8 } }
 
---- Odvodí prototyp z vanilla entity: nové jméno, vlastní předmět, obarvená ikona, bez upgradů.
+--- Odvodí prototyp z vanilla entity: nové jméno, vlastní předmět, obarvená ikona s odznakem města, bez upgradů.
 local function derive(source, name)
   local entity = table.deepcopy(source)
   entity.name = name
@@ -15,6 +17,7 @@ local function derive(source, name)
   -- Zdroj má buď `icon`, nebo vrstvy `icons` (např. electric-energy-interface).
   local layers = source.icons and table.deepcopy(source.icons) or { { icon = source.icon, icon_size = source.icon_size } }
   for _, layer in ipairs(layers) do layer.tint = TINT end
+  layers[#layers + 1] = table.deepcopy(BADGE)
   entity.icons = layers
   entity.icon = nil
   entity.fast_replaceable_group = nil

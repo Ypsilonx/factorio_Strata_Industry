@@ -10,6 +10,7 @@ Přepínače:
     --draft       rychlý náhled (méně vzorků)
     --overview    všech 5 vzhledů z modu vedle sebe → blender/renders/preview-all.png
     --skywalk     textury visutých lávek (dřevěná, prosklená) → research-towns/graphics/entity/skywalk
+    --thumbnail   náhled modu pro portál 144×144 (osada a město vědy úhlopříčně) → research-towns/thumbnail.png
     --install     vrstvy a ikonu zapsat do modu (research-towns/graphics, prototypes/hall_sprites.lua);
                   vzhledy bez vlastního renderu dočasně dostanou kopii
 
@@ -281,6 +282,32 @@ def fill_missing(kind, source):
         print(f"{kind} {variant}: dočasně kopie vzhledu {source}")
 
 
+def thumbnail(size=144):
+    """Thumbnail pro portál (size×size): radnice na trávě rozdělená úhlopříčkou – vlevo nahoře osada (vzhled 1),
+    vpravo dole město vědy (vzhled 5) – příběh modu v jednom obrázku → research-towns/thumbnail.png."""
+    layers = []
+    for variant in (1, VARIANTS):
+        base = R.load_pixels(entity_dir("hall") / f"hall-{variant}-base.png")
+        shadow = R.load_pixels(entity_dir("hall") / f"hall-{variant}-shadow.png")
+        shadow[..., 3] *= 0.55
+        tile = np.zeros_like(base)
+        tile[...] = (0.30, 0.31, 0.19, 1.0)
+        layers.append(R.over(R.over(tile, shadow), base))
+    # Výřez kolem badatelny a náměstí (střed entity je 7,5 dlaždice nad spodním okrajem + okraj 1 dlaždice).
+    h, w = layers[0].shape[:2]
+    side, cx, cy = 768, w // 2, h - 64 - 480 - 160
+    crop = [layer[cy - side // 2:cy + side // 2, cx - side // 2:cx + side // 2] for layer in layers]
+    ys, xs = np.mgrid[0:side, 0:side]
+    mixed = np.where(((xs + ys) < side)[..., None], crop[0], crop[1])
+    factor = -(-side // size)
+    canvas = np.zeros((size * factor, size * factor, 4), dtype=np.float32)
+    canvas[...] = (0.30, 0.31, 0.19, 1.0)
+    offset = (size * factor - side) // 2
+    canvas[offset:offset + side, offset:offset + side] = mixed
+    R.save_pixels(R.downsample(canvas, factor), MOD / "thumbnail.png")
+    print(f"THUMBNAIL: {size}×{size}")
+
+
 def overview():
     """Všech 5 vzhledů z modu vedle sebe na trávě (zmenšeno na polovinu) → blender/renders/preview-all.png."""
     tiles = []
@@ -298,6 +325,8 @@ if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if "--calibrate" in args:
         calibrate()
+    if "--thumbnail" in args:
+        thumbnail()
     if "--overview" in args:
         overview()
     if "--draft" in args:

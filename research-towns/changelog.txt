@@ -1,6 +1,6 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.0
-Date: 2026-10-05
+Date: 2026-10-06
   Features:
     - Town halls replace labs; towns level up from goods, fluids and power delivered through depots.
     - Story: the people of Nauvis as research partners – flavour texts, town upgrade messages and Tips and tricks.
