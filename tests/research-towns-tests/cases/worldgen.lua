@@ -48,6 +48,69 @@ return {
     end } },
   },
   {
+    name = "rozehraná hra bez nastavení Měst dostane cizí města",
+    setup = function()
+      -- Jako Nauvis ze savu před modem: v nastavení generátoru chybí posuvník Města i značky.
+      local settings = game.surfaces.nauvis.map_gen_settings
+      settings.autoplace_controls[worldgen.CONTROL] = nil
+      settings.autoplace_settings.entity.settings[worldgen.SITE] = nil
+      local surface = game.create_surface("rt-oldsave", settings)
+      surface.request_to_generate_chunks({ 0, 0 }, 16)
+      surface.force_generate_chunk_requests()
+    end,
+    steps = { { ticks = 1, run = function()
+      remote.call(R, "worldgen_populate", "rt-oldsave")
+      local wild = 0
+      for _, t in ipairs(remote.call(R, "list_towns")) do
+        if t.surface == "rt-oldsave" and t.state == "wild" then wild = wild + 1 end
+      end
+      H.check(wild >= 2, "cizích měst v rozehrané hře: " .. wild)
+    end } },
+  },
+  {
+    name = "doplnění do rozehrané hry nepostaví radnici u hráčovy základny",
+    setup = function(ctx)
+      -- Mimo Nauvis se značky nenahrazují – zůstanou jako v savu, kam se mod přidává.
+      local surface = game.create_surface("rt-oldbase", game.surfaces.nauvis.map_gen_settings)
+      surface.request_to_generate_chunks({ 0, 0 }, 16)
+      surface.force_generate_chunk_requests()
+      local sites = surface.find_entities_filtered({ name = worldgen.SITE })
+      H.check(#sites >= 2, "značek na povrchu: " .. #sites)
+      ctx.base = sites[1].position
+      ctx.chest = surface.create_entity({ name = "iron-chest", force = "player",
+        position = { ctx.base.x + 20, ctx.base.y } })
+      H.check(ctx.chest, "bednu nelze postavit")
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      remote.call(R, "worldgen_populate", "rt-oldbase")
+      local surface = game.surfaces["rt-oldbase"]
+      H.check(surface.count_entities_filtered({ name = worldgen.SITE }) == 0, "zůstaly značky")
+      local near = surface.count_entities_filtered({ position = ctx.base, radius = 5, name = "rt-town-hall-1" })
+      H.check(near == 0, "radnice u hráčovy bedny")
+      local wild = 0
+      for _, t in ipairs(remote.call(R, "list_towns")) do
+        if t.surface == "rt-oldbase" then wild = wild + 1 end
+      end
+      H.check(wild >= 1, "ostatní značky se nenahradily")
+    end } },
+  },
+  {
+    name = "první město vznikne i při nejvyšší četnosti",
+    setup = function(ctx)
+      local settings = game.surfaces.nauvis.map_gen_settings
+      settings.autoplace_controls[worldgen.CONTROL] = { frequency = 6, size = 1, richness = 1 }
+      ctx.dense = game.create_surface("rt-dense", settings)
+      ctx.dense.request_to_generate_chunks({ 0, 0 }, 8)
+      ctx.dense.force_generate_chunk_requests()
+      ctx.force = game.create_force("rt-first-dense")
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      local id = remote.call(R, "worldgen_first_town", "rt-dense", ctx.force.name)
+      H.check(id, "první město se při četnosti 6 neumístilo")
+      H.check(H.status(id).state == "partner", "první město není partnerské")
+    end } },
+  },
+  {
     name = "opakované ensure (rozehraná hra) nepřidá první město ani radnice navíc",
     steps = { { ticks = 1, run = function()
       local before = #remote.call(R, "list_towns")

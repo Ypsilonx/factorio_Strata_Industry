@@ -10,12 +10,13 @@ local M = {}
 --- Jak často se kontroluje blízkost hráčů (ticky).
 M.CHECK_TICKS = 60
 
---- Objeví neobjevená města v dosahu připojených hráčů.
+--- Objeví neobjevená města v dosahu připojených hráčů. Fyzická pozice – v mapě (remote view) je
+--- player.position pozice kamery a hráč by objevil města bez chůze.
 function M.check()
   local radius = worldgen.DISCOVERY_RADIUS + levels.HALL_SIZE / 2
   for _, player in pairs(game.connected_players) do
-    local halls = player.surface.find_entities_filtered({ position = player.position, radius = radius,
-      name = config.hall_name(1), force = "neutral" })
+    local halls = player.physical_surface.find_entities_filtered({ position = player.physical_position,
+      radius = radius, name = config.hall_name(1), force = "neutral" })
     for _, hall in pairs(halls) do
       local id = storage.wild_halls[hall.unit_number]
       local town = id and storage.towns[id]

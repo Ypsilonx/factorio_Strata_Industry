@@ -21,6 +21,7 @@ return {
     A.truthy(e.rt_town_probability:find("distance > " .. worldgen.TOWN_SPAWN_CLEAR, 1, true), "okolí spawnu")
     A.truthy(e.rt_town_x:find("floor(x / rt_town_cell)", 1, true), "posun podle indexu buňky")
     A.truthy(e.rt_town_probability:find("< " .. worldgen.TOWN_SITE_WINDOW, 1, true), "okno místa radnice")
+    A.truthy(e.rt_town_probability:find("control:rt-towns:size') > 0", 1, true), "vypnutí Měst v GUI (size 0)")
   end },
   { "okno místa radnice je menší než radnice – v buňce nanejvýš jedno město", function()
     local levels = require("shared.levels")

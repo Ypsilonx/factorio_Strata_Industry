@@ -32,6 +32,10 @@ M.INDEX_CELL = 256
 M.FIRST_TOWN_DISTANCES = { 150, 120, 180, 100, 200 }
 M.FIRST_TOWN_DIRECTIONS = 16
 M.FIRST_TOWN_GAP = 100
+--- Druhý průchod s menším odstupem – při vysoké četnosti je radnice skoro všude do FIRST_TOWN_GAP.
+M.FIRST_TOWN_GAP_MIN = 25
+--- Při doplnění do rozehrané hry nevznikne město, kde je do této vzdálenosti od okraje radnice hráčova stavba.
+M.TOWN_PLAYER_CLEAR = 30
 
 --- Velikost buňky mřížky pro četnost z posuvníku (stejný vzorec jako noise výraz rt_town_cell).
 function M.cell_size(frequency)
@@ -56,7 +60,9 @@ function M.noise_expressions()
     rt_town_x = offset("x", 7101),
     rt_town_y = offset("y", 7102),
     rt_town_probability = string.format(
-      "(rt_town_frequency > 0) * (distance > %d) * (abs(x - rt_town_x) < %d) * (abs(y - rt_town_y) < %d)",
+      -- Vypnutí řádku v GUI generátoru nastaví size = 0 (frekvence z GUI je nejméně 1/6).
+      "(rt_town_frequency > 0) * (var('control:" .. M.CONTROL .. ":size') > 0) * (distance > %d)"
+        .. " * (abs(x - rt_town_x) < %d) * (abs(y - rt_town_y) < %d)",
       M.TOWN_SPAWN_CLEAR, M.TOWN_SITE_WINDOW, M.TOWN_SITE_WINDOW),
   }
 end

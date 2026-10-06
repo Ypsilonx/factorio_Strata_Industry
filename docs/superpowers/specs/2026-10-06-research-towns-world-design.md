@@ -81,7 +81,13 @@ Mimo rozsah 2a: znečištění (2b), ruiny (2c), specializace (2d), cestování 
 
 Při prvním spuštění verze s 2a (příznak ve `storage`): `regenerate_entity({"rt-town-site"})` na Nauvisu,
 nahrazení všech značek (stejná funkce jako v `on_chunk_generated`), a když žádné partnerské město není,
-postaví se první město. Značka koliduje s hráčovými stavbami → tam město nevznikne.
+postaví se první město. Nauvis ze starého savu nemá v `map_gen_settings` posuvník ani značku – skript je doplní
+(jinak by `regenerate_entity` i nové chunky nic nevložily). Kde je do `TOWN_PLAYER_CLEAR` (30 dlaždic) hráčova
+stavba, město nevznikne (nezničitelná radnice by blokovala základnu).
+
+Vypnutí Měst v okně generátoru (`size = 0`) města vypne; první město vznikne vždy. Při vysoké četnosti se
+první město zkusí podruhé s odstupem `FIRST_TOWN_GAP_MIN` (25). Objevení počítá s fyzickou pozicí hráče
+(`physical_position`), ne s pozicí kamery v mapě.
 
 ## Klíčová rozhodnutí
 

@@ -64,8 +64,39 @@ function M.on_chunk_generated(event)
   end
 end
 
+--- Doplní do nastavení generátoru povrchu posuvník Města a značky: Nauvis ze savu před modem je nemá
+--- (planeta je dostane až při nové mapě), takže by regenerate_entity ani nové chunky nic nevložily.
+local function enable_towns(surface)
+  local settings = surface.map_gen_settings
+  local default = { frequency = 1, size = 1, richness = 1 }
+  settings.autoplace_controls = settings.autoplace_controls or {}
+  settings.autoplace_controls[worldgen.CONTROL] = settings.autoplace_controls[worldgen.CONTROL] or default
+  settings.autoplace_settings = settings.autoplace_settings or {}
+  settings.autoplace_settings.entity = settings.autoplace_settings.entity or { settings = {} }
+  local entities = settings.autoplace_settings.entity.settings
+  entities[worldgen.SITE] = entities[worldgen.SITE] or default
+  surface.map_gen_settings = settings
+end
+
+--- Doplní města do už vygenerovaných chunků povrchu (mod přidaný do rozehrané hry). U hráčových staveb
+--- (do TOWN_PLAYER_CLEAR) město nevznikne – nezničitelná radnice by blokovala základnu.
+function M.populate(surface)
+  enable_towns(surface)
+  surface.regenerate_entity({ worldgen.SITE })
+  local radius = levels.HALL_SIZE / 2 + worldgen.TOWN_PLAYER_CLEAR
+  for _, site in pairs(surface.find_entities_filtered({ name = worldgen.SITE })) do
+    if site.valid then
+      if surface.count_entities_filtered({ position = site.position, radius = radius, force = "player" }) > 0 then
+        site.destroy()
+      else
+        M.replace_site(site)
+      end
+    end
+  end
+end
+
 --- Je kandidát vhodné místo prvního města? (souš, bez útesů a hráčových staveb, daleko od jiných radnic)
-local function first_site_ok(surface, position)
+local function first_site_ok(surface, position, gap)
   local area = area_around(position, 1)
   if surface.count_tiles_filtered({ area = area, collision_mask = "water_tile" }) > 0 then return false end
   if surface.count_entities_filtered({ area = area, type = "cliff" }) > 0 then return false end
@@ -73,28 +104,29 @@ local function first_site_ok(surface, position)
   -- Značky ještě nenahrazené radnicí (chunk se právě generuje) se počítají jako radnice.
   local names = config.hall_names()
   names[#names + 1] = worldgen.SITE
-  return surface.count_entities_filtered({ position = position, radius = worldgen.FIRST_TOWN_GAP, name = names }) == 0
+  return surface.count_entities_filtered({ position = position, radius = gap, name = names }) == 0
 end
 
---- Postaví první (partnerské) město 100–200 dlaždic od spawnu, pokud síla player žádné partnerské město nemá.
+--- Postaví první (partnerské) město síly 100–200 dlaždic od spawnu, pokud síla žádné partnerské město nemá.
+--- Nejdřív s odstupem FIRST_TOWN_GAP od jiných radnic, pak (vysoká četnost Měst) s FIRST_TOWN_GAP_MIN.
 --- @return table|nil město
-function M.ensure_first_town()
-  local surface = game.surfaces[M.SURFACE]
-  if not surface then return nil end
-  local force = game.forces.player
+function M.ensure_first_town(surface, force)
   for _, town in pairs(storage.towns) do
     if town.state == "partner" and town.hall.valid and town.hall.force == force then return nil end
   end
   local spawn = force.get_spawn_position(surface)
-  for _, position in ipairs(worldgen.first_town_candidates(spawn, surface.map_gen_settings.seed)) do
-    surface.request_to_generate_chunks(position, 1)
-    surface.force_generate_chunk_requests()
-    if first_site_ok(surface, position) then
-      clear_ground(surface, position)
-      local town = towns.create(surface, position, force)
-      if town then
-        clear_nests(surface, position)
-        return town
+  local candidates = worldgen.first_town_candidates(spawn, surface.map_gen_settings.seed)
+  for _, gap in ipairs({ worldgen.FIRST_TOWN_GAP, worldgen.FIRST_TOWN_GAP_MIN }) do
+    for _, position in ipairs(candidates) do
+      surface.request_to_generate_chunks(position, 1)
+      surface.force_generate_chunk_requests()
+      if first_site_ok(surface, position, gap) then
+        clear_ground(surface, position)
+        local town = towns.create(surface, position, force)
+        if town then
+          clear_nests(surface, position)
+          return town
+        end
       end
     end
   end
@@ -110,11 +142,8 @@ function M.ensure(again)
   storage.worldgen_done = true
   local surface = game.surfaces[M.SURFACE]
   if not surface then return end
-  surface.regenerate_entity({ worldgen.SITE })
-  for _, site in pairs(surface.find_entities_filtered({ name = worldgen.SITE })) do
-    if site.valid then M.replace_site(site) end
-  end
-  M.ensure_first_town()
+  M.populate(surface)
+  M.ensure_first_town(surface, game.forces.player)
 end
 
 return M

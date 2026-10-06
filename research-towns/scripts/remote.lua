@@ -74,6 +74,15 @@ remote.add_interface("research-towns", {
   worldgen_ensure = function(again)
     worldgen.ensure(again)
   end,
+  --- Doplní města do vygenerovaných chunků povrchu (testy rozehrané hry).
+  worldgen_populate = function(surface_name)
+    worldgen.populate(game.surfaces[surface_name])
+  end,
+  --- Postaví první město síly na povrchu (testy); vrací id, nebo nil.
+  worldgen_first_town = function(surface_name, force_name)
+    local t = worldgen.ensure_first_town(game.surfaces[surface_name], game.forces[force_name])
+    return t and t.id
+  end,
   --- Srovná město s aktuálními vzorci (jako po změně konfigurace).
   refresh_town = function(id)
     local t = town(id)
