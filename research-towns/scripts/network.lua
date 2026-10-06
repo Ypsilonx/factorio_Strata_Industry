@@ -12,6 +12,8 @@ M.HOUSE = "rt-house"
 
 --- Barva dočasného chodníku (finální sprite z Blenderu je plán 3).
 local LINK_COLOR = { r = 0.55, g = 0.45, b = 0.3, a = 0.9 }
+--- Barva čísla úrovně nad domem (jen v Alt režimu).
+local LEVEL_COLOR = { r = 1, g = 0.85, b = 0.5 }
 
 --- Jména všech budov sítě (domy + radnice).
 function M.names()
@@ -64,10 +66,18 @@ function M.is_active(node)
   return node.town ~= nil and node.depth ~= nil and node.depth <= levels.MAX_HOUSE_DEPTH
 end
 
---- Nastaví domu grafickou variantu podle jeho úrovně a ikonu „odpojeno“, když není aktivní.
+--- Nastaví domu grafickou variantu a číslo podle jeho úrovně a ikonu „odpojeno“, když není aktivní.
 function M.refresh_house(node)
   if not node.entity.valid then return end
   node.entity.graphics_variation = levels.variant(node.level, config.level_count())
+  if node.label and node.label.valid then
+    node.label.text = tostring(node.level)
+  else
+    node.label = rendering.draw_text({
+      text = tostring(node.level), surface = node.entity.surface, target = { entity = node.entity },
+      color = LEVEL_COLOR, scale = 2, alignment = "center", vertical_alignment = "middle", only_in_alt_mode = true,
+    })
+  end
   local active = M.is_active(node)
   if active and node.warning then
     if node.warning.valid then node.warning.destroy() end
@@ -138,6 +148,7 @@ function M.remove(key)
     unlink(key, other)
   end
   if node.warning and node.warning.valid then node.warning.destroy() end
+  if node.label and node.label.valid then node.label.destroy() end
   storage.nodes[key] = nil
   local touched = M.recompute(neighbours)
   if node.town then touched[node.town] = true end

@@ -21,4 +21,11 @@ return {
     A.eq(milestones.complete(REQS, progress), true, "voda v toleranci")
     A.eq(milestones.complete(nil, progress), false, "max. úroveň")
   end },
+  { "postup je průměr podílů požadavků a dalších podílů", function()
+    local progress = { ["item/wood"] = 50, ["fluid/water"] = 500 }
+    A.eq(milestones.fraction(REQS, progress), 0.75, "dřevo 1/2, voda nad potřebu = 1")
+    A.eq(milestones.fraction(REQS, progress, { 0.25 }), (0.5 + 1 + 0.25) / 3, "s domy")
+    A.eq(milestones.fraction(REQS, {}, { 2 }), 1 / 3, "další podíl nejvýš 1")
+    A.eq(milestones.fraction(nil, progress), nil, "bez požadavků")
+  end },
 }

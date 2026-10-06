@@ -211,14 +211,23 @@ local function upkeep_rate(town, active_houses)
   return upkeep.per_minute(config.completed_milestones(town.level), config.upkeep_multiplier(), active_houses)
 end
 
---- Spotřeba se zásobou pro GUI/remote/tabuli.
+--- Spotřeba se zásobou a cílovou (plnou) zásobou pro GUI/remote/tabuli.
 local function upkeep_status(town, active_houses)
   local list = {}
   for i, req in ipairs(upkeep_rate(town, active_houses)) do
     list[i] = { type = req.type, name = req.name, per_minute = req.amount,
+      buffer = req.amount * levels.UPKEEP_BUFFER_SECONDS / 60,
       stock = town.stock[milestones.key(req.type, req.name)] or 0 }
   end
   return list
+end
+
+--- Postup k další úrovni (0–1): suroviny a věda milníku a počet aktivních domů rovným dílem.
+local function level_progress(town)
+  local requirements = config.upgrade(town.level)
+  if not requirements then return nil end
+  local houses_part = network.active_houses(town) / levels.house_limit(town.level)
+  return milestones.fraction(requirements, town.progress, { houses_part })
 end
 
 --- Stav města pro GUI a remote rozhraní.
@@ -239,6 +248,8 @@ function M.status(town)
     house_requirements = with_delivered(house_reqs, town.house_progress),
     houses_to_upgrade = houses.upgradable(candidates, math.min(town.level, count)),
     house_target_level = target and target.level,
+    level_progress = level_progress(town),
+    house_upgrade_progress = milestones.fraction(house_reqs, town.house_progress),
     upkeep = upkeep_status(town, #candidates), upkeep_ok = town.upkeep_ok,
   }
 end

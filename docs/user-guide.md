@@ -13,13 +13,17 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
 3. **Městská rozvodna** u radnice nebo domu odebírá elektřinu města; bez ní radnice nezkoumá.
 4. **Překladiště zboží a kapalin** u radnice nebo aktivního domu dodávají suroviny. Pořadí: nejdřív zásoba pro
    provoz, pak milník radnice (nová věda + suroviny), pak vylepšení domů. Co nikdo nepotřebuje, zůstane.
-5. Až je milník splněný a máš dost domů, klikni v panelu radnice na **Povýšit město**.
+5. Až je milník splněný a máš dost domů, klikni v panelu radnice na **Povýšit město**. Progress bar v panelu
+   ukazuje, kolik zbývá (suroviny, věda i počet domů).
 6. **Spotřeba:** suroviny splněných milníků město průběžně spotřebovává, když zkoumá. Když dojdou, radnice stojí.
+   Spotřeba je v celých kusech za minutu; radnice si drží zásobu na 5 minut provozu.
    Množství nastavíš v nastavení modu (Násobič spotřeby surovin).
 7. **Vylepšení domů** je dobrovolné: dodávky navíc vylepšují domy postupně jeden po druhém (stejné suroviny jako
    milník radnice, bez vědy). Dům dává bonus (úroveň + 1) %, všechny domy dohromady nejvýš +120 %.
+   Úroveň domu uvidíš jako číslo nad domem v Alt režimu.
 8. **Za poslední vědou** město roste dál; každá úroveň přidá produktivitu výzkumu radnice.
 9. **Městská tabule** posílá do obvodové sítě požadavky města – režim Radnice, Dům nebo Spotřeba zvolíš v jejím
-   okně; navíc signály příkonu (MW) a pokrytí elektřiny (%).
+   okně (Spotřeba = celá zásoba na 5 minut); navíc signály příkonu (MW), pokrytí elektřiny (%), postupu k další
+   úrovni (%) a postupu vylepšení domu (%).
 
 Ladicí příkaz: `/rt-create-town` (admin) založí radnici severně od hráče. Generování měst na mapě přijde v další verzi.

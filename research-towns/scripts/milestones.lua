@@ -39,4 +39,22 @@ function M.complete(requirements, progress)
   return true
 end
 
+--- Postup splnění (0–1): průměr podílů dodaného u každého požadavku a dalších podílů (např. domy).
+--- @param requirements table[]|nil
+--- @param extra number[]|nil další podíly 0–1 počítané rovným dílem
+--- @return number|nil nil = není co plnit
+function M.fraction(requirements, progress, extra)
+  local sum, count = 0, 0
+  for _, req in ipairs(requirements or {}) do
+    sum = sum + math.min(1, (progress[M.key(req.type, req.name)] or 0) / req.amount)
+    count = count + 1
+  end
+  for _, part in ipairs(extra or {}) do
+    sum = sum + math.min(1, part)
+    count = count + 1
+  end
+  if count == 0 then return nil end
+  return sum / count
+end
+
 return M

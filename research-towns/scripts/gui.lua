@@ -17,7 +17,9 @@ M.NAMES = {
   productivity = "rt_town_productivity",
   power = "rt_town_power",
   requirements = "rt_town_requirements",
+  level_progress = "rt_town_level_progress",
   house_upgrade = "rt_town_house_upgrade",
+  house_progress = "rt_town_house_progress",
   house_requirements = "rt_town_house_requirements",
   upkeep_status = "rt_town_upkeep_status",
   upkeep = "rt_town_upkeep",
@@ -42,8 +44,10 @@ function M.ensure(player)
   frame.add({ type = "label", name = n.productivity })
   frame.add({ type = "label", name = n.power })
   frame.add({ type = "label", caption = { "rt.gui-requirements" } })
+  frame.add({ type = "progressbar", name = n.level_progress }).style.horizontally_stretchable = true
   frame.add({ type = "table", name = n.requirements, column_count = 2 })
   frame.add({ type = "label", name = n.house_upgrade })
+  frame.add({ type = "progressbar", name = n.house_progress }).style.horizontally_stretchable = true
   frame.add({ type = "table", name = n.house_requirements, column_count = 2 })
   frame.add({ type = "label", name = n.upkeep_status })
   frame.add({ type = "table", name = n.upkeep, column_count = 2 })
@@ -93,6 +97,13 @@ local function progress_rows(requirements)
   return rows
 end
 
+--- Nastaví progress bar s popiskem v procentech; bez čeho plnit (nil) ho skryje.
+local function set_progress(bar, fraction)
+  bar.visible = fraction ~= nil
+  bar.value = fraction or 0
+  bar.caption = { "rt.gui-progress", board.percent(fraction) }
+end
+
 --- Naplní panel hráče stavem města.
 local function fill(player, town)
   local frame = player.gui.relative[M.NAMES.frame]
@@ -108,6 +119,8 @@ local function fill(player, town)
   local megawatts = string.format("%.0f", status.power_watts / 1e6)
   frame[n.power].caption = status.power_ok and { "rt.gui-power-ok", megawatts } or { "rt.gui-power-missing", megawatts }
   fill_list(frame[n.requirements], progress_rows(status.requirements))
+  set_progress(frame[n.level_progress], status.level_progress)
+  set_progress(frame[n.house_progress], status.house_upgrade_progress)
   frame[n.house_upgrade].caption = status.house_target_level
     and { "rt.gui-house-upgrade", status.houses_to_upgrade, status.house_target_level + 1 }
     or { "rt.gui-house-upgrade-none" }
@@ -115,7 +128,7 @@ local function fill(player, town)
   local upkeep_rows = {}
   for i, item in ipairs(status.upkeep) do
     upkeep_rows[i] = { type = item.type, name = item.name,
-      caption = { "rt.gui-upkeep-row", string.format("%.1f", item.per_minute), math.floor(item.stock) } }
+      caption = { "rt.gui-upkeep-row", item.per_minute, math.floor(item.stock), math.ceil(item.buffer - 1e-6) } }
   end
   frame[n.upkeep_status].caption = #upkeep_rows == 0 and { "rt.gui-upkeep-none" }
     or (status.upkeep_ok and { "rt.gui-upkeep-ok" } or { "rt.gui-upkeep-missing" })

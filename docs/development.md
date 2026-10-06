@@ -45,16 +45,19 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 
 ## Ruční kontrola ve hře (headless ji neověří)
 1. Nová hra, `/rt-create-town` (admin) – radnice 15×15 s popiskem a jménem, popisek i na mapě.
-2. Postavit dům u radnice – chodník se vykreslí; dům daleko – ikona varování.
+2. Postavit dům u radnice – chodník se vykreslí; dům daleko – ikona varování. V Alt režimu číslo úrovně nad domem;
+   po vylepšení domu se zvýší.
 3. Otevřít radnici – panel vpravo: úroveň, domy, elektřina, milník s ikonami, tlačítko Povýšit neaktivní.
 4. Přejmenovat město v panelu (Enter) – změní se popisek.
 5. Rozvodna bez elektřiny → „Nedostatek elektřiny“, radnice nezkoumá; s elektřinou zkoumá.
 6. Dodat milník (vč. zelené vědy) + 4 domy → Povýšit → radnice změní barvu, panel ukazuje úroveň 2; domy si drží vlastní úroveň.
 7. Výzkum „Automation science pack“ se spustí vyrobením domu.
 8. Panel radnice: úroveň s počtem věd, produktivita (jen nad poslední vědou), domy k vylepšení s požadavky,
-   spotřeba za minutu a stav zásoby; ikony mají popup suroviny.
+   spotřeba v celých kusech za minutu a zásoba „X / plná“; ikony mají popup suroviny. Progress bar k další úrovni
+   (suroviny, věda, domy) a k vylepšení domu (skrytý, když není co vylepšovat).
 9. Městská tabule: okno s volbou režimu (Radnice / Dům / Spotřeba), signály v obvodové síti (připojit lampu nebo
-   kombinátor), Shift+klik kopíruje režim na jinou tabuli, plán (blueprint) s tabulí si pamatuje režim.
+   kombinátor; Spotřeba = celá zásoba na 5 minut; signály postupu úrovně a domu v %), Shift+klik kopíruje režim
+   na jinou tabuli, plán (blueprint) s tabulí si pamatuje režim.
 10. Nastavení modů → Startup: „Násobič spotřeby surovin“ (0 vypne spotřebu).
 11. Tipy a triky: kategorie Research Towns s aktualizovanými texty (úrovně, spotřeba, tabule).
 12. Nad poslední vědou (`/c remote.call("research-towns", "set_level", <id>, 8)`): Povýšit v panelu – okno zůstane

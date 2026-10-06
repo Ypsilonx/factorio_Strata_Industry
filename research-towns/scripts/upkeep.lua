@@ -8,7 +8,8 @@ local M = {}
 --- Tolerance pro kapaliny a zlomky.
 local EPSILON = 1e-6
 
---- Spotřeba za minutu: součet množství splněných milníků × UPKEEP_RATE × násobič × (1 + HOUSE_UPKEEP_SHARE × domy).
+--- Spotřeba za minutu: součet množství splněných milníků × UPKEEP_RATE × násobič × (1 + HOUSE_UPKEEP_SHARE × domy),
+--- zaokrouhlený nahoru na celé kusy (hráč staví zásobování podle celých čísel z panelu a tabule).
 --- @param completed table[][] požadavky splněných milníků
 --- @return table[] { {type, name, amount} } seřazené podle klíče suroviny
 function M.per_minute(completed, multiplier, active_houses)
@@ -29,7 +30,11 @@ function M.per_minute(completed, multiplier, active_houses)
   end
   table.sort(keys)
   local result = {}
-  for i, key in ipairs(keys) do result[i] = sums[key] end
+  for i, key in ipairs(keys) do
+    local sum = sums[key]
+    sum.amount = math.ceil(sum.amount - EPSILON)
+    result[i] = sum
+  end
   return result
 end
 

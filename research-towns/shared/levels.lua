@@ -46,8 +46,9 @@ M.PRODUCTIVITY_DECAY = 0.9
 M.UPKEEP_RATE = 0.01
 --- Každý aktivní dům zvýší spotřebu o tento díl.
 M.HOUSE_UPKEEP_SHARE = 0.05
---- Zásoba radnice na tolik sekund provozu; po jejím vyčerpání radnice stojí.
-M.UPKEEP_BUFFER_SECONDS = 60
+--- Zásoba radnice na tolik sekund provozu; po jejím vyčerpání radnice stojí. Tabule v režimu Spotřeba
+--- požaduje celou zásobu, aby překladiště drželo dost i při nepravidelných dodávkách.
+M.UPKEEP_BUFFER_SECONDS = 300
 
 --- Pásma kandidátů surovin milníků od nejranějšího; tier_index je roztáhne na libovolný počet úrovní.
 --- Nad poslední vědou se používá poslední pásmo.

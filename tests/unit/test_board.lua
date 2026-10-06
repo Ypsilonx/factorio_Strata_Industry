@@ -7,8 +7,9 @@ local STATUS = {
     { type = "fluid", name = "water", amount = 100, delivered = 100 } },
   house_requirements = { { type = "item", name = "pipe", amount = 10, delivered = 0 } },
   houses_to_upgrade = 3,
-  upkeep = { { type = "item", name = "wood", per_minute = 2.3, stock = 0 } },
+  upkeep = { { type = "item", name = "wood", per_minute = 3, buffer = 15, stock = 0 } },
   power_watts = 4e6, power_percent = 75,
+  level_progress = 0.629, house_upgrade_progress = nil,
 }
 
 --- Signál podle jména, nebo nil.
@@ -33,9 +34,17 @@ return {
     A.eq(find(list, "rt-signal-houses").count, 3, "domy")
     A.eq(find(list, "wood"), nil, "milník radnice ne")
   end },
-  { "režim Spotřeba: za minutu nahoru", function()
+  { "režim Spotřeba: celá zásoba", function()
     local list = board.signals("upkeep", STATUS)
-    A.eq(find(list, "wood").count, 3, "dřevo za minutu")
+    A.eq(find(list, "wood").count, 15, "dřevo na celou zásobu")
     A.eq(find(list, "wood").type, "item", "typ")
+  end },
+  { "postup v procentech ve všech režimech, bez vylepšení domu vynechán", function()
+    for _, mode in ipairs(board.MODES) do
+      A.eq(find(board.signals(mode, STATUS), "rt-signal-level-progress").count, 62, mode)
+      A.eq(find(board.signals(mode, STATUS), "rt-signal-house-progress"), nil, mode)
+    end
+    A.eq(board.percent(0.99999999), 100, "splněno v toleranci")
+    A.eq(board.percent(nil), 0, "nil")
   end },
 }

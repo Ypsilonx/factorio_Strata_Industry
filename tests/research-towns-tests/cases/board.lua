@@ -30,6 +30,23 @@ return {
     end } },
   },
   {
+    name = "postup k další úrovni v panelu i na tabuli",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      H.house(ctx, 11, 0)
+      ctx.board = H.place(ctx, "rt-town-board", 2, 9)
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      H.process(ctx.town)
+      local s = H.status(ctx.town)
+      local parts = #H.levels_data().upgrade["1"] + 1
+      local expected = (1 / s.house_limit) / parts
+      H.check(math.abs(s.level_progress - expected) < 1e-9, "postup: " .. tostring(s.level_progress))
+      local got = signals(ctx.board)
+      H.check(got["rt-signal-level-progress"] == math.floor(expected * 100 + 1e-3), "signál: " .. serpent.line(got))
+    end } },
+  },
+  {
     name = "režimy Dům a Spotřeba",
     setup = function(ctx)
       ctx.town = H.town(ctx)
@@ -44,7 +61,8 @@ return {
       remote.call(R, "set_board_mode", ctx.board.unit_number, "upkeep")
       H.process(ctx.town)
       local first = H.status(ctx.town).upkeep[1]
-      H.check(signals(ctx.board)[first.name] == math.ceil(first.per_minute - 1e-6), "spotřeba: " .. serpent.line(signals(ctx.board)))
+      H.check(signals(ctx.board)[first.name] == math.ceil(first.buffer - 1e-6), "spotřeba: " .. serpent.line(signals(ctx.board)))
+      H.check(first.buffer == first.per_minute * 5, "zásoba na 5 minut: " .. serpent.line(first))
     end } },
   },
   {

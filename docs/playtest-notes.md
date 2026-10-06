@@ -4,14 +4,19 @@
 
 ### K úpravě
 
-- [ ] **Zaokrouhlit požadavky spotřeby ve hře.** Spotřeba za minutu vychází ve zlomcích kusů,
+- [x] **Zaokrouhlit požadavky spotřeby ve hře.** Spotřeba za minutu vychází ve zlomcích kusů,
   např. 0,3 ks/min. Panel radnice i městská tabule je zobrazují tak, jak jsou, a to ve hře nedává smysl.
   Zobrazovat celé kusy, nebo přepočítat interval tak, aby šlo o celé kusy
   (souvisí s `scripts/upkeep.lua`, `scripts/gui.lua` a `scripts/board.lua`).
-- [ ] **Úroveň domu musí být vidět ve hře.** Hráč nepozná, které domy jsou vylepšené
+- [x] **Úroveň domu musí být vidět ve hře.** Hráč nepozná, které domy jsou vylepšené
   a které ne. Grafická varianta (`levels.variant`) se mění jen po pásmech, takže to nestačí.
   Návrh: číslo úrovně nad domem (`rendering.draw_text`) nebo popisek
   či vlastní tooltip domu (`scripts/network.lua`, `M.refresh_house`).
+- [x] **Zásoba spotřeby nestačí.** Překladiště zboží nestíhalo doplňovat zásobu na 1 minutu. Zásoba je teď na
+  5 minut (`UPKEEP_BUFFER_SECONDS`) a tabule v režimu Spotřeba požaduje celou zásobu.
+- [x] **Postup k další úrovni.** Progress bar v panelu radnice (úroveň i vylepšení domu) a signály na tabuli.
+
+Vyřešeno 2026-10-06: spotřeba zaokrouhlená nahoru na celé kusy, číslo úrovně nad domem v Alt režimu.
 
 ### Co funguje
 

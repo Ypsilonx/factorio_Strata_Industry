@@ -33,9 +33,12 @@ return {
         H.check(#s.upkeep > 0, "úroveň 2 nemá spotřebu")
         H.check(s.upkeep_ok and not H.hall(ctx.town).disabled_by_script, "zásobená radnice stojí")
         H.check(s.upkeep[1].stock > 0, "zásoba se nenaplnila")
+        -- Po doplnění do plné zásoby proběhla spotřeba jednoho intervalu (2 s = 1/30 minuty).
+        local first = s.upkeep[1]
+        H.check(first.stock >= first.buffer - first.per_minute / 30 - 1e-6, "zásoba není plná: " .. serpent.line(first))
         ctx.depot.clear_items_inside()
-        -- Zásoba je na UPKEEP_BUFFER_SECONDS (30 intervalů po 2 s); 40 zpracování ji jistě vyčerpá.
-        for _ = 1, 40 do H.process(ctx.town) end
+        -- Zásoba je na UPKEEP_BUFFER_SECONDS (150 intervalů po 2 s); 200 zpracování ji jistě vyčerpá.
+        for _ = 1, 200 do H.process(ctx.town) end
         s = H.status(ctx.town)
         H.check(not s.upkeep_ok, "spotřeba hlášena jako pokrytá bez surovin")
         H.check(H.hall(ctx.town).disabled_by_script, "radnice bez surovin zkoumá")

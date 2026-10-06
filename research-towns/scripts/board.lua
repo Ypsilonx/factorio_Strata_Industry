@@ -11,6 +11,11 @@ local function ceil(value)
   return math.ceil(value - 1e-6)
 end
 
+--- Podíl 0–1 na celá procenta dolů (100 až po splnění; tolerance kvůli kapalinám).
+function M.percent(fraction)
+  return fraction and math.floor(fraction * 100 + 1e-3) or 0
+end
+
 --- Signály tabule pro režim a stav města (towns.status). Nulové hodnoty se vynechají.
 --- @return { type: string, name: string, count: integer }[]
 function M.signals(mode, status)
@@ -24,10 +29,12 @@ function M.signals(mode, status)
     for _, req in ipairs(status.house_requirements) do add(req.type, req.name, ceil(req.amount - req.delivered)) end
     add("virtual", "rt-signal-houses", status.houses_to_upgrade)
   elseif mode == "upkeep" then
-    for _, req in ipairs(status.upkeep) do add(req.type, req.name, ceil(req.per_minute)) end
+    for _, req in ipairs(status.upkeep) do add(req.type, req.name, ceil(req.buffer)) end
   end
   add("virtual", "rt-signal-power-mw", ceil(status.power_watts / 1e6))
   add("virtual", "rt-signal-power-percent", status.power_percent)
+  add("virtual", "rt-signal-level-progress", M.percent(status.level_progress))
+  add("virtual", "rt-signal-house-progress", M.percent(status.house_upgrade_progress))
   return list
 end
 

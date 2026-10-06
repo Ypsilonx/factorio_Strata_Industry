@@ -226,14 +226,17 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   jen elektřinu. Desítky druhů surovin jsou záměr – město je velké a překladišť se vejde dost.
 - **Množství:** za minutu podíl z množství příslušného milníku × koeficient; každý aktivní dům přidá menší díl.
   V nekonečných úrovních se nepřidávají nové druhy, jen roste množství. Konstanty v `shared/levels.lua`,
-  globální **koeficient spotřeby jako startup nastavení** (ladění pro Pyanodon a jiné overhauly).
-- Spotřebovává se **jen když radnice zkoumá**. Radnice drží malou zásobu (~1 min provozu); když dojde kterákoli
+  globální **koeficient spotřeby jako startup nastavení** (ladění pro Pyanodon a jiné overhauly). Spotřeba za minutu
+  se zaokrouhluje nahoru na celé kusy (po prvním hraní 2026-10-06: zlomky ve hře nedávaly smysl).
+- Spotřebovává se **jen když radnice zkoumá**. Radnice drží zásobu na 5 min provozu (původně 1 min – při
+  nepravidelných dodávkách radnice stála); když dojde kterákoli
   surovina, radnice se zastaví jako bez elektřiny (při částečném zásobování běží poměrnou část času).
   Zpracování v rámci `process` (interval `TOWN_INTERVAL`), žádná práce navíc za tick.
 - **Pořadí rozdělení surovin z překladišť (mění sekci „Balanc domů“):** 1) spotřeba (doplnění zásoby),
   2) milník radnice, 3) vylepšení domů, 4) zbytek zůstává v překladišti.
-- **GUI a tabule:** panel ukáže spotřebu za minutu a stav zásoby; tabule má režim **Spotřeba** (požadavek za
-  minutu, signály předmětů/kapalin).
+- **GUI a tabule:** panel ukáže spotřebu za minutu a stav zásoby; tabule má režim **Spotřeba** (požadavek na celou
+  zásobu, signály předmětů/kapalin). Panel i tabule (všechny režimy) ukazují postup k další úrovni a k vylepšení
+  domu; úroveň domu je číslo nad domem v Alt režimu.
 
 ### Příběh (hotovo 2026-10-05)
 - **Legenda:** Nauvis nikdy nebyl prázdný; jeho obyvatelé znají planetu, hráč zná stroje. Dodávky a know-how

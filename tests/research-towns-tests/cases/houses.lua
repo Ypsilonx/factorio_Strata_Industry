@@ -15,6 +15,14 @@ local function materials(level)
   return result
 end
 
+--- Text čísla úrovně nad domem (nil = žádný).
+local function house_label(entity)
+  for _, render in pairs(rendering.get_all_objects("research-towns")) do
+    if render.type == "text" and render.target.entity == entity then return render.text end
+  end
+  return nil
+end
+
 return {
   {
     name = "dodané suroviny vylepší dům a zvýší bonus",
@@ -23,6 +31,7 @@ return {
       remote.call(R, "set_level", ctx.town, 2)
       ctx.house = H.house(ctx, 11, 0)
       H.check(remote.call(R, "house_level", ctx.house.unit_number) == 1, "nový dům má úroveň 1")
+      H.check(house_label(ctx.house) == "1", "číslo nad novým domem: " .. tostring(house_label(ctx.house)))
       ctx.depot = H.place(ctx, "rt-goods-depot", 0, 10)
       -- Dvojnásobek pokryje milník radnice, vylepšení domu i případnou spotřebu.
       local wanted = materials(1)
@@ -32,6 +41,7 @@ return {
     steps = { { ticks = 1, run = function(ctx)
       H.process(ctx.town)
       H.check(remote.call(R, "house_level", ctx.house.unit_number) == 2, "dům se nevylepšil")
+      H.check(house_label(ctx.house) == "2", "číslo nad vylepšeným domem: " .. tostring(house_label(ctx.house)))
       local s = H.status(ctx.town)
       H.check(s.beacon_modules == levels.bonus_modules(2, { 2 }), "bonus: " .. s.beacon_modules)
       H.check(s.houses_to_upgrade == 0, "zbývá vylepšit: " .. s.houses_to_upgrade)
