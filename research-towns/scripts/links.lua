@@ -4,6 +4,9 @@
 --- domů (plán 3b) – do té doby mají všechny úrovně šňůry.
 local M = {}
 
+--- atan2: hra běží na Lua 5.2 (math.atan2), unit testy na Lua 5.3 (math.atan se dvěma argumenty).
+local atan2 = math.atan2 or math.atan
+
 --- Počet úseků šňůry, největší prověšení a prověšení na dlaždici délky.
 M.ROPE_SEGMENTS = 10
 M.SAG_MAX = 0.6
@@ -60,6 +63,32 @@ function M.flags(points, seed)
   local total = walked
   if #result > 0 and total - (next_at - M.FLAG_SPACING) < M.FLAG_SPACING / 2 then result[#result] = nil end
   return result
+end
+
+--- Styl spojení podle vzhledu města (levels.variant): šňůra s praporky (osada, automatizace), dřevěná visutá
+--- lávka (logistika, chemie), prosklená lávka (město vědy).
+--- @return "garland"|"wood"|"glass"
+function M.style(variant)
+  if variant >= 5 then return "glass" end
+  if variant >= 3 then return "wood" end
+  return "garland"
+end
+
+--- Úseky visuté lávky z a do b: celé dlaždice (textura se neroztahuje víc než o pár procent), každý se středem,
+--- délkou a natočením pro rendering.draw_sprite (orientace 0 = sprite na východ, po směru hodin; y dolů).
+--- @return { center: { x: number, y: number }, length: number, orientation: number }[]
+function M.walkway(a, b)
+  local dx, dy = b.x - a.x, b.y - a.y
+  local length = math.sqrt(dx * dx + dy * dy)
+  local count = math.max(1, math.ceil(length - 1e-9))
+  local orientation = (atan2(dy, dx) / (2 * math.pi)) % 1
+  local segments = {}
+  for i = 1, count do
+    local t = (i - 0.5) / count
+    segments[i] = { center = { x = a.x + dx * t, y = a.y + dy * t }, length = length / count,
+      orientation = orientation }
+  end
+  return segments
 end
 
 --- Lucerny ve třetinách šňůry.

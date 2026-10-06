@@ -20,6 +20,8 @@ local ROPE_SHADOW = { r = 0, g = 0, b = 0, a = 0.25 }
 --- Posun stínu šňůry na zemi (slunce zleva shora → stín doprava dolů).
 local ROPE_SHADOW_OFFSET = { x = 0.5, y = 0.35 }
 local LANTERN_COLOR = { r = 1, g = 0.72, b = 0.38, a = 1 }
+--- Stín visuté lávky na zemi (tint spritu lávky).
+local WALKWAY_SHADOW = { r = 0, g = 0, b = 0, a = 0.35 }
 --- Barva čísla úrovně nad domem (jen v Alt režimu).
 local LEVEL_COLOR = { r = 1, g = 0.85, b = 0.5 }
 
@@ -42,15 +44,44 @@ local function anchor(node)
   return { x = p.x, y = p.y - links.ANCHOR[node.kind == "hall" and "hall" or "house"] }
 end
 
---- Vykreslí spojení dvou budov; vrátí seznam vykreslených objektů.
+--- Styl spojení podle vzhledu města (šňůra / dřevěná / prosklená lávka); domy bez města mají šňůru.
+local function link_style(a, b)
+  local town = storage.towns[a.town or b.town or 0]
+  if not (town and town.state == "partner") then return "garland" end
+  return links.style(levels.variant(town.level, config.level_count()))
+end
+
+--- Visutá lávka mezi úchyty budov: úseky spritu natočené po směru spojení a jejich stín na zemi.
+local function draw_walkway(add, a, b, style, surface)
+  local sprite = "rt-skywalk-" .. style
+  local o = ROPE_SHADOW_OFFSET
+  local pa, pb = a.entity.position, b.entity.position
+  for _, s in ipairs(links.walkway({ x = pa.x + o.x, y = pa.y + o.y }, { x = pb.x + o.x, y = pb.y + o.y })) do
+    add(rendering.draw_sprite({ sprite = sprite, target = s.center, surface = surface, orientation = s.orientation,
+      x_scale = s.length, tint = WALKWAY_SHADOW, render_layer = "ground-patch-higher" }))
+  end
+  for _, s in ipairs(links.walkway(anchor(a), anchor(b))) do
+    add(rendering.draw_sprite({ sprite = sprite, target = s.center, surface = surface, orientation = s.orientation,
+      x_scale = s.length, render_layer = "wires" }))
+  end
+  local middle = { x = (anchor(a).x + anchor(b).x) / 2, y = (anchor(a).y + anchor(b).y) / 2 }
+  add(rendering.draw_light({ sprite = "utility/light_small", target = middle, surface = surface, scale = 0.8,
+    intensity = 0.5, minimum_darkness = 0.3, color = LANTERN_COLOR }))
+end
+
+--- Vykreslí spojení dvou budov; vrátí seznam vykreslených objektů (pole + .style).
 --- @return LuaRenderObject[]
 local function draw_link(a, b)
   local surface = a.entity.surface
   local pa, pb = a.entity.position, b.entity.position
-  local list = {}
+  local list = { style = link_style(a, b) }
   local function add(object) list[#list + 1] = object end
   add(rendering.draw_line({ color = PATH_COLOR, width = PATH_WIDTH, from = pa, to = pb, surface = surface,
     render_layer = "ground-patch" }))
+  if list.style ~= "garland" then
+    draw_walkway(add, a, b, list.style, surface)
+    return list
+  end
   local o = ROPE_SHADOW_OFFSET
   add(rendering.draw_line({ color = ROPE_SHADOW, width = 2, surface = surface, render_layer = "ground-patch-higher",
     from = { pa.x + o.x, pa.y + o.y }, to = { pb.x + o.x, pb.y + o.y } }))
@@ -114,6 +145,31 @@ function M.redraw_links()
       storage.renders[key] = nil
     end
   end
+end
+
+--- Překreslí spojení budov města (po změně úrovně se mění styl: šňůra → lávka).
+function M.redraw_town_links(town)
+  local keys = { town.hall.unit_number }
+  for key in pairs(town.houses) do keys[#keys + 1] = key end
+  local done = {}
+  for _, key in ipairs(keys) do
+    local node = storage.nodes[key]
+    for other_key in pairs(node and node.links or {}) do
+      local pair = pair_key(key, other_key)
+      local other = storage.nodes[other_key]
+      if not done[pair] and other and node.entity.valid and other.entity.valid then
+        done[pair] = true
+        destroy_renders(storage.renders[pair])
+        storage.renders[pair] = draw_link(node, other)
+      end
+    end
+  end
+end
+
+--- Styl vykresleného spojení dvou uzlů, nebo nil (testy; starší save s jednou čárou nemá styl).
+function M.link_style(a_key, b_key)
+  local value = storage.renders[pair_key(a_key, b_key)]
+  return value and value.object_name ~= "LuaRenderObject" and value.style or nil
 end
 
 --- Počet platných vykreslených objektů spojení dvou uzlů (testy).

@@ -262,6 +262,7 @@ function M.refresh(town)
   if town.hall.name ~= name then replace_hall(town, name) end
   town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
   network.refresh_town_houses(town)
+  network.redraw_town_links(town)
   depots.apply_town_power(town)
   M.update_bonus(town)
   draw_labels(town)

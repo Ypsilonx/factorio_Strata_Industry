@@ -26,7 +26,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Barvy dočasné grafiky, počet variant | `prototypes/hall.lua` → `TINTS`, `prototypes/house.lua` → `TINTS`, `shared/levels.lua` → `VARIANTS` |
 | Panel radnice: slotů na řádek, šířka progress baru | `scripts/gui.lua` → `SLOT_COLUMNS`, `BAR_WIDTH` |
 | Rozmístění měst, dar, objevení, první město | `shared/worldgen.lua` → `TOWN_CELL_BASE`, `TOWN_CELL_MAX`, `TOWN_CELL_MARGIN`, `TOWN_SITE_WINDOW`, `TOWN_SPAWN_CLEAR`, `TOWN_NEST_CLEAR`, `TOWN_PLAYER_CLEAR`, `DISCOVERY_RADIUS`, `GIFT_SHARE`, `FIRST_TOWN_*`, barva na mapě `MAP_COLOR` |
-| Spojení budov (chodník, šňůra, praporky, lucerny) | `scripts/network.lua` → `PATH_COLOR`, `PATH_WIDTH`, `ROPE_COLOR`, `ROPE_SHADOW_OFFSET`, `LANTERN_COLOR`; tvar `scripts/links.lua` → `SAG_*`, `ANCHOR`, `FLAG_*` |
+| Spojení budov (chodník, šňůra, praporky, lucerny, lávky) | `scripts/network.lua` → `PATH_COLOR`, `PATH_WIDTH`, `ROPE_COLOR`, `ROPE_SHADOW_OFFSET`, `LANTERN_COLOR`, `WALKWAY_SHADOW`; tvar a styl podle úrovně `scripts/links.lua` → `SAG_*`, `ANCHOR`, `FLAG_*`, `style`; textura lávek `blender/build_hall.py` → `skywalk_model` |
 | Barva popisků města | `scripts/towns.lua` → `LABEL_COLOR` |
 
 ## Kompatibilita
@@ -81,3 +81,8 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
     překladiště u radnice dar sebere, po dodání zpráva o partnerství, radnice začne zkoumat s elektřinou, domy se
     připojí.
 16. Rozehraný save bez měst (mod přidaný později): po načtení přibudou města i první město.
+17. Grafika radnice: 5 vzhledů (`/c remote.call("research-towns", "set_level", <id>, N)`), výběr sedí na areál 15×15,
+    stín doprava dolů, okna svítí jen při výzkumu, ikona v panelu.
+18. Domy: vzhled podle úrovně domu 1–5 (chalupa → činžák), okna svítí v noci, ikona předmětu domu.
+19. Spojení: úroveň města 1–2 šňůra s praporky a lucernami, 3–4 dřevěná lávka, 5 prosklená lávka (natočená
+    po směru spojení, stín na zemi); nic nepřekáží chůzi ani stavbě pásů.

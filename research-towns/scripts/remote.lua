@@ -84,6 +84,10 @@ remote.add_interface("research-towns", {
     local t = worldgen.ensure_first_town(game.surfaces[surface_name], game.forces[force_name])
     return t and t.id
   end,
+  --- Styl vykresleného spojení dvou budov ("garland" | "wood" | "glass"), nebo nil (testy).
+  link_style = function(a, b)
+    return network.link_style(a, b)
+  end,
   --- Počet vykreslených objektů spojení dvou budov (testy).
   link_renders = function(a, b)
     return network.link_render_count(a, b)

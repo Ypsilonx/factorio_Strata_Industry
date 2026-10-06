@@ -13,3 +13,5 @@ Date: 2026-10-05
     - Progress bars to the next town level and house upgrade, also as town board signals.
     - House level shown as a number above the house in Alt mode.
     - Upkeep in whole items per minute; town halls keep a 5 minute stock, which the town board requests in full.
+    - New graphics: town halls in five eras (settlement, automation, logistics, chemistry, city of science) and houses by house level.
+    - Town buildings are connected by a path with a garland of flags and lanterns, later by wooden and glass skywalks.

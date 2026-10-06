@@ -34,6 +34,29 @@ return {
     },
   },
   {
+    name = "spojení podle úrovně města: šňůra, po povýšení dřevěná lávka",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      ctx.house = H.house(ctx, 11, 0)
+      ctx.hall = H.status(ctx.town).hall
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        H.check(remote.call(R, "link_style", ctx.hall, ctx.house.unit_number) == "garland", "úroveň 1 není šňůra")
+        -- Úroveň se vzhledem 3 (logistika): první úroveň, jejíž varianta je ≥ 3.
+        local level = 1
+        while levels.variant(level, H.level_count()) < 3 do level = level + 1 end
+        remote.call(R, "set_level", ctx.town, level)
+        ctx.hall = H.status(ctx.town).hall
+      end },
+      { ticks = 1, run = function(ctx)
+        local style = remote.call(R, "link_style", ctx.hall, ctx.house.unit_number)
+        H.check(style == "wood", "po povýšení styl " .. tostring(style))
+        H.check(remote.call(R, "link_renders", ctx.hall, ctx.house.unit_number) >= 3, "lávka bez úseků")
+      end },
+    },
+  },
+  {
     name = "dům u radnice patří k městu v hloubce 1",
     setup = function(ctx)
       ctx.town = H.town(ctx)

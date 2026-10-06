@@ -9,6 +9,7 @@ Přepínače:
     --house N     vzhled domu N (1–5, = úroveň domu): vrstvy a náhled blender/renders/preview-house-N.png
     --draft       rychlý náhled (méně vzorků)
     --overview    všech 5 vzhledů z modu vedle sebe → blender/renders/preview-all.png
+    --skywalk     textury visutých lávek (dřevěná, prosklená) → research-towns/graphics/entity/skywalk
     --install     vrstvy a ikonu zapsat do modu (research-towns/graphics, prototypes/hall_sprites.lua);
                   vzhledy bez vlastního renderu dočasně dostanou kopii
 
@@ -143,6 +144,52 @@ def render_house(variant):
     return base, light_px, shadow, center_up
 
 
+def skywalk_model(b, kind):
+    """Úsek visuté lávky dlouhý 1 dlaždici (osa x), široký 0,5: dřevěná (prkna, zábradlí) nebo prosklená
+    (betonová podlaha, skleněné stěny a střecha s ocelovými žebry)."""
+    if kind == "wood":
+        b.box("RT_Deck", (0, 0, 0.0), (1.0, 0.5, 0.06), "planks", bevel=0.005)
+        for x in (-0.25, 0.25):
+            b.box("RT_Joist", (x, 0, -0.04), (0.06, 0.52, 0.05), "wood_beam", bevel=0.005)
+        for y in (-0.24, 0.24):
+            b.beam("RT_Rail", (-0.5, y, 0.32), (0.5, y, 0.32), 0.035, "wood_beam")
+            for x in (-0.5, 0.0, 0.5):
+                b.box("RT_Post", (x, y, 0.06), (0.04, 0.04, 0.27), "wood_beam", bevel=0.005)
+    else:
+        b.box("RT_Deck", (0, 0, 0.0), (1.0, 0.5, 0.06), "concrete", bevel=0.005)
+        for y in (-0.23, 0.23):
+            b.box("RT_GlassWall", (0, y, 0.06), (1.0, 0.03, 0.32), "glass", bevel=0)
+        b.box("RT_GlassRoof", (0, 0, 0.38), (1.0, 0.5, 0.03), "glass", bevel=0)
+        for x in (-0.5, 0.0, 0.5):
+            b.beam("RT_Rib", (x, -0.26, 0.4), (x, 0.26, 0.4), 0.04, "iron")
+        b.beam("RT_Spine", (-0.5, 0, 0.42), (0.5, 0, 0.42), 0.03, "iron")
+
+
+def render_skywalk(kind):
+    """Textura úseku lávky kolmo shora (64×64 px = 1 dlaždice) → graphics/entity/skywalk/skywalk-<kind>.png.
+    Hra ji opakuje podél spojení a natáčí (rendering.draw_sprite), proto pohled shora bez perspektivy."""
+    scene, collection = R.fresh_scene()
+    R.setup_render(scene, 1, 1)
+    data = bpy.data.cameras.new("RT_Camera")
+    data.type = "ORTHO"
+    data.ortho_scale = 1.0
+    camera = bpy.data.objects.new("RT_Camera", data)
+    camera.location = (0, 0, 10)
+    collection.objects.link(camera)
+    scene.camera = camera
+    R.setup_lights(collection)
+    parent = bpy.data.objects.new("RT_Root", None)
+    collection.objects.link(parent)
+    mats = rt_materials.library()
+    rt_materials.set_glow(False)
+    skywalk_model(rt_hall.Builder(collection, parent, mats), kind)
+    pixels = R.downsample(R.render(scene, RENDERS / f"skywalk-{kind}-raw.png"))
+    out = entity_dir("skywalk")
+    out.mkdir(parents=True, exist_ok=True)
+    R.save_pixels(pixels, out / f"skywalk-{kind}.png")
+    print(f"LÁVKA {kind}: {pixels.shape[1]}×{pixels.shape[0]} px")
+
+
 def vanilla_frame(path, width, height):
     """První snímek vanilla HR spritu (levý horní roh listu)."""
     return R.load_pixels(FACTORIO_DATA / path)[:height, :width]
@@ -270,3 +317,6 @@ if __name__ == "__main__":
         if "--install" in args:
             install("house", number, *layers)
             fill_missing("house", number)
+    if "--skywalk" in args:
+        for skywalk in ("wood", "glass"):
+            render_skywalk(skywalk)
