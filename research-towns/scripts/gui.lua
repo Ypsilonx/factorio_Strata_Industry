@@ -90,11 +90,13 @@ function M.rebuild_all()
   for _, player in pairs(game.players) do M.ensure(player) end
 end
 
---- Město otevřené radnice, nebo nil.
+--- Město otevřené radnice (partnerské i cizí), nebo nil.
 local function town_of(entity)
   if not (entity and entity.valid) then return nil end
   local node = storage.nodes[entity.unit_number]
-  return node and node.kind == "hall" and storage.towns[node.town]
+  if node then return node.kind == "hall" and storage.towns[node.town] or nil end
+  local id = storage.wild_halls[entity.unit_number]
+  return id and storage.towns[id]
 end
 
 --- Naplní mřížku sloty surovin: ikona s nativním popupem, číslo v rohu a vlastní tooltip.
@@ -147,6 +149,18 @@ local function fill(player, town)
   if not frame then return end
   local n = M.NAMES
   local status = towns.status(town)
+  -- Cizí město ukazuje jen dar; partnerské vrátí viditelnost sekcí.
+  local partner = status.state == "partner"
+  for _, key in ipairs({ n.houses, n.power, n.house_header, n.house_requirements, n.upkeep_status, n.upkeep, n.upgrade }) do
+    frame[key].visible = partner
+  end
+  if not partner then
+    frame[n.productivity].visible = false
+    frame[n.level].caption = { "rt.gui-gift-hint" }
+    set_header(frame[n.level_header], { "rt.gui-gift" }, status.level_progress)
+    fill_slots(frame[n.requirements], requirement_slots(status.requirements))
+    return
+  end
   frame[n.level].caption = { "rt.gui-level", status.level, math.min(status.level, status.level_count), status.level_count }
   frame[n.houses].caption = { "rt.gui-houses", status.active_houses, status.house_limit,
     string.format("%d", math.floor(status.bonus * 100 + 0.5)) }

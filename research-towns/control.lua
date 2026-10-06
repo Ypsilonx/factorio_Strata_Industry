@@ -7,6 +7,7 @@ local depots = require("scripts.depots")
 local towns = require("scripts.towns")
 local gui = require("scripts.gui")
 local worldgen = require("scripts.worldgen")
+local discovery = require("scripts.discovery")
 local board = require("scripts.board")
 require("scripts.remote")
 
@@ -137,6 +138,8 @@ script.on_event(defines.events.on_entity_settings_pasted, on_settings_pasted)
 script.on_event(defines.events.on_player_setup_blueprint, on_setup_blueprint)
 -- Obnova otevřených panelů; bez otevřeného okna jen jedna kontrola prázdné tabulky.
 script.on_nth_tick(gui.REFRESH_TICKS, gui.refresh)
+-- Objevení měst hráči (60 se nekryje s TOWN_INTERVAL ani REFRESH_TICKS – stejné číslo by handler přepsalo).
+script.on_nth_tick(discovery.CHECK_TICKS, discovery.check)
 script.on_init(function()
   state.init()
   worldgen.ensure()
