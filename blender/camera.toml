@@ -1,0 +1,30 @@
+# Projekce a světla pro render grafiky Research Towns (čte blender/rt_render.py).
+# Laditelné hodnoty – po změně znovu spustit blender/build_hall.py.
+
+[camera]
+# Úhel pohledu jako ve Factoriu (kamera z jihu, 45° nad zemí).
+elevation_deg = 45.0
+# Pixely na dlaždici ve výstupním PNG (ve hře scale = 0.5 → 32 px na obrazovce při zoomu 1).
+px_per_tile = 64
+# Render ve vyšším rozlišení a zmenšení – ostřejší detaily.
+supersample = 2
+
+[render]
+samples = 64
+
+[sun]
+# Teplé slunce zleva shora, stín doprava dolů jako u vanilla budov.
+rotation_deg = [-12.0, -48.0, 0.0]
+strength = 2.8
+angle_deg = 4.0
+color = [1.0, 0.95, 0.86]
+
+[fill]
+# Chladné doplňkové světlo bez stínu.
+rotation_deg = [50.0, 30.0, 0.0]
+strength = 0.4
+color = [0.8, 0.88, 1.0]
+
+[world]
+color = [0.42, 0.42, 0.45]
+strength = 0.3
