@@ -1,6 +1,7 @@
 --- Prototyp radnice: laboratoř 15×15 odvozená z vanilla laboratoře; úroveň mění vědy, rychlost a vzhled.
 local levels = require("shared.levels")
 local placeholder = require("prototypes.placeholder")
+local worldgen = require("shared.worldgen")
 
 local M = {}
 
@@ -33,6 +34,8 @@ function M.create(level, count, sciences)
   hall.fast_replaceable_group = nil
   hall.next_upgrade = nil
   hall.max_health = 3000
+  -- Barva na mapě i v náhledu mapy (stejná jako značka místa města).
+  hall.map_color = worldgen.MAP_COLOR
   hall.collision_box = { { -half + 0.1, -half + 0.1 }, { half - 0.1, half - 0.1 } }
   hall.selection_box = { { -half, -half }, { half, half } }
   hall.on_animation = placeholder.scaled(base.on_animation, factor, tint)

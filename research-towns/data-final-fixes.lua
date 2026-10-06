@@ -43,3 +43,6 @@ end
 mod_data.infinite = milestone(count)
 
 data:extend({ { type = "mod-data", name = "rt-levels", data = mod_data } })
+
+-- Generátor mapy: posuvník Města a značky míst měst na Nauvisu.
+require("prototypes.worldgen")

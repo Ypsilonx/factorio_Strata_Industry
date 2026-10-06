@@ -1,5 +1,6 @@
 --- Obecné kontroly platné s jakýmkoli overhaul modem (pouští je i `tools/run-tests.sh mods …`).
 local levels = require("__research-towns__/shared/levels")
+local worldgen = require("__research-towns__/shared/worldgen")
 local H = require("helpers")
 
 --- Množina z pole.
@@ -77,5 +78,14 @@ return {
     end
     H.check(#data.infinite > 0, "nekonečný milník je prázdný")
     for _, req in ipairs(data.infinite) do H.check(exists(req), "surovina " .. req.name .. " neexistuje") end
+  end } } },
+  { name = "generátor mapy: posuvník Města a značka místa města na Nauvisu", steps = { { ticks = 1, run = function()
+    H.check(prototypes.autoplace_control[worldgen.CONTROL], "chybí autoplace-control " .. worldgen.CONTROL)
+    local site = prototypes.entity[worldgen.SITE]
+    H.check(site and site.autoplace_specification, "značka nemá autoplace")
+    local mgs = game.surfaces.nauvis.map_gen_settings
+    H.check(mgs.autoplace_controls[worldgen.CONTROL], "Nauvis nemá posuvník Města")
+    H.check(mgs.autoplace_settings.entity.settings[worldgen.SITE], "Nauvis nerozmísťuje značky")
+    H.check(prototypes.entity["rt-town-hall-1"].map_color, "radnice nemá barvu na mapě")
   end } } },
 }
