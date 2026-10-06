@@ -7,10 +7,13 @@ Přepínače:
     --calibrate   zkušební deska 3×3 se sloupky přes vanilla laboratoř → blender/renders/calibration.png
     --variant N   vzhled radnice N (1–5): vrstvy a náhled blender/renders/preview-N.png
     --draft       rychlý náhled (méně vzorků)
+    --install     vrstvy a ikonu zapsat do modu (research-towns/graphics, prototypes/hall_sprites.lua);
+                  vzhledy bez vlastního renderu dočasně dostanou kopii
 
 Moduly: rt_render.py (scéna, kamera, světla, pixely), camera.toml (laditelná projekce a světla).
 """
 
+import shutil
 import sys
 from pathlib import Path
 
@@ -171,6 +174,8 @@ def preview(variant, base, light_px, shadow):
             vanilla_frame("base/graphics/entity/assembling-machine-1/assembling-machine-1.png", 214, 226),
             vanilla_frame("base/graphics/entity/stone-furnace/stone-furnace.png", 151, 146)]
     refs_w = sum(r.shape[1] for r in refs) + 40 * len(refs)
+    print("JAS vanilla (laboratoř, montážní stroj, pec): "
+          + ", ".join(f"{R.luminance(r):.3f}" for r in refs) + f" | radnice {R.luminance(base):.3f}")
     canvas = np.zeros((2 * h, w + refs_w, 4), dtype=np.float32)
     canvas[...] = (0.30, 0.31, 0.19, 1.0)
     dark_shadow = shadow.copy()
@@ -191,6 +196,56 @@ def preview(variant, base, light_px, shadow):
     R.save_pixels(canvas, RENDERS / f"preview-{variant}.png")
 
 
+MOD = ROOT / "research-towns"
+ENTITY_DIR = MOD / "graphics" / "entity" / "hall"
+ICON_DIR = MOD / "graphics" / "icons"
+#: Počet vzhledů radnice (levels.VARIANTS v shared/levels.lua).
+VARIANTS = 5
+
+
+def icon(base, size=64):
+    """Ikona: výřez neprůhledné části spritu, doplněný na čtverec a zmenšený průměrem bloků na size×size."""
+    ys, xs = np.nonzero(base[..., 3] > 0.05)
+    crop = base[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+    side = max(crop.shape[:2])
+    factor = -(-side // size)
+    canvas = np.zeros((size * factor, size * factor, 4), dtype=np.float32)
+    y0, x0 = (canvas.shape[0] - crop.shape[0]) // 2, (canvas.shape[1] - crop.shape[1]) // 2
+    canvas[y0:y0 + crop.shape[0], x0:x0 + crop.shape[1]] = crop
+    return R.downsample(canvas, factor)
+
+
+def write_sprites_lua(width, height, center_up):
+    """Zapíše rozměry a posun spritů radnice pro data stage (prototypes/hall_sprites.lua; generováno)."""
+    text = (
+        "--- Rozměry a posun spritů radnice – GENEROVÁNO blender/build_hall.py (--install), neupravovat ručně.\n"
+        "--- Sprity jsou v HR (64 px na dlaždici, ve hře scale 0.5); shift posouvá střed obrázku nad střed entity.\n"
+        f"return {{ width = {width}, height = {height}, shift = {{ 0, {-center_up} }}, scale = 0.5 }}\n"
+    )
+    (MOD / "prototypes" / "hall_sprites.lua").write_text(text, encoding="utf-8")
+
+
+def install(variant, base, light_px, shadow, center_up):
+    """Zapíše vrstvy a ikonu vzhledu do modu a rozměry do hall_sprites.lua."""
+    ENTITY_DIR.mkdir(parents=True, exist_ok=True)
+    ICON_DIR.mkdir(parents=True, exist_ok=True)
+    for name, pixels in (("base", base), ("light", light_px), ("shadow", shadow)):
+        R.save_pixels(pixels, ENTITY_DIR / f"hall-{variant}-{name}.png")
+    R.save_pixels(icon(base), ICON_DIR / f"hall-{variant}.png")
+    write_sprites_lua(base.shape[1], base.shape[0], center_up)
+
+
+def fill_missing(source):
+    """Dočasně: vzhledy, které ještě nemají vlastní render, dostanou kopii vzhledu source."""
+    for variant in range(1, VARIANTS + 1):
+        if variant == source or (ENTITY_DIR / f"hall-{variant}-base.png").exists():
+            continue
+        for name in ("base", "light", "shadow"):
+            shutil.copyfile(ENTITY_DIR / f"hall-{source}-{name}.png", ENTITY_DIR / f"hall-{variant}-{name}.png")
+        shutil.copyfile(ICON_DIR / f"hall-{source}.png", ICON_DIR / f"hall-{variant}.png")
+        print(f"RADNICE {variant}: dočasně kopie vzhledu {source}")
+
+
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     if "--calibrate" in args:
@@ -202,3 +257,6 @@ if __name__ == "__main__":
         number = int(args[args.index("--variant") + 1])
         layers = render_hall(number)
         preview(number, *layers[:3])
+        if "--install" in args:
+            install(number, *layers)
+            fill_missing(number)
