@@ -14,4 +14,5 @@ Date: 2026-10-06
     - House level shown as a number above the house in Alt mode.
     - Upkeep in whole items per minute; town halls keep a 5 minute stock, which the town board requests in full.
     - New graphics: town halls in five eras (settlement, automation, logistics, chemistry, city of science) and houses by house level.
+    - New graphics for depots, the town substation and the town board.
     - Town buildings are connected by a path with a garland of flags and lanterns, later by wooden and glass skywalks.

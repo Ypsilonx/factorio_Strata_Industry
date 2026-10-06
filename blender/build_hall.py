@@ -11,6 +11,7 @@ Přepínače:
     --overview    všech 5 vzhledů z modu vedle sebe → blender/renders/preview-all.png
     --skywalk     textury visutých lávek (dřevěná, prosklená) → research-towns/graphics/entity/skywalk
     --thumbnail   náhled modu pro portál 144×144 (osada a město vědy úhlopříčně) → research-towns/thumbnail.png
+    --depots      překladiště zboží, kapalin, rozvodna a tabule (s --install do modu)
     --install     vrstvy a ikonu zapsat do modu (research-towns/graphics, prototypes/hall_sprites.lua);
                   vzhledy bez vlastního renderu dočasně dostanou kopii
 
@@ -38,6 +39,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import rt_hall  # noqa: E402
+import rt_depots  # noqa: E402
 import rt_house  # noqa: E402
 import rt_materials  # noqa: E402
 import rt_render as R  # noqa: E402
@@ -282,6 +284,44 @@ def fill_missing(kind, source):
         print(f"{kind} {variant}: dočasně kopie vzhledu {source}")
 
 
+def render_depots(install_mod):
+    """Vyrenderuje překladiště a tabuli (rt_depots.DEPOTS); s install_mod zapíše vrstvy do graphics/entity/depots,
+    ikony do graphics/icons a rozměry, okénko kapaliny a body drátů tabule do prototypes/depot_sprites.lua."""
+    mats = rt_materials.library()
+    entries = []
+    for name, (_, footprint, top, margin) in rt_depots.DEPOTS.items():
+        base, light_px, shadow, center_up, parts = R.render_layers(
+            name, lambda collection, parent, n=name: rt_depots.build(collection, parent, mats, n),
+            footprint, top, margin, rt_materials.set_glow)
+        print(f"PŘEKLADIŠTĚ {name}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, jas {R.luminance(base):.3f}")
+        preview(name, base, light_px, shadow)
+        if install_mod:
+            out = entity_dir("depots")
+            out.mkdir(parents=True, exist_ok=True)
+            for layer, pixels in (("base", base), ("light", light_px), ("shadow", shadow)):
+                R.save_pixels(pixels, out / f"{name}-{layer}.png")
+            R.save_pixels(icon(base), ICON_DIR / f"{name}.png")
+            entries.append(f'  ["{name}"] = {{ width = {base.shape[1]}, height = {base.shape[0]}, '
+                           f'shift = {{ 0, {-center_up} }}, scale = 0.5 }},')
+    if not install_mod:
+        return
+    x, y, z0, z1 = rt_depots.GAUGE
+    _, top_y = rt_depots.screen(x, y, z1)
+    _, bottom_y = rt_depots.screen(x, y, z0)
+    wire = rt_depots.screen(*rt_depots.BOARD_WIRE)
+    lamp = rt_depots.screen(*rt_depots.BOARD_LAMP)
+    text = (
+        "--- Rozměry a posun spritů překladišť a tabule, okénko kapaliny a body drátů – GENEROVÁNO\n"
+        "--- blender/build_hall.py (--depots --install) ze stejných souřadnic jako model; neupravovat ručně.\n"
+        "return {\n" + "\n".join(entries) + "\n"
+        f"  gauge = {{ {{ {x - 0.06:.3f}, {top_y:.3f} }}, {{ {x + 0.06:.3f}, {bottom_y:.3f} }} }},\n"
+        f"  board_wire = {{ {wire[0]:.3f}, {wire[1]:.3f} }},\n"
+        f"  board_lamp = {{ {lamp[0]:.3f}, {lamp[1]:.3f} }},\n"
+        "}\n"
+    )
+    (MOD / "prototypes" / "depot_sprites.lua").write_text(text, encoding="utf-8")
+
+
 def thumbnail(size=144):
     """Thumbnail pro portál (size×size): radnice na trávě rozdělená úhlopříčkou – vlevo nahoře osada (vzhled 1),
     vpravo dole město vědy (vzhled 5) – příběh modu v jednom obrázku → research-towns/thumbnail.png."""
@@ -349,3 +389,5 @@ if __name__ == "__main__":
     if "--skywalk" in args:
         for skywalk in ("wood", "glass"):
             render_skywalk(skywalk)
+    if "--depots" in args:
+        render_depots("--install" in args)

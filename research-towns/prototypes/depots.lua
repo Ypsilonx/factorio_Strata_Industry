@@ -1,24 +1,35 @@
---- Překladiště: zboží (bedna), kapaliny (nádrž), městská rozvodna (spotřebič elektřiny) a městská tabule.
---- Odvozené z vanilla prototypů; skript je přiřadí k nejbližšímu městu.
-local placeholder = require("prototypes.placeholder")
+--- Překladiště: zboží (bedna), kapaliny (káď), městská rozvodna (spotřebič elektřiny) a městská tabule.
+--- Chování odvozené z vanilla prototypů, grafika z Blenderu (blender/build_hall.py --depots); skript je
+--- přiřadí k nejbližšímu městu.
 local levels = require("shared.levels")
 local reach = require("prototypes.reach")
+local sprites = require("prototypes.depot_sprites")
 
-local TINT = { r = 0.9, g = 0.75, b = 0.5 }
---- Odznak města v rohu ikony (ikona domu) – v inventáři je hned vidět, že jde o stavbu pro město.
-local BADGE = { icon = "__research-towns__/graphics/icons/house-1.png", icon_size = 64, scale = 0.28, shift = { -8, -8 } }
+local GRAPHICS = "__research-towns__/graphics/"
 
---- Odvodí prototyp z vanilla entity: nové jméno, vlastní předmět, obarvená ikona s odznakem města, bez upgradů.
+--- Vrstvy spritu překladiště: základ, světla (draw_as_light) a stín.
+local function picture(name)
+  local entry = sprites[name]
+  local layers = {}
+  for _, layer in ipairs({ "base", "light", "shadow" }) do
+    layers[#layers + 1] = {
+      filename = GRAPHICS .. "entity/depots/" .. name .. "-" .. layer .. ".png",
+      width = entry.width, height = entry.height, shift = entry.shift, scale = entry.scale,
+      draw_as_shadow = layer == "shadow" or nil,
+      draw_as_light = layer == "light" or nil,
+      blend_mode = layer == "light" and "additive" or nil,
+    }
+  end
+  return { layers = layers }
+end
+
+--- Odvodí prototyp z vanilla entity: nové jméno, vlastní předmět a ikona z Blenderu, bez upgradů.
 local function derive(source, name)
   local entity = table.deepcopy(source)
   entity.name = name
   entity.hidden = nil
   entity.minable = { mining_time = 0.3, result = name }
-  -- Zdroj má buď `icon`, nebo vrstvy `icons` (např. electric-energy-interface).
-  local layers = source.icons and table.deepcopy(source.icons) or { { icon = source.icon, icon_size = source.icon_size } }
-  for _, layer in ipairs(layers) do layer.tint = TINT end
-  layers[#layers + 1] = table.deepcopy(BADGE)
-  entity.icons = layers
+  entity.icons = { { icon = GRAPHICS .. "icons/" .. name .. ".png", icon_size = 64 } }
   entity.icon = nil
   entity.fast_replaceable_group = nil
   entity.next_upgrade = nil
@@ -28,14 +39,34 @@ end
 
 local goods = derive(data.raw.container["iron-chest"], "rt-goods-depot")
 goods.inventory_size = 48
-goods.picture = placeholder.scaled(goods.picture, 1, TINT)
+goods.picture = picture("rt-goods-depot")
 
+-- Káď: stejný obrázek pro všechny směry (potrubní nástavce jsou ve všech čtyřech rozích); kapalina je vidět
+-- v průzoru (window_bounding_box spočítaný z modelu), vanilla tmavé pozadí okénka se nekreslí.
 local fluid = derive(data.raw["storage-tank"]["storage-tank"], "rt-fluid-depot")
+fluid.pictures.picture = picture("rt-fluid-depot")
+fluid.pictures.window_background = { filename = "__core__/graphics/empty.png", size = 1 }
+fluid.window_bounding_box = sprites.gauge
 
 -- Městská tabule: konstantní kombinátor, jehož signály plní skript podle režimu (viz scripts/board.lua).
+-- Dráty se připínají na levý sloupek, kontrolka svítí v lucerně (body z modelu, stejné pro všechny směry).
 local board = derive(data.raw["constant-combinator"]["constant-combinator"], "rt-town-board")
+board.sprites = picture("rt-town-board")
+local wire, lamp = sprites.board_wire, sprites.board_lamp
+local point = {
+  wire = { red = { wire[1] - 0.04, wire[2] }, green = { wire[1] + 0.04, wire[2] } },
+  shadow = { red = { wire[1] + 0.9, wire[2] + 1.1 }, green = { wire[1] + 0.98, wire[2] + 1.1 } },
+}
+board.circuit_wire_connection_points = { point, point, point, point }
+local led = { filename = "__base__/graphics/entity/combinator/activity-leds/constant-combinator-LED-S.png",
+  width = 14, height = 12, scale = 0.5, shift = lamp }
+board.activity_led_sprites = led
+board.activity_led_light_offsets = { lamp, lamp, lamp, lamp }
 
 local power = derive(data.raw["electric-energy-interface"]["electric-energy-interface"], "rt-power-depot")
+power.picture = picture("rt-power-depot")
+power.animation = nil
+power.continuous_animation = nil
 power.flags = { "placeable-neutral", "player-creation" }
 power.gui_mode = "none"
 power.energy_production = "0W"

@@ -37,6 +37,23 @@ local function check_kind(kind)
 end
 
 return {
+  { "překladiště a tabule: vrstvy s rozměry z depot_sprites, ikony 64×64", function()
+    local sprites = require("prototypes.depot_sprites")
+    for _, name in ipairs({ "rt-goods-depot", "rt-fluid-depot", "rt-power-depot", "rt-town-board" }) do
+      local entry = sprites[name]
+      A.truthy(entry, "chybí rozměry " .. name)
+      for _, layer in ipairs({ "base", "light", "shadow" }) do
+        local path = string.format("research-towns/graphics/entity/depots/%s-%s.png", name, layer)
+        local w, h = png_size(path)
+        A.truthy(w, "chybí " .. path)
+        A.eq(w, entry.width, path .. " šířka")
+        A.eq(h, entry.height, path .. " výška")
+      end
+      local w = png_size("research-towns/graphics/icons/" .. name .. ".png")
+      A.eq(w, 64, name .. " ikona")
+    end
+    A.truthy(sprites.gauge and sprites.board_wire and sprites.board_lamp, "okénko a body drátů")
+  end },
   { "radnice: vrstvy všech vzhledů a ikony", function() check_kind("hall") end },
   { "dům: vrstvy všech vzhledů a ikony", function() check_kind("house") end },
 }
