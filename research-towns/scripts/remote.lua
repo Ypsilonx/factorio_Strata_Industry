@@ -3,6 +3,7 @@ local towns = require("scripts.towns")
 local board = require("scripts.board")
 local config = require("scripts.config")
 local worldgen = require("scripts.worldgen")
+local network = require("scripts.network")
 
 --- Město podle id, nebo nil.
 local function town(id)
@@ -82,6 +83,10 @@ remote.add_interface("research-towns", {
   worldgen_first_town = function(surface_name, force_name)
     local t = worldgen.ensure_first_town(game.surfaces[surface_name], game.forces[force_name])
     return t and t.id
+  end,
+  --- Počet vykreslených objektů spojení dvou budov (testy).
+  link_renders = function(a, b)
+    return network.link_render_count(a, b)
   end,
   --- Srovná město s aktuálními vzorci (jako po změně konfigurace).
   refresh_town = function(id)

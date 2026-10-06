@@ -14,6 +14,26 @@ end
 
 return {
   {
+    name = "spojení domu s radnicí: chodník, šňůra, praporky a lucerny; se zbořením zmizí",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      ctx.house = H.house(ctx, 11, 0)
+      ctx.hall = H.status(ctx.town).hall
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        local count = remote.call(R, "link_renders", ctx.hall, ctx.house.unit_number)
+        -- Chodník + stín + 10 úseků šňůry + praporky + 2 lucerny se světlem.
+        H.check(count >= 16, "vykreslených objektů spojení: " .. count)
+        ctx.house_key = ctx.house.unit_number
+        ctx.house.destroy({ raise_destroy = true })
+      end },
+      { ticks = 1, run = function(ctx)
+        H.check(remote.call(R, "link_renders", ctx.hall, ctx.house_key) == 0, "spojení zůstalo")
+      end },
+    },
+  },
+  {
     name = "dům u radnice patří k městu v hloubce 1",
     setup = function(ctx)
       ctx.town = H.town(ctx)

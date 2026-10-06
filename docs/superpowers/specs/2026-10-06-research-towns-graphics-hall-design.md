@@ -1,7 +1,7 @@
 # Research Towns – plán 3a: grafika radnice z Blenderu
 
 Navazuje na `2026-10-05-research-towns-design.md` (plán 3 – grafika a vydání). Schváleno s uživatelem 2026-10-06.
-Plán 3 je rozdělený: **3a** pipeline + kalibrace + radnice, **3b** dům + visutý chodník, **3c** překladiště,
+Plán 3 je rozdělený: **3a** pipeline + kalibrace + radnice, **3b** dům + visuté lávky pro úrovně 3–5 (šňůry s praporky pro 1–2 jsou hotové), **3c** překladiště,
 rozvodna, tabule, ikony a ikony signálů, **3d** thumbnail, screenshoty, portál.
 
 ## Cíl

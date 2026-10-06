@@ -156,6 +156,8 @@ script.on_configuration_changed(function()
       scheduler.schedule(town, game.tick + 1)
     end
   end
+  -- Starší save má spojení jako jednoduché čáry – překreslit na chodník a šňůru.
+  network.redraw_links()
   worldgen.ensure()
   gui.rebuild_all()
 end)

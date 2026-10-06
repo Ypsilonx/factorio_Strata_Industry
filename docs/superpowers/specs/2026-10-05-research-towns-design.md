@@ -44,7 +44,9 @@ se přesměrují na vyrobení domu, jinak by hra uvízla. Laboratoře v existuj�
 ## Síť města
 
 - Síť tvoří **jen radnice a domy**. Dům se připojí k radnici nebo k jinému domu v dosahu (konstanta jako
-  u sloupů); spojení se vykreslí jako **visutý chodník** (`rendering`, bez kolize).
+  u sloupů); spojení se vykreslí (`rendering`, bez kolize – nebrání chůzi ani stavbě): vyšlapaný chodník
+  na zemi (pod pásy) a nad ním podle úrovně města šňůra s praporky a lucernami (úroveň 1–2), dřevěná visutá
+  lávka (3–4) a prosklená lávka (5). Lávky přijdou s grafikou domů (plán 3b), do té doby šňůry všude (2026-10-06).
 - Dům smí být od radnice nejvýš **5 domů v sérii** (nejkratší cesta v grafu ≤ 5). Dál je neaktivní.
 - **Překladiště nejsou součástí sítě**, jen dodávají: připojí se k nejbližší budově města (radnice/dům)
   ve svém dosahu, síť nerozšiřují. V dosahu dvou měst → bližší.

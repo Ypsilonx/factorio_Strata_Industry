@@ -1,17 +1,25 @@
---- Runtime síť města: uzly (radnice, domy) ve storage.nodes, vazby = visuté chodníky v dosahu.
+--- Runtime síť města: uzly (radnice, domy) ve storage.nodes, vazby = spojení budov v dosahu (chodník a šňůra).
 --- Příslušnost k městu a hloubku počítá čistá logika scripts/graph.lua.
 local levels = require("shared.levels")
 local config = require("scripts.config")
 local geometry = require("scripts.geometry")
 local graph = require("scripts.graph")
+local links = require("scripts.links")
 
 local M = {}
 
 --- Jméno prototypu domu.
 M.HOUSE = "rt-house"
 
---- Barva dočasného chodníku (finální sprite z Blenderu je plán 3).
-local LINK_COLOR = { r = 0.55, g = 0.45, b = 0.3, a = 0.9 }
+--- Vzhled spojení budov: vyšlapaný chodník na zemi, šňůra (jako dráty, nad pásy a insertery), její stín
+--- a lucerny. Tvar a praporky počítá scripts/links.lua. Jen vykreslení – nic nemá kolizi.
+local PATH_COLOR = { r = 0.3, g = 0.25, b = 0.17, a = 0.55 }
+local PATH_WIDTH = 10
+local ROPE_COLOR = { r = 0.16, g = 0.12, b = 0.08, a = 1 }
+local ROPE_SHADOW = { r = 0, g = 0, b = 0, a = 0.25 }
+--- Posun stínu šňůry na zemi (slunce zleva shora → stín doprava dolů).
+local ROPE_SHADOW_OFFSET = { x = 0.5, y = 0.35 }
+local LANTERN_COLOR = { r = 1, g = 0.72, b = 0.38, a = 1 }
 --- Barva čísla úrovně nad domem (jen v Alt režimu).
 local LEVEL_COLOR = { r = 1, g = 0.85, b = 0.5 }
 
@@ -28,13 +36,61 @@ local function pair_key(a, b)
   return b .. ":" .. a
 end
 
---- Propojí dva uzly a vykreslí chodník.
+--- Úchyt šňůry nad budovou (pozice na mapě posunutá nahoru o výšku střechy).
+local function anchor(node)
+  local p = node.entity.position
+  return { x = p.x, y = p.y - links.ANCHOR[node.kind == "hall" and "hall" or "house"] }
+end
+
+--- Vykreslí spojení dvou budov; vrátí seznam vykreslených objektů.
+--- @return LuaRenderObject[]
+local function draw_link(a, b)
+  local surface = a.entity.surface
+  local pa, pb = a.entity.position, b.entity.position
+  local list = {}
+  local function add(object) list[#list + 1] = object end
+  add(rendering.draw_line({ color = PATH_COLOR, width = PATH_WIDTH, from = pa, to = pb, surface = surface,
+    render_layer = "ground-patch" }))
+  local o = ROPE_SHADOW_OFFSET
+  add(rendering.draw_line({ color = ROPE_SHADOW, width = 2, surface = surface, render_layer = "ground-patch-higher",
+    from = { pa.x + o.x, pa.y + o.y }, to = { pb.x + o.x, pb.y + o.y } }))
+  local points = links.rope(anchor(a), anchor(b), links.ROPE_SEGMENTS)
+  for i = 2, #points do
+    add(rendering.draw_line({ color = ROPE_COLOR, width = 2, from = points[i - 1], to = points[i], surface = surface,
+      render_layer = "wires" }))
+  end
+  for _, flag in ipairs(links.flags(points, a.key + b.key)) do
+    add(rendering.draw_polygon({ color = links.FLAG_COLORS[flag.color], vertices = flag.vertices, surface = surface,
+      render_layer = "wires" }))
+  end
+  for _, p in ipairs(links.lanterns(points)) do
+    add(rendering.draw_circle({ color = LANTERN_COLOR, radius = 0.08, filled = true, target = p, surface = surface,
+      render_layer = "wires" }))
+    add(rendering.draw_light({ sprite = "utility/light_small", target = p, surface = surface, scale = 0.6,
+      intensity = 0.6, minimum_darkness = 0.3, color = LANTERN_COLOR }))
+  end
+  return list
+end
+
+--- Zničí vykreslení spojení (seznam objektů, nebo jeden objekt ze staršího savu).
+local function destroy_renders(value)
+  if not value then return end
+  if value.object_name == "LuaRenderObject" then
+    if value.valid then value.destroy() end
+    return
+  end
+  for _, object in ipairs(value) do
+    if object.valid then object.destroy() end
+  end
+end
+
+--- Propojí dva uzly a vykreslí spojení.
 local function link(a, b)
   a.links[b.key] = true
   b.links[a.key] = true
-  storage.renders[pair_key(a.key, b.key)] = rendering.draw_line({
-    color = LINK_COLOR, width = 4, from = a.entity.position, to = b.entity.position, surface = a.entity.surface,
-  })
+  local key = pair_key(a.key, b.key)
+  destroy_renders(storage.renders[key])
+  storage.renders[key] = draw_link(a, b)
 end
 
 --- Zruší vazbu dvou uzlů i s vykreslením.
@@ -42,9 +98,34 @@ local function unlink(a_key, b_key)
   local other = storage.nodes[b_key]
   if other then other.links[a_key] = nil end
   local key = pair_key(a_key, b_key)
-  local render = storage.renders[key]
-  if render and render.valid then render.destroy() end
+  destroy_renders(storage.renders[key])
   storage.renders[key] = nil
+end
+
+--- Překreslí všechna spojení (po změně verze – starší save má jednoduché čáry).
+function M.redraw_links()
+  for key, value in pairs(storage.renders) do
+    destroy_renders(value)
+    local a_key, b_key = key:match("^(%d+):(%d+)$")
+    local a, b = storage.nodes[tonumber(a_key)], storage.nodes[tonumber(b_key)]
+    if a and b and a.entity.valid and b.entity.valid then
+      storage.renders[key] = draw_link(a, b)
+    else
+      storage.renders[key] = nil
+    end
+  end
+end
+
+--- Počet platných vykreslených objektů spojení dvou uzlů (testy).
+function M.link_render_count(a_key, b_key)
+  local value = storage.renders[pair_key(a_key, b_key)]
+  if not value then return 0 end
+  if value.object_name == "LuaRenderObject" then return value.valid and 1 or 0 end
+  local count = 0
+  for _, object in ipairs(value) do
+    if object.valid then count = count + 1 end
+  end
+  return count
 end
 
 --- Uzly sítě v dosahu entity (mezera mezi okraji ≤ HOUSE_REACH).
