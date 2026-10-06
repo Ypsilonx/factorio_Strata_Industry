@@ -6,6 +6,7 @@ Spuštění (headless, z kořene repozitáře):
 Přepínače:
     --calibrate   zkušební deska 3×3 se sloupky přes vanilla laboratoř → blender/renders/calibration.png
     --variant N   vzhled radnice N (1–5): vrstvy a náhled blender/renders/preview-N.png
+    --house N     vzhled domu N (1–5, = úroveň domu): vrstvy a náhled blender/renders/preview-house-N.png
     --draft       rychlý náhled (méně vzorků)
     --overview    všech 5 vzhledů z modu vedle sebe → blender/renders/preview-all.png
     --install     vrstvy a ikonu zapsat do modu (research-towns/graphics, prototypes/hall_sprites.lua);
@@ -35,6 +36,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 import rt_hall  # noqa: E402
+import rt_house  # noqa: E402
 import rt_materials  # noqa: E402
 import rt_render as R  # noqa: E402
 
@@ -117,47 +119,26 @@ HALL_TILES, HALL_TOP, HALL_MARGIN = 15, 4, 1
 def render_hall(variant):
     """Vyrenderuje vrstvy radnice daného vzhledu. Vrátí (base, light, shadow, center_up) – pixely v cílovém
     rozlišení (64 px/dlaždici)."""
-    width, height, center_up = R.frame(HALL_TILES, top=HALL_TOP, bottom=HALL_MARGIN, side=HALL_MARGIN)
-    scene, collection = R.fresh_scene()
-    parent = R.root(collection)
-    R.setup_render(scene, width, height)
-    R.setup_camera(scene, collection, width, height, center_up)
-    lights = R.setup_lights(collection)
-    ground = R.add_ground(collection, width, height)
     mats = rt_materials.library()
-    parts = rt_hall.build(collection, parent, mats, variant)
-    model = [o for o in collection.objects if o.type == "MESH" and o is not ground]
-    RENDERS.mkdir(exist_ok=True)
-    world_strength = scene.world.node_tree.nodes["Background"].inputs["Strength"]
-    default_world = world_strength.default_value
-
-    # Základ: svítidla zhasnutá, bez podložky.
-    rt_materials.set_glow(False)
-    ground.hide_render = True
-    base = R.downsample(R.render(scene, RENDERS / f"hall-{variant}-base-raw.png"))
-
-    # Světla: jen emise (slunce a okolí zhasnuté), alfa z jasu – ve hře additive blend.
-    rt_materials.set_glow(True)
-    for light in lights:
-        light.hide_render = True
-    world_strength.default_value = 0.0
-    light_px = R.downsample(R.render(scene, RENDERS / f"hall-{variant}-light-raw.png"))
-    light_px[..., 3] = np.clip(light_px[..., :3].max(axis=-1) * 1.5, 0.0, 1.0) * light_px[..., 3]
-    for light in lights:
-        light.hide_render = False
-    world_strength.default_value = default_world
-    rt_materials.set_glow(False)
-
-    # Stín: model neviditelný pro kameru, podložka zachytí stín; nádvoří stín nevrhá (zakrylo by podložku).
-    ground.hide_render = False
-    for obj in model:
-        obj.visible_camera = False
-        if obj.name.startswith("RT_Plaza"):
-            obj.visible_shadow = False
-    shadow_raw = R.downsample(R.render(scene, RENDERS / f"hall-{variant}-shadow-raw.png"))
-    shadow = np.zeros_like(shadow_raw)
-    shadow[..., 3] = shadow_raw[..., 3]
+    base, light_px, shadow, center_up, parts = R.render_layers(
+        f"hall-{variant}", lambda collection, parent: rt_hall.build(collection, parent, mats, variant),
+        HALL_TILES, HALL_TOP, HALL_MARGIN, rt_materials.set_glow)
     print(f"RADNICE {variant}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, posun nahoru {center_up} dlaždic, "
+          f"jas {R.luminance(base):.3f}")
+    return base, light_px, shadow, center_up
+
+
+#: Záběr domu: půdorys 3×3, nad ním 3,2 dlaždice na čtyřpatrový činžák, okraj 1 dlaždice na stín.
+HOUSE_TILES, HOUSE_TOP, HOUSE_MARGIN = 3, 3.2, 1
+
+
+def render_house(variant):
+    """Vyrenderuje vrstvy domu daného vzhledu (= úrovně domu). Vrátí (base, light, shadow, center_up)."""
+    mats = rt_materials.library()
+    base, light_px, shadow, center_up, parts = R.render_layers(
+        f"house-{variant}", lambda collection, parent: rt_house.build(collection, parent, mats, variant),
+        HOUSE_TILES, HOUSE_TOP, HOUSE_MARGIN, rt_materials.set_glow)
+    print(f"DŮM {variant}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, posun nahoru {center_up} dlaždic, "
           f"jas {R.luminance(base):.3f}")
     return base, light_px, shadow, center_up
 
@@ -167,7 +148,7 @@ def vanilla_frame(path, width, height):
     return R.load_pixels(FACTORIO_DATA / path)[:height, :width]
 
 
-def preview(variant, base, light_px, shadow):
+def preview(label, base, light_px, shadow):
     """Náhled na trávě: den (stín + základ) a noc (ztmavený základ + světla) a vedle vanilla budovy
     pro porovnání barev a měřítka → blender/renders/preview-N.png."""
     h, w = base.shape[:2]
@@ -194,12 +175,18 @@ def preview(variant, base, light_px, shadow):
     night[..., :3] *= 0.22
     lit = light_px[..., :3] * light_px[..., 3:4]
     night[:, :w, :3] = np.clip(night[:, :w, :3] + lit, 0.0, 1.0)
-    R.save_pixels(canvas, RENDERS / f"preview-{variant}.png")
+    R.save_pixels(canvas, RENDERS / f"preview-{label}.png")
 
 
 MOD = ROOT / "research-towns"
-ENTITY_DIR = MOD / "graphics" / "entity" / "hall"
 ICON_DIR = MOD / "graphics" / "icons"
+#: Názvy staveb (podle nich složka spritů graphics/entity/<druh> a modul prototypes/<druh>_sprites.lua).
+KIND_NAMES = {"hall": "radnice", "house": "domu"}
+
+
+def entity_dir(kind):
+    """Složka spritů stavby v modu."""
+    return MOD / "graphics" / "entity" / kind
 #: Počet vzhledů radnice (levels.VARIANTS v shared/levels.lua).
 VARIANTS = 5
 
@@ -216,43 +203,43 @@ def icon(base, size=64):
     return R.downsample(canvas, factor)
 
 
-def write_sprites_lua(width, height, center_up):
-    """Zapíše rozměry a posun spritů radnice pro data stage (prototypes/hall_sprites.lua; generováno)."""
+def write_sprites_lua(kind, width, height, center_up):
+    """Zapíše rozměry a posun spritů stavby pro data stage (prototypes/<druh>_sprites.lua; generováno)."""
     text = (
-        "--- Rozměry a posun spritů radnice – GENEROVÁNO blender/build_hall.py (--install), neupravovat ručně.\n"
+        f"--- Rozměry a posun spritů {KIND_NAMES[kind]} – GENEROVÁNO blender/build_hall.py (--install), neupravovat ručně.\n"
         "--- Sprity jsou v HR (64 px na dlaždici, ve hře scale 0.5); shift posouvá střed obrázku nad střed entity.\n"
         f"return {{ width = {width}, height = {height}, shift = {{ 0, {-center_up} }}, scale = 0.5 }}\n"
     )
-    (MOD / "prototypes" / "hall_sprites.lua").write_text(text, encoding="utf-8")
+    (MOD / "prototypes" / f"{kind}_sprites.lua").write_text(text, encoding="utf-8")
 
 
-def install(variant, base, light_px, shadow, center_up):
-    """Zapíše vrstvy a ikonu vzhledu do modu a rozměry do hall_sprites.lua."""
-    ENTITY_DIR.mkdir(parents=True, exist_ok=True)
+def install(kind, variant, base, light_px, shadow, center_up):
+    """Zapíše vrstvy a ikonu vzhledu stavby do modu a rozměry do <druh>_sprites.lua."""
+    entity_dir(kind).mkdir(parents=True, exist_ok=True)
     ICON_DIR.mkdir(parents=True, exist_ok=True)
     for name, pixels in (("base", base), ("light", light_px), ("shadow", shadow)):
-        R.save_pixels(pixels, ENTITY_DIR / f"hall-{variant}-{name}.png")
-    R.save_pixels(icon(base), ICON_DIR / f"hall-{variant}.png")
-    write_sprites_lua(base.shape[1], base.shape[0], center_up)
+        R.save_pixels(pixels, entity_dir(kind) / f"{kind}-{variant}-{name}.png")
+    R.save_pixels(icon(base), ICON_DIR / f"{kind}-{variant}.png")
+    write_sprites_lua(kind, base.shape[1], base.shape[0], center_up)
 
 
-def fill_missing(source):
+def fill_missing(kind, source):
     """Dočasně: vzhledy, které ještě nemají vlastní render, dostanou kopii vzhledu source."""
     for variant in range(1, VARIANTS + 1):
-        if variant == source or (ENTITY_DIR / f"hall-{variant}-base.png").exists():
+        if variant == source or (entity_dir(kind) / f"{kind}-{variant}-base.png").exists():
             continue
         for name in ("base", "light", "shadow"):
-            shutil.copyfile(ENTITY_DIR / f"hall-{source}-{name}.png", ENTITY_DIR / f"hall-{variant}-{name}.png")
-        shutil.copyfile(ICON_DIR / f"hall-{source}.png", ICON_DIR / f"hall-{variant}.png")
-        print(f"RADNICE {variant}: dočasně kopie vzhledu {source}")
+            shutil.copyfile(entity_dir(kind) / f"{kind}-{source}-{name}.png", entity_dir(kind) / f"{kind}-{variant}-{name}.png")
+        shutil.copyfile(ICON_DIR / f"{kind}-{source}.png", ICON_DIR / f"{kind}-{variant}.png")
+        print(f"{kind} {variant}: dočasně kopie vzhledu {source}")
 
 
 def overview():
     """Všech 5 vzhledů z modu vedle sebe na trávě (zmenšeno na polovinu) → blender/renders/preview-all.png."""
     tiles = []
     for variant in range(1, VARIANTS + 1):
-        base = R.load_pixels(ENTITY_DIR / f"hall-{variant}-base.png")
-        shadow = R.load_pixels(ENTITY_DIR / f"hall-{variant}-shadow.png")
+        base = R.load_pixels(entity_dir("hall") / f"hall-{variant}-base.png")
+        shadow = R.load_pixels(entity_dir("hall") / f"hall-{variant}-shadow.png")
         shadow[..., 3] *= 0.55
         tile = np.zeros_like(base)
         tile[...] = (0.30, 0.31, 0.19, 1.0)
@@ -274,5 +261,12 @@ if __name__ == "__main__":
         layers = render_hall(number)
         preview(number, *layers[:3])
         if "--install" in args:
-            install(number, *layers)
-            fill_missing(number)
+            install("hall", number, *layers)
+            fill_missing("hall", number)
+    if "--house" in args:
+        number = int(args[args.index("--house") + 1])
+        layers = render_house(number)
+        preview(f"house-{number}", *layers[:3])
+        if "--install" in args:
+            install("house", number, *layers)
+            fill_missing("house", number)

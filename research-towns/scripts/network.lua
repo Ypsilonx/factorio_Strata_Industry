@@ -150,7 +150,7 @@ end
 --- Nastaví domu grafickou variantu a číslo podle jeho úrovně a ikonu „odpojeno“, když není aktivní.
 function M.refresh_house(node)
   if not node.entity.valid then return end
-  node.entity.graphics_variation = levels.variant(node.level, config.level_count())
+  node.entity.graphics_variation = levels.house_variant(node.level)
   if node.label and node.label.valid then
     node.label.text = tostring(node.level)
   else

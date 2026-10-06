@@ -88,6 +88,11 @@ return {
     A.eq(levels.house_level_max(9, 7), levels.HOUSE_LEVEL_MAX, "nad 5")
     A.eq(levels.house_level_max(9, 4), 4, "jen 4 vědy")
   end },
+  { "vzhled domu = jeho úroveň (nejvýš počet vzhledů)", function()
+    A.eq(levels.house_variant(1), 1, "úroveň 1")
+    A.eq(levels.house_variant(3), 3, "úroveň 3")
+    A.eq(levels.house_variant(levels.VARIANTS + 2), levels.VARIANTS, "nad počtem vzhledů poslední")
+  end },
   { "produktivita jen nad poslední vědou, klesající přírůstky pod stropem", function()
     A.eq(levels.productivity(7, 7), 0, "poslední věda")
     local p1, p2, p3 = levels.productivity(8, 7), levels.productivity(9, 7), levels.productivity(10, 7)

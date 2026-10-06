@@ -41,6 +41,7 @@ return {
     steps = { { ticks = 1, run = function(ctx)
       H.process(ctx.town)
       H.check(remote.call(R, "house_level", ctx.house.unit_number) == 2, "dům se nevylepšil")
+      H.check(ctx.house.graphics_variation == 2, "vzhled domu neodpovídá úrovni 2: " .. ctx.house.graphics_variation)
       H.check(house_label(ctx.house) == "2", "číslo nad vylepšeným domem: " .. tostring(house_label(ctx.house)))
       local s = H.status(ctx.town)
       H.check(s.beacon_modules == levels.bonus_modules(2, { 2 }), "bonus: " .. s.beacon_modules)

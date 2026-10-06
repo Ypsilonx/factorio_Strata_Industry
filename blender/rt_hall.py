@@ -483,11 +483,11 @@ def rebuilt(b, x, y):
     return any(b.variant >= since and math.hypot(x - zx, y - zy) < r for zx, zy, r, since, _ in ERA_SITES)
 
 
-def tenement(b, sx, sy, rng):
+def tenement(b, sx, sy, rng, floors=None):
     """Činžák (od vzhledu 3) na místě starého domu: 3 patra cihel (od 4 omítnutý beton, od 5 čtyři patra),
     mřížka oken na obou stranách, plochá střecha s atikou a komíny; ve vzhledu 5 zahrada
     na střeše."""
-    floors = 4 if b.variant >= 5 else 3
+    floors = floors or (4 if b.variant >= 5 else 3)
     floor_h = 1.05
     wall = "brick" if b.variant == 3 else "plaster_grey"
     b.box("RT_Tenement", (0, 0, 0.04), (sx, sy, floors * floor_h), wall)

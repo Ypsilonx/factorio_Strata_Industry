@@ -1,7 +1,6 @@
---- Virtuální signály městské tabule. Ikony jsou složené: budova + malý symbol vpravo dole (dočasné,
---- finální grafika z Blenderu je plán 3).
-local HALL = "__base__/graphics/icons/lab.png"
-local HOUSE = "__base__/graphics/icons/stone-furnace.png"
+--- Virtuální signály městské tabule. Ikony jsou složené: budova (ikona z Blenderu) + malý symbol vpravo dole.
+local HALL = "__research-towns__/graphics/icons/hall-1.png"
+local HOUSE = "__research-towns__/graphics/icons/house-1.png"
 local SIGNAL = "__base__/graphics/icons/signal/"
 
 --- Ikona budovy se symbolem signálu v rohu.

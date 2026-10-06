@@ -212,3 +212,48 @@ def luminance(pixels):
     mask = pixels[..., 3] > 0.5
     rgb = pixels[mask][:, :3]
     return float((rgb @ np.array([0.2126, 0.7152, 0.0722])).mean()) if len(rgb) else 0.0
+
+
+def render_layers(name, build, footprint, top, margin, set_glow):
+    """Vyrenderuje model do tří vrstev: základ (svítidla zhasnutá), světla (jen emise, alfa z jasu – ve hře
+    additive) a stín (model neviditelný pro kameru, podložka zachytí stín). build(collection, parent) postaví
+    model a vrátí počet dílů; objekty RT_Plaza (nádvoří, dvorek) stín nevrhají – zakryly by podložku.
+    set_glow(on) přepíná svítící materiály. Vrátí (base, light, shadow, center_up, díly)."""
+    width, height, center_up = frame(footprint, top=top, bottom=margin, side=margin)
+    scene, collection = fresh_scene()
+    parent = root(collection)
+    setup_render(scene, width, height)
+    setup_camera(scene, collection, width, height, center_up)
+    lights = setup_lights(collection)
+    ground = add_ground(collection, width, height)
+    parts = build(collection, parent)
+    model = [o for o in collection.objects if o.type == "MESH" and o is not ground]
+    renders = HERE / "renders"
+    renders.mkdir(exist_ok=True)
+    world_strength = scene.world.node_tree.nodes["Background"].inputs["Strength"]
+    default_world = world_strength.default_value
+
+    set_glow(False)
+    ground.hide_render = True
+    base = downsample(render(scene, renders / f"{name}-base-raw.png"))
+
+    set_glow(True)
+    for light in lights:
+        light.hide_render = True
+    world_strength.default_value = 0.0
+    light_px = downsample(render(scene, renders / f"{name}-light-raw.png"))
+    light_px[..., 3] = np.clip(light_px[..., :3].max(axis=-1) * 1.5, 0.0, 1.0) * light_px[..., 3]
+    for light in lights:
+        light.hide_render = False
+    world_strength.default_value = default_world
+    set_glow(False)
+
+    ground.hide_render = False
+    for obj in model:
+        obj.visible_camera = False
+        if obj.name.startswith("RT_Plaza"):
+            obj.visible_shadow = False
+    shadow_raw = downsample(render(scene, renders / f"{name}-shadow-raw.png"))
+    shadow = np.zeros_like(shadow_raw)
+    shadow[..., 3] = shadow_raw[..., 3]
+    return base, light_px, shadow, center_up, parts

@@ -190,6 +190,11 @@ function M.house_level_max(level, count)
   return math.min(level, count, M.HOUSE_LEVEL_MAX)
 end
 
+--- Grafická varianta domu: jeho úroveň (úroveň domu je nejvýš HOUSE_LEVEL_MAX = VARIANTS).
+function M.house_variant(house_level)
+  return math.min(house_level, M.VARIANTS)
+end
+
 --- Dávají domy už plný bonus k rychlosti (SPEED_BONUS_CAP)? Pak další vylepšování nic nepřidá.
 --- @param house_levels integer[] úrovně aktivních domů
 function M.bonus_full(level, house_levels)
