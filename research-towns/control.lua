@@ -43,6 +43,8 @@ local function on_object_destroyed(event)
     else
       towns.on_network_changed(network.remove(key))
     end
+  elseif key and storage.wild_halls[key] then
+    towns.remove_wild(key)
   elseif key and storage.depots[key] then
     depots.remove(key)
   end
@@ -141,7 +143,8 @@ script.on_configuration_changed(function()
   state.init()
   scheduler.clear()
   for _, town in pairs(storage.towns) do
-    if town.hall.valid then
+    -- Neobjevená města se nezpracovávají; objevená jen kvůli daru.
+    if town.hall.valid and town.state ~= "wild" then
       -- Vzorce, počet úrovní (jiné mody) i prototypy se mohly změnit – srovnat bez ztráty postupu.
       towns.refresh(town)
       scheduler.schedule(town, game.tick + 1)

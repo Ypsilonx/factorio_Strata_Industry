@@ -17,4 +17,13 @@ return {
     A.eq(storage.towns[1].upkeep_ok, true, "spotřeba pokryta")
     storage = nil
   end },
+  { "starý save: města jsou partnerská, mají pozici a jsou v indexu", function()
+    storage = { towns = { [1] = { id = 1, progress = {}, hall = { valid = true, position = { x = 10, y = 20 } } } } }
+    state.init()
+    A.eq(storage.towns[1].state, "partner", "stav")
+    A.eq(storage.towns[1].position.x, 10, "pozice")
+    A.truthy(storage.wild_halls, "tabulka neutrálních radnic")
+    A.truthy(storage.town_cells["0:0"][1], "index")
+    storage = nil
+  end },
 }

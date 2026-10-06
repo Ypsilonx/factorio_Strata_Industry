@@ -10,6 +10,7 @@ local story = require("shared.story")
 local houses = require("scripts.houses")
 local upkeep = require("scripts.upkeep")
 local board = require("scripts.board")
+local worldgen = require("shared.worldgen")
 
 local M = {}
 
@@ -88,27 +89,114 @@ function M.on_network_changed(touched)
   end
 end
 
---- Založí město s radnicí úrovně 1; nil, když tam radnice nejde postavit.
+--- Zařadí město do prostorového indexu (hnízda u nových chunků, viz scripts/worldgen.lua).
+local function index_add(town)
+  local key = worldgen.cell_key(town.position)
+  storage.town_cells[key] = storage.town_cells[key] or {}
+  storage.town_cells[key][town.id] = true
+end
+
+--- Vyřadí město z prostorového indexu.
+local function index_remove(town)
+  local cell = storage.town_cells[worldgen.cell_key(town.position)]
+  if cell then cell[town.id] = nil end
+end
+
+--- Založí záznam města pro radnici (jméno, úroveň 1, prázdný postup) a zařadí ho do indexu.
+--- @param state "wild"|"partner"
+local function new_town(hall, state)
+  local id = storage.next_town_id
+  storage.next_town_id = id + 1
+  local town = {
+    id = id, name = names.generate(id), level = 1, hall = hall, state = state, position = hall.position,
+    progress = {}, house_progress = {}, stock = {}, upkeep_ok = true, depots = {}, houses = {}, power_ok = false,
+  }
+  storage.towns[id] = town
+  index_add(town)
+  return town
+end
+
+--- Založí partnerské město s radnicí úrovně 1; nil, když tam radnice nejde postavit.
 --- @param position MapPosition střed radnice
 function M.create(surface, position, force)
   local name = config.hall_name(1)
   if not surface.can_place_entity({ name = name, position = position, force = force }) then return nil end
   local hall = surface.create_entity({ name = name, position = position, force = force })
   if not hall then return nil end
-  local id = storage.next_town_id
-  storage.next_town_id = id + 1
-  local town = {
-    id = id, name = names.generate(id), level = 1, hall = hall, progress = {}, house_progress = {},
-    stock = {}, upkeep_ok = true,
-    depots = {}, houses = {}, power_ok = false,
-  }
-  storage.towns[id] = town
-  -- Bez elektřiny radnice nezkoumá; zapne ji první zpracování (Task 7).
+  local town = new_town(hall, "partner")
+  -- Bez elektřiny radnice nezkoumá; zapne ji první zpracování.
   hall.disabled_by_script = true
   draw_labels(town)
-  M.on_network_changed(network.add(hall, "hall", id))
+  M.on_network_changed(network.add(hall, "hall", town.id))
   scheduler.schedule(town, game.tick + 1)
   return town
+end
+
+--- Zaeviduje neutrální radnici (z generátoru) jako neobjevené město: nezničitelná, vypnutá, mimo síť.
+function M.register_wild(hall)
+  hall.destructible = false
+  hall.disabled_by_script = true
+  local town = new_town(hall, "wild")
+  storage.wild_halls[hall.unit_number] = town.id
+  -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
+  script.register_on_object_destroyed(hall)
+  return town
+end
+
+--- Úrovně partnerských měst síly.
+--- @return integer[]
+local function partner_levels(force)
+  local list = {}
+  for _, town in pairs(storage.towns) do
+    if town.state == "partner" and town.hall.valid and town.hall.force == force then list[#list + 1] = town.level end
+  end
+  return list
+end
+
+--- Hráč síly objevil město: dar z milníku, který síla už zvládla (stanoví se jednou), popisky, značka na mapě,
+--- zpráva a zařazení do plánovače (sběr daru).
+function M.discover(town, force)
+  local hall = town.hall
+  town.state = "discovered"
+  town.force = force.name
+  town.progress = {}
+  town.gift = worldgen.gift(config.upgrade(worldgen.gift_level(partner_levels(force))), worldgen.GIFT_SHARE)
+  draw_labels(town)
+  force.add_chart_tag(hall.surface, { position = hall.position, text = town.name, icon = { type = "item", name = "rt-house" } })
+  local gps = string.format("[gps=%d,%d,%s]", math.floor(hall.position.x), math.floor(hall.position.y), hall.surface.name)
+  force.print({ "rt.town-discovered", town.name, gps })
+  depots.resolve_unassigned()
+  scheduler.schedule(town, game.tick + 1)
+end
+
+--- Dar dodán: radnice přejde na sílu, napojí se na síť (domy v dosahu se připojí) a město začne na úrovni 1.
+function M.take_over(town, force)
+  local hall = town.hall
+  storage.wild_halls[hall.unit_number] = nil
+  hall.force = force
+  hall.destructible = true
+  town.state = "partner"
+  town.gift = nil
+  town.progress = {}
+  M.on_network_changed(network.add(hall, "hall", town.id))
+  M.refresh(town)
+  force.print({ "rt.town-partnered", town.name })
+end
+
+--- Neutrální radnice zmizela bez události (jiný mod, editor): město zaniká, překladiště se uvolní.
+function M.remove_wild(key)
+  local id = storage.wild_halls[key]
+  if not id then return end
+  storage.wild_halls[key] = nil
+  local town = storage.towns[id]
+  if not town then return end
+  destroy_labels(town)
+  index_remove(town)
+  storage.towns[id] = nil
+  for depot_key in pairs(town.depots) do
+    local depot = storage.depots[depot_key]
+    if depot then depots.resolve(depot) end
+  end
 end
 
 --- Přejmenuje město.
@@ -169,7 +257,7 @@ end
 --- Srovná město s aktuální úrovní, vzorci a prototypy bez ztráty postupu (po povýšení, po změně konfigurace
 --- nebo ve starém savu): prototyp radnice, vzhled domů, odběr rozvoden, moduly beaconu a popisky.
 function M.refresh(town)
-  if not town.hall.valid then return end
+  if not town.hall.valid or town.state ~= "partner" then return end
   local name = config.hall_name(town.level)
   if town.hall.name ~= name then replace_hall(town, name) end
   town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
@@ -241,12 +329,21 @@ end
 
 --- Stav města pro GUI a remote rozhraní.
 function M.status(town)
+  if town.state ~= "partner" then
+    return {
+      id = town.id, name = town.name, level = town.level, state = town.state, hall = town.hall.unit_number,
+      requirements = with_delivered(town.gift, town.progress), house_requirements = {}, houses_to_upgrade = 0,
+      upkeep = {}, power_watts = 0, power_percent = 0,
+      level_progress = milestones.fraction(town.gift, town.progress), house_upgrade_progress = nil,
+    }
+  end
   local count = config.level_count()
   local candidates = network.house_candidates(town)
   local target, house_reqs = house_target(town, candidates)
   local beacon = town.beacon
   return {
-    id = town.id, name = town.name, level = town.level, level_count = count, hall = town.hall.unit_number,
+    id = town.id, name = town.name, level = town.level, state = town.state, level_count = count,
+    hall = town.hall.unit_number,
     active_houses = network.active_houses(town), house_limit = levels.house_limit(town.level),
     bonus = levels.bonus_modules(town.level, network.active_house_levels(town)) * levels.BONUS_STEP,
     productivity = levels.productivity_modules(town.level, count) * levels.BONUS_STEP,
@@ -287,10 +384,25 @@ local function wants_research(hall)
   return true
 end
 
+--- Objevené město: sběr daru z překladišť; po dodání celého daru převzetí silou překladišť
+--- (bez překladiště silou, která město objevila).
+local function process_gift(town)
+  depots.collect(town, { { requirements = town.gift, progress = town.progress } })
+  if milestones.complete(town.gift, town.progress) then
+    M.take_over(town, depots.owner_force(town) or game.forces[town.force])
+  else
+    M.refresh_boards(town)
+  end
+end
+
 --- Pravidelné zpracování: dodávky z překladišť (zásoba spotřeby → milník radnice → vylepšení domu),
 --- vylepšení domu, spotřeba zásoby, kontrola elektřiny a zapnutí/vypnutí výzkumu.
 function M.process(town)
   if not town.hall.valid then return end
+  if town.state ~= "partner" then
+    if town.state == "discovered" then process_gift(town) end
+    return
+  end
   local candidates = network.house_candidates(town)
   local target, house_reqs = house_target(town, candidates)
   local rate = upkeep_rate(town, #candidates)
@@ -329,6 +441,7 @@ function M.on_hall_removed(key)
   if town then
     if town.beacon and town.beacon.valid then town.beacon.destroy() end
     destroy_labels(town)
+    index_remove(town)
     storage.towns[town.id] = nil
     for depot_key in pairs(town.depots) do
       local depot = storage.depots[depot_key]

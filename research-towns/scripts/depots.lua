@@ -48,25 +48,36 @@ local function anchors(node)
   return network.is_active(node)
 end
 
+--- Město, ke kterému se překladiště může připojit přes budovu other (nil = nemůže): radnice nebo aktivní dům
+--- partnerského města; objevená cizí radnice jen kvůli daru (zboží, kapaliny, tabule – rozvodna ne).
+local function anchor_town(depot, other)
+  local node = storage.nodes[other.unit_number]
+  if node then return anchors(node) and node.town or nil end
+  local id = storage.wild_halls[other.unit_number]
+  local town = id and storage.towns[id]
+  if town and town.state == "discovered" and depot.kind ~= "power" then return id end
+  return nil
+end
+
 --- Přiřadí překladiště k městu nejbližší kotvy v dosahu (remíza → nižší id města) a přepočte elektřinu.
 function M.resolve(depot)
   local entity = depot.entity
   -- Zmizelo bez události – záznam uklidí jeho vlastní on_object_destroyed.
   if not entity.valid then return end
   local box = entity.selection_box
-  local best, best_gap
+  local best_town, best_gap
   local found = entity.surface.find_entities_filtered({ area = geometry.expand(box, levels.DEPOT_REACH), name = network.names() })
   for _, other in pairs(found) do
-    local node = storage.nodes[other.unit_number]
-    if node and anchors(node) then
+    local town_id = anchor_town(depot, other)
+    if town_id then
       local gap = geometry.gap(box, other.selection_box)
-      if gap <= levels.DEPOT_REACH and (not best or gap < best_gap or (gap == best_gap and node.town < best.town)) then
-        best, best_gap = node, gap
+      if gap <= levels.DEPOT_REACH and (not best_town or gap < best_gap or (gap == best_gap and town_id < best_town)) then
+        best_town, best_gap = town_id, gap
       end
     end
   end
   local old = depot.town
-  depot.town = best and best.town
+  depot.town = best_town
   -- Tabule bez města nesmí posílat staré požadavky.
   if depot.kind == "board" and not depot.town then board.write(entity, {}) end
   if old == depot.town then return end
@@ -175,6 +186,18 @@ function M.power_percent(town)
     end
   end
   return math.floor((worst or 0) * 100)
+end
+
+--- Síla překladišť města (první podle unit_number, tabule se nepočítá), nebo nil.
+function M.owner_force(town)
+  local keys = {}
+  for key in pairs(town.depots) do keys[#keys + 1] = key end
+  table.sort(keys)
+  for _, key in ipairs(keys) do
+    local depot = storage.depots[key]
+    if depot and depot.kind ~= "board" and depot.entity.valid then return depot.entity.force end
+  end
+  return nil
 end
 
 return M

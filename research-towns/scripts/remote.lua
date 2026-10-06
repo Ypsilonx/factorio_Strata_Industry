@@ -1,6 +1,7 @@
 --- Remote rozhraní „research-towns“ (pro testy a jiné mody) a ladicí příkaz /rt-create-town.
 local towns = require("scripts.towns")
 local board = require("scripts.board")
+local config = require("scripts.config")
 
 --- Město podle id, nebo nil.
 local function town(id)
@@ -46,6 +47,27 @@ remote.add_interface("research-towns", {
     depot.mode = mode
     local t = depot.town and town(depot.town)
     if t and t.hall.valid then towns.refresh_boards(t) end
+  end,
+  --- Založí neobjevené město s neutrální radnicí (testy); vrací id, nebo nil.
+  create_wild_town = function(surface_name, position)
+    local hall = game.surfaces[surface_name].create_entity({ name = config.hall_name(1), position = position, force = "neutral" })
+    return hall and towns.register_wild(hall).id
+  end,
+  --- Objeví neobjevené město za sílu (jako by k němu došel hráč).
+  discover = function(id, force_name)
+    local t = town(id)
+    if t and t.state == "wild" then towns.discover(t, game.forces[force_name or "player"]) end
+  end,
+  --- Seznam měst { id, state, surface, position, force } (testy generátoru).
+  list_towns = function()
+    local list = {}
+    for id, t in pairs(storage.towns) do
+      if t.hall.valid then
+        list[#list + 1] = { id = id, state = t.state, surface = t.hall.surface.name, position = t.position,
+          force = t.hall.force.name }
+      end
+    end
+    return list
   end,
   --- Srovná město s aktuálními vzorci (jako po změně konfigurace).
   refresh_town = function(id)
