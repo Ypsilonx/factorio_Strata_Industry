@@ -10,9 +10,13 @@ M.MAP_COLOR = { r = 1, g = 0.75, b = 0.2 }
 --- Velikost buňky mřížky (dlaždice) při četnosti 1 a strop při nízké četnosti: i nejnižší četnost dá
 --- aspoň ~20 měst do 1500 dlaždic od spawnu.
 M.TOWN_CELL_BASE = 250
-M.TOWN_CELL_MAX = 450
+M.TOWN_CELL_MAX = 400
 --- Okraj buňky bez měst – sousední města nebudou nalepená na sebe.
 M.TOWN_CELL_MARGIN = 40
+--- Poloviční velikost okna, kde smí stát radnice buňky (dlaždice). Jediná dlaždice byla často pod vodou,
+--- útesem nebo rudou (vznikla jen ~45 % měst); okno 14×14 je menší než radnice 15×15, takže se do něj
+--- vejde nanejvýš jedna – generátor zkusí dlaždice okna a první volná vyhraje.
+M.TOWN_SITE_WINDOW = 7
 --- Kolem spawnu generátor města nedává (první město staví skript).
 M.TOWN_SPAWN_CLEAR = 120
 --- Pás kolem radnice bez stromů, kamenů a útesů; okruh bez hnízd biterů.
@@ -36,7 +40,7 @@ end
 
 --- Pojmenované noise výrazy generátoru (jméno → výraz). Posun radnice v buňce je pro celou buňku stejný –
 --- šum se vzorkuje v indexu buňky (posun závislý na x, y slil v pokusu radnice do „housenek“).
---- Pravděpodobnost je 1 právě na jedné dlaždici buňky; 0 jinde, kolem spawnu a při četnosti 0.
+--- Pravděpodobnost je 1 v okně TOWN_SITE_WINDOW kolem bodu buňky; 0 jinde, kolem spawnu a při četnosti 0.
 function M.noise_expressions()
   local span = "(rt_town_cell - " .. (2 * M.TOWN_CELL_MARGIN) .. ")"
   --- Souřadnice radnice v buňce pro osu ("x" / "y"); seed odliší osy.
@@ -52,8 +56,8 @@ function M.noise_expressions()
     rt_town_x = offset("x", 7101),
     rt_town_y = offset("y", 7102),
     rt_town_probability = string.format(
-      "(rt_town_frequency > 0) * (distance > %d) * (abs(x - rt_town_x) < 0.5) * (abs(y - rt_town_y) < 0.5)",
-      M.TOWN_SPAWN_CLEAR),
+      "(rt_town_frequency > 0) * (distance > %d) * (abs(x - rt_town_x) < %d) * (abs(y - rt_town_y) < %d)",
+      M.TOWN_SPAWN_CLEAR, M.TOWN_SITE_WINDOW, M.TOWN_SITE_WINDOW),
   }
 end
 

@@ -20,6 +20,12 @@ return {
     A.truthy(e.rt_town_probability:find("rt_town_frequency > 0", 1, true), "četnost 0 vypne města")
     A.truthy(e.rt_town_probability:find("distance > " .. worldgen.TOWN_SPAWN_CLEAR, 1, true), "okolí spawnu")
     A.truthy(e.rt_town_x:find("floor(x / rt_town_cell)", 1, true), "posun podle indexu buňky")
+    A.truthy(e.rt_town_probability:find("< " .. worldgen.TOWN_SITE_WINDOW, 1, true), "okno místa radnice")
+  end },
+  { "okno místa radnice je menší než radnice – v buňce nanejvýš jedno město", function()
+    local levels = require("shared.levels")
+    A.truthy(2 * worldgen.TOWN_SITE_WINDOW < levels.HALL_SIZE, "okno " .. 2 * worldgen.TOWN_SITE_WINDOW)
+    A.truthy(worldgen.TOWN_SITE_WINDOW < worldgen.TOWN_CELL_MARGIN, "okno nepřesáhne okraj buňky")
   end },
   { "dar: úroveň o jednu nižší než nejvyšší partner, bez vědy, nahoru", function()
     A.eq(worldgen.gift_level({}), 1, "bez partnerů")

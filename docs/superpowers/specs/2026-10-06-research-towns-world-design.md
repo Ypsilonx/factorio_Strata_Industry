@@ -17,12 +17,12 @@ Mimo rozsah 2a: znečištění (2b), ruiny (2c), specializace (2d), cestování 
 - Generátor rozmísťuje **značku místa města** `rt-town-site` (`simple-entity`, půdorys radnice 15×15,
   `map_color` radnice, síla `neutral`). Skript ji při generování chunku nahradí radnicí. Důvod značky:
   `regenerate_entity` v rozehrané hře pak nemůže sáhnout na existující radnice.
-- **Mřížka s posunem:** jedna značka na buňku mřížky, posun uvnitř buňky z šumu vzorkovaného podle indexu buňky
+- **Mřížka s posunem:** jedna značka na buňku mřížky v okně 14×14 dlaždic (`TOWN_SITE_WINDOW`; menší než radnice, takže nanejvýš jedna – jediná dlaždice byla často pod vodou), posun uvnitř buňky z šumu vzorkovaného podle indexu buňky
   (pro celou buňku konstantní – v pokusu z proměnného posunu vznikaly „housenky“ slitých radnic).
   Okraj buňky bez měst = `TOWN_CELL_MARGIN`, aby sousední města nebyla nalepená.
 - **Velikost buňky** = `min(TOWN_CELL_MAX, TOWN_CELL_BASE / sqrt(četnost))`; výchozí `TOWN_CELL_BASE = 250`,
-  `TOWN_CELL_MAX = 450`. Strop zaručuje požadavek uživatele: **i při nejnižší četnosti aspoň ~20 měst do
-  1 500 dlaždic od spawnu** (π·1500² / 450² ≈ 35 buněk, po odečtení vody > 20). Hardmode s pár městy není.
+  `TOWN_CELL_MAX = 400`. Strop zaručuje požadavek uživatele: **i při nejnižší četnosti aspoň ~20 měst do
+  1 500 dlaždic od spawnu** (π·1500² / 400² ≈ 44 buněk; ověřeno testem `worldgen` na 3 seedech: 25–31 měst). Hardmode s pár městy není.
 - Kolem spawnu se značky negenerují (`distance > TOWN_SPAWN_CLEAR`, 120 dlaždic) – první město řeší skript.
 - Jen **Nauvis** (`data.raw.planet.nauvis.map_gen_settings`); když planeta chybí, autoplace se nepřidá
   a zůstane jen první město.

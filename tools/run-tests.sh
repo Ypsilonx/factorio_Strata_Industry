@@ -5,6 +5,7 @@
 #          tools/run-tests.sh mods <mod> [<mod>…]   kompatibilita s jinými mody (např. pymodpack, boblogistics):
 #            mody i jejich povinné závislosti se vezmou v nejvyšší verzi ze složky MODS_SOURCE
 #            (výchozí %APPDATA%/Factorio/mods) a spustí se jen obecné kontroly z cases/compat.lua.
+#          tools/run-tests.sh worldgen               pomalý test počtu měst (nejnižší četnost, okruh 1500)
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FACTORIO="${FACTORIO_EXE:-C:/STEAM/steamapps/common/Factorio/bin/x64/factorio.exe}"
@@ -56,6 +57,12 @@ if [ "$VARIANT" = "mods" ]; then
   echo "Mody: ${EXTRA[*]:-} | vestavěné: $(for k in "${!BUILTIN[@]}"; do [ "${BUILTIN[$k]}" = true ] && printf '%s ' "$k"; done)"
   # Herní testy počítají s vanilla prototypy (bedny, rozvodny), overhaul mody je mění – jen obecné kontroly.
   sed -i '/runner.register/{/cases.compat/!d}' "$RUN/mods/research-towns-tests/control.lua"
+fi
+# Pomalý test počtu měst jen ve variantě worldgen; ostatní varianty ho vynechají.
+if [ "$VARIANT" = "worldgen" ]; then
+  sed -i '/runner.register/{/cases.worldgen_count/!d}' "$RUN/mods/research-towns-tests/control.lua"
+else
+  sed -i '/cases.worldgen_count/d' "$RUN/mods/research-towns-tests/control.lua"
 fi
 
 {
