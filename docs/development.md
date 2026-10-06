@@ -25,6 +25,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Recepty domu, překladišť a tabule | `prototypes/house.lua`, `prototypes/depots.lua` |
 | Barvy dočasné grafiky, počet variant | `prototypes/hall.lua` → `TINTS`, `prototypes/house.lua` → `TINTS`, `shared/levels.lua` → `VARIANTS` |
 | Panel radnice: slotů na řádek, šířka progress baru | `scripts/gui.lua` → `SLOT_COLUMNS`, `BAR_WIDTH` |
+| Rozmístění měst, dar, objevení, první město | `shared/worldgen.lua` → `TOWN_CELL_BASE`, `TOWN_CELL_MAX`, `TOWN_CELL_MARGIN`, `TOWN_SITE_WINDOW`, `TOWN_SPAWN_CLEAR`, `TOWN_NEST_CLEAR`, `DISCOVERY_RADIUS`, `GIFT_SHARE`, `FIRST_TOWN_*`, barva na mapě `MAP_COLOR` |
 | Barva chodníků a popisků | `scripts/network.lua` → `LINK_COLOR`, `scripts/towns.lua` → `LABEL_COLOR` |
 
 ## Kompatibilita
@@ -38,11 +39,18 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
   - Space Age: odstraněno `lab`, `biolab`; 12 úrovní (modrá na úrovni 4, planetární vědy 8–12).
   - Vanilla: 7 úrovní (vojenská věda je úroveň 3 před modrou – podle stromu, potvrzeno).
   - Krastorio 2 zatím neověřeno (není staženo).
+- Ověřeno 2026-10-06, plán 2a (města na mapě), unit 68/68, vanilla 52/52, Space Age 52/52, worldgen 1/1:
+  Bob's (17 modů) compat 6/6, `pymodpack` compat 6/6 – posuvník Města a značky na Nauvisu vzniknou,
+  první město se umístilo (v `create.log` chybí „první město se nepodařilo umístit“).
 
 ## Testy
 - `bash tools/run-unit.sh` – čistá logika.
 - `bash tools/run-tests.sh vanilla` a `space-age` – integrační testy.
 - `bash tools/run-tests.sh mods <mod>…` – kompatibilita (jen `cases/compat.lua`).
+- `bash tools/run-tests.sh worldgen` – pomalý test minima měst (nejnižší četnost, 3 seedy, ~1,5 min);
+  2026-10-06: 25 / 31 / 30 měst do 1 500 dlaždic.
+- Náhled mapy s modem (po `run-tests.sh vanilla`): `factorio --config .test-run/vanilla/config.ini
+  --mod-directory .test-run/vanilla/mods --generate-map-preview preview.png --map-gen-seed 123`.
 
 ## Ruční kontrola ve hře (headless ji neověří)
 1. Nová hra, `/rt-create-town` (admin) – radnice 15×15 s popiskem a jménem, popisek i na mapě.
@@ -66,3 +74,9 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 11. Tipy a triky: kategorie Research Towns s aktualizovanými texty (úrovně, spotřeba, tabule).
 12. Nad poslední vědou (`/c remote.call("research-towns", "set_level", <id>, 8)`): Povýšit v panelu – okno zůstane
     otevřené a panel ukáže novou úroveň a produktivitu.
+13. Nová mapa: v okně generátoru posuvník „Města“, v náhledu mapy oranžové čtverečky měst; četnost mění jejich počet.
+14. Start hry: první město 100–200 dlaždic od přistání, partnerské, se jménem na mapě.
+15. Dojít k cizímu městu: zpráva s GPS, značka na mapě, panel radnice (jde neutrální radnici otevřít?) ukazuje dar;
+    překladiště u radnice dar sebere, po dodání zpráva o partnerství, radnice začne zkoumat s elektřinou, domy se
+    připojí.
+16. Rozehraný save bez měst (mod přidaný později): po načtení přibudou města i první město.

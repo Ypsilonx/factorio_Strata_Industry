@@ -8,6 +8,8 @@ Date: 2026-10-05
     - Houses have their own level and are upgraded with surplus deliveries; total speed bonus capped at +120 %.
     - Towns continuously consume the materials of completed milestones (startup setting to adjust).
     - Town board sends the town's requests to the circuit network.
+    - Towns are placed by the map generator (Towns slider, visible in the map preview); the first town near the spawn is your partner right away.
+    - Other towns are discovered by walking up to them; deliver a gift through a depot to make them partners.
     - Progress bars to the next town level and house upgrade, also as town board signals.
     - House level shown as a number above the house in Alt mode.
     - Upkeep in whole items per minute; town halls keep a 5 minute stock, which the town board requests in full.

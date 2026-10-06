@@ -6,6 +6,10 @@
 
 Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod je i ve hře v okně **Tipy a triky**.
 
+0. **Města na mapě:** při tvorbě mapy zvolíš četnost měst (posuvník Města) a v náhledu mapy je uvidíš.
+   První město je 100–200 dlaždic od místa přistání a je hned tvoje. K dalším městům dojdi – obyvatelé tě
+   přivítají a požádají o dar (suroviny, které už vyrábíš). Dodej ho přes překladiště u jejich radnice
+   a město se stane partnerem.
 1. **Radnice** zkoumá jako laboratoř. Každá úroveň města otevře **jednu novou vědu** (úroveň 1 = první věda).
 2. **Domy** (vyrobíš v montážním stroji) postav do dosahu radnice nebo jiného domu – propojí se visutým
    chodníkem. Nejvýš 5 domů v sérii od radnice; dům dál je neaktivní (ikona varování). K povýšení potřebuje město
@@ -26,4 +30,4 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
    okně (Spotřeba = celá zásoba na 5 minut); navíc signály příkonu (MW), pokrytí elektřiny (%), postupu k další
    úrovni (%) a postupu vylepšení domu (%).
 
-Ladicí příkaz: `/rt-create-town` (admin) založí radnici severně od hráče. Generování měst na mapě přijde v další verzi.
+Ladicí příkaz: `/rt-create-town` (admin) založí radnici severně od hráče.
