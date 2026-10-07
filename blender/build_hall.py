@@ -4,6 +4,7 @@ Spuštění (headless, z kořene repozitáře):
     "C:/STEAM/steamapps/common/Blender/blender.exe" -b --factory-startup --python blender/build_hall.py -- --calibrate
 
 Přepínače:
+    --lights      jen postavit scény všech vzhledů a zapsat noční světla do research-towns/shared/night_lights.lua
     --scene K N   jen postavit scénu stavby K (hall | house) ve vzhledu N bez renderu – pro prohlížení
                   v otevřeném Blenderu přes MCP (exec skriptu se sys.argv = [..., "--", "--scene", "hall", "3"])
     --calibrate   zkušební deska 3×3 se sloupky přes vanilla laboratoř → blender/renders/calibration.png
@@ -20,12 +21,15 @@ Přepínače:
 Moduly: rt_render.py (scéna, kamera, světla, pixely), camera.toml (laditelná projekce a světla).
 """
 
+import math
+import re
 import shutil
 import sys
 from pathlib import Path
 
 import bpy
 import numpy as np
+from mathutils import Vector
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
@@ -290,6 +294,75 @@ def write_sprites_lua(kind, width, height, center_up):
     (MOD / "prototypes" / f"{kind}_sprites.lua").write_text(text, encoding="utf-8")
 
 
+#: Svítící místa pro noční světla ve hře: materiál / objekt → druh světla (barvu a dosah určí scripts/lights.lua).
+LIGHT_MATERIALS = {"RT_Window": "window", "RT_Fire": "fire"}
+#: Svítidla podle jména dílu (lucerna, lampa) – i když mají materiál okna.
+LIGHT_OBJECTS = {"RT_Lamp", "RT_GateLamp", "RT_Lantern"}
+#: Poloměr sloučení blízkých svítidel stejného druhu do jednoho světla (dlaždice) – méně objektů ve hře.
+LIGHT_CLUSTER = {"hall": 1.6, "house": 1.2}
+NIGHT_LIGHTS = MOD / "shared" / "night_lights.lua"
+
+
+def light_kind(obj):
+    """Druh světla objektu scény (window | fire | lamp), nebo None."""
+    if obj.get("rt_glow_light") or re.sub(r"(_\d+)?(\.\d+)?$", "", obj.name) in LIGHT_OBJECTS:
+        return "lamp"
+    for slot in obj.material_slots:
+        if slot.material and slot.material.name in LIGHT_MATERIALS:
+            return LIGHT_MATERIALS[slot.material.name]
+    return None
+
+
+def night_lights(kind):
+    """Svítící místa postavené scény promítnutá na obrazovku (posun od středu entity v dlaždicích, y dolů),
+    sloučená do shluků. Vrátí [(x, y, druh, počet)]."""
+    lights = []
+    scene = bpy.data.scenes[R.SCENE_NAME]
+    scene.view_layers[0].update()  # matrix_world nových objektů (i natažení osy Y kořenem)
+    for obj in scene.collection.all_objects:
+        kind_of = light_kind(obj) if obj.type == "MESH" else None
+        if not kind_of:
+            continue
+        center = obj.matrix_world @ (sum((Vector(c) for c in obj.bound_box), Vector()) / 8)
+        tile_y = center.y / math.sqrt(2.0)
+        lights.append((center.x, -tile_y - center.z * rt_depots.SCREEN, kind_of))
+    clusters = []
+    for x, y, kind_of in lights:
+        for c in clusters:
+            if c[2] == kind_of and math.hypot(c[0] - x, c[1] - y) < LIGHT_CLUSTER[kind]:
+                n = c[3]
+                c[0], c[1], c[3] = (c[0] * n + x) / (n + 1), (c[1] * n + y) / (n + 1), n + 1
+                break
+        else:
+            clusters.append([x, y, kind_of, 1])
+    return [tuple(c) for c in clusters]
+
+
+def write_night_lights(kind, variant, lights):
+    """Zapíše světla vzhledu do shared/night_lights.lua (řádek M.<druh>[<vzhled>]; ostatní řádky ponechá)."""
+    header = ("--- Noční světla radnice a domů – GENEROVÁNO blender/build_hall.py (--install), neupravovat ručně.\n"
+              "--- Posun od středu entity v dlaždicích (y dolů), druh světla a počet sloučených svítidel;\n"
+              "--- vykresluje scripts/lights.lua.\n"
+              "local M = { hall = {}, house = {} }\n")
+    text = NIGHT_LIGHTS.read_text(encoding="utf-8") if NIGHT_LIGHTS.exists() else header + "return M\n"
+    entries = ", ".join(f'{{ {x:.2f}, {y:.2f}, "{k}", {n} }}' for x, y, k, n in lights)
+    line = f"M.{kind}[{variant}] = {{ {entries} }}\n"
+    lines = [l for l in text.splitlines(keepends=True) if not l.startswith(f"M.{kind}[{variant}] =")]
+    lines.insert(lines.index("return M\n"), line)
+    NIGHT_LIGHTS.write_text("".join(lines), encoding="utf-8")
+    print(f"SVĚTLA {kind} {variant}: {len(lights)}")
+
+
+def update_night_lights():
+    """Jen postaví scény všech vzhledů radnice a domu (bez renderu) a zapíše jejich noční světla."""
+    for kind, (module, footprint, top, margin) in SCENES.items():
+        for variant in range(1, VARIANTS + 1):
+            mats = rt_materials.library()
+            R.build_scene(lambda collection, parent: module.build(collection, parent, mats, variant), footprint, top,
+                          margin)
+            write_night_lights(kind, variant, night_lights(kind))
+
+
 def install(kind, variant, base, light_px, shadow, center_up):
     """Zapíše vrstvy a ikonu vzhledu stavby do modu a rozměry do <druh>_sprites.lua."""
     entity_dir(kind).mkdir(parents=True, exist_ok=True)
@@ -298,6 +371,7 @@ def install(kind, variant, base, light_px, shadow, center_up):
         R.save_pixels(pixels, entity_dir(kind) / f"{kind}-{variant}-{name}.png")
     R.save_pixels(icon(base), ICON_DIR / f"{kind}-{variant}.png")
     write_sprites_lua(kind, base.shape[1], base.shape[0], center_up)
+    write_night_lights(kind, variant, night_lights(kind))
 
 
 def fill_missing(kind, source):
@@ -390,6 +464,8 @@ def overview():
 
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if "--lights" in args:
+        update_night_lights()
     if "--scene" in args:
         i = args.index("--scene")
         show_scene(args[i + 1], int(args[i + 2]))

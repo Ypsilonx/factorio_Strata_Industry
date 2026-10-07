@@ -5,6 +5,7 @@ local depots = require("scripts.depots")
 local milestones = require("scripts.milestones")
 local names = require("scripts.names")
 local network = require("scripts.network")
+local lights = require("scripts.lights")
 local scheduler = require("scripts.scheduler")
 local story = require("shared.story")
 local houses = require("scripts.houses")
@@ -17,6 +18,13 @@ local M = {}
 local LABEL_COLOR = { r = 1, g = 0.85, b = 0.5 }
 local BONUS_MODULE = "rt-bonus-module"
 local PRODUCTIVITY_MODULE = "rt-productivity-module"
+
+--- Zajistí noční světla radnice podle jejího vzhledu (vzhled z úrovně prototypu radnice).
+function M.refresh_lights(town)
+  if not town.hall.valid then return end
+  local variant = levels.variant(levels.hall_level(town.hall.name), config.level_count())
+  lights.ensure(town.hall, "hall", variant)
+end
 
 --- Zničí popisky města.
 local function destroy_labels(town)
@@ -128,6 +136,7 @@ function M.create(surface, position, force)
   hall.disabled_by_script = true
   draw_labels(town)
   M.on_network_changed(network.add(hall, "hall", town.id))
+  M.refresh_lights(town)
   scheduler.schedule(town, game.tick + 1)
   return town
 end
@@ -138,6 +147,7 @@ function M.register_wild(hall)
   hall.disabled_by_script = true
   local town = new_town(hall, "wild")
   storage.wild_halls[hall.unit_number] = town.id
+  M.refresh_lights(town)
   -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
   script.register_on_object_destroyed(hall)
   return town
@@ -188,6 +198,7 @@ function M.remove_wild(key)
   local id = storage.wild_halls[key]
   if not id then return end
   storage.wild_halls[key] = nil
+  lights.forget(key)
   local town = storage.towns[id]
   if not town then return end
   destroy_labels(town)
@@ -260,6 +271,7 @@ function M.refresh(town)
   if not town.hall.valid or town.state ~= "partner" then return end
   local name = config.hall_name(town.level)
   if town.hall.name ~= name then replace_hall(town, name) end
+  M.refresh_lights(town)
   town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
   network.refresh_town_houses(town)
   network.redraw_town_links(town)

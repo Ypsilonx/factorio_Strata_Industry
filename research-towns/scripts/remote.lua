@@ -4,6 +4,7 @@ local board = require("scripts.board")
 local config = require("scripts.config")
 local worldgen = require("scripts.worldgen")
 local network = require("scripts.network")
+local lights = require("scripts.lights")
 
 --- Město podle id, nebo nil.
 local function town(id)
@@ -87,6 +88,10 @@ remote.add_interface("research-towns", {
   --- Styl vykresleného spojení dvou budov ("garland" | "wood" | "glass"), nebo nil (testy).
   link_style = function(a, b)
     return network.link_style(a, b)
+  end,
+  --- Počet nočních světel radnice nebo domu (testy).
+  light_count = function(unit_number)
+    return lights.count(unit_number)
   end,
   --- Počet vykreslených objektů spojení dvou budov (testy).
   link_renders = function(a, b)

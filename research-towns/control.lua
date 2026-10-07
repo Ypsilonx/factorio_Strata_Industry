@@ -3,6 +3,7 @@ local levels = require("shared.levels")
 local state = require("scripts.state")
 local scheduler = require("scripts.scheduler")
 local network = require("scripts.network")
+local lights = require("scripts.lights")
 local depots = require("scripts.depots")
 local towns = require("scripts.towns")
 local gui = require("scripts.gui")
@@ -148,6 +149,14 @@ end)
 script.on_configuration_changed(function()
   state.init()
   scheduler.clear()
+  -- Pozice nočních světel z Blenderu se mohly změnit – vykreslit znovu (domy při towns.refresh níže).
+  lights.reset()
+  for _, node in pairs(storage.nodes) do
+    if node.kind == "house" and node.entity.valid then network.refresh_house(node) end
+  end
+  for _, town in pairs(storage.towns) do
+    towns.refresh_lights(town)
+  end
   for _, town in pairs(storage.towns) do
     -- Neobjevená města se nezpracovávají; objevená jen kvůli daru.
     if town.hall.valid and town.state ~= "wild" then

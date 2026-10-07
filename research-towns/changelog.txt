@@ -16,3 +16,4 @@ Date: 2026-10-06
     - New graphics: town halls in five eras (settlement, automation, logistics, chemistry, city of science) and houses by house level.
     - New graphics for depots, the town substation and the town board.
     - Town buildings are connected by a path with a garland of flags and lanterns, later by wooden and paved walkways on the ground.
+    - Town halls and houses light up their surroundings at night (windows, lanterns, lamps and fires).

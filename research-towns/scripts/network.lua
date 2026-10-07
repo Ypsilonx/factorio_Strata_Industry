@@ -5,6 +5,7 @@ local config = require("scripts.config")
 local geometry = require("scripts.geometry")
 local graph = require("scripts.graph")
 local links = require("scripts.links")
+local lights = require("scripts.lights")
 
 local M = {}
 
@@ -203,6 +204,7 @@ end
 function M.refresh_house(node)
   if not node.entity.valid then return end
   node.entity.graphics_variation = levels.house_variant(node.level)
+  lights.ensure(node.entity, "house", levels.house_variant(node.level))
   if node.label and node.label.valid then
     node.label.text = tostring(node.level)
   else
@@ -282,6 +284,7 @@ function M.remove(key)
   end
   if node.warning and node.warning.valid then node.warning.destroy() end
   if node.label and node.label.valid then node.label.destroy() end
+  lights.forget(key)
   storage.nodes[key] = nil
   local touched = M.recompute(neighbours)
   if node.town then touched[node.town] = true end
@@ -340,6 +343,7 @@ function M.replace_hall(old_key, entity)
   local node = storage.nodes[old_key]
   local new_key = entity.unit_number
   storage.nodes[old_key] = nil
+  lights.forget(old_key)
   for other_key in pairs(node.links) do
     local other = storage.nodes[other_key]
     other.links[old_key] = nil

@@ -242,8 +242,9 @@ def card(collection, x, y, sprites, elevation_deg=45.0, name="RT_Card", z=0.0, s
     if shadow:
         decal(collection, x, y, shadow, z, elevation_deg, scale)
     if extra and extra[0]:
-        _card_plane(collection, name + "_Light", x, y, z, extra[0], glow_material(extra[0][0]), e, scale,
+        light, _ = _card_plane(collection, name + "_Light", x, y, z, extra[0], glow_material(extra[0][0]), e, scale,
                                slide + GLOW_IN_FRONT)
+        light["rt_glow_light"] = True  # noční světlo ve hře (build_hall.night_lights)
     return obj
 
 

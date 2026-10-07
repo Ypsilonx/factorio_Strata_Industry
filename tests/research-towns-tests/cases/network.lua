@@ -14,6 +14,25 @@ end
 
 return {
   {
+    name = "noční světla: radnice i dům mají světla, se zbořením domu zmizí",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      ctx.house = H.house(ctx, 11, 0)
+      ctx.hall = H.status(ctx.town).hall
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        H.check(remote.call(R, "light_count", ctx.hall) > 0, "radnice nemá noční světla")
+        H.check(remote.call(R, "light_count", ctx.house.unit_number) > 0, "dům nemá noční světla")
+        ctx.house_key = ctx.house.unit_number
+        ctx.house.destroy({ raise_destroy = true })
+      end },
+      { ticks = 1, run = function(ctx)
+        H.check(remote.call(R, "light_count", ctx.house_key) == 0, "světla zbořeného domu zůstala")
+      end },
+    },
+  },
+  {
     name = "spojení domu s radnicí: chodník, šňůra, praporky a lucerny; se zbořením zmizí",
     setup = function(ctx)
       ctx.town = H.town(ctx)
