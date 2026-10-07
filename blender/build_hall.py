@@ -439,6 +439,8 @@ def render_depots(install_mod):
     _, bottom_y = rt_depots.screen(x, y, z0)
     wire = rt_depots.screen(*rt_depots.BOARD_WIRE)
     lamp = rt_depots.screen(*rt_depots.BOARD_LAMP)
+    power_wire = rt_depots.screen(*rt_depots.POWER_WIRE)
+    shadow_x = power_wire[0] + rt_depots.POWER_WIRE[2] * rt_depots.WIRE_SHADOW_PER_HEIGHT
     text = (
         "--- Rozměry a posun spritů překladišť a tabule, okénko kapaliny a body drátů – GENEROVÁNO\n"
         "--- blender/build_hall.py (--depots --install) ze stejných souřadnic jako model; neupravovat ručně.\n"
@@ -446,6 +448,8 @@ def render_depots(install_mod):
         f"  gauge = {{ {{ {x - 0.06:.3f}, {top_y:.3f} }}, {{ {x + 0.06:.3f}, {bottom_y:.3f} }} }},\n"
         f"  board_wire = {{ {wire[0]:.3f}, {wire[1]:.3f} }},\n"
         f"  board_lamp = {{ {lamp[0]:.3f}, {lamp[1]:.3f} }},\n"
+        f"  power_wire = {{ {power_wire[0]:.3f}, {power_wire[1]:.3f} }},\n"
+        f"  power_wire_shadow = {{ {shadow_x:.3f}, 0.250 }},\n"
         "}\n"
     )
     (MOD / "prototypes" / "depot_sprites.lua").write_text(text, encoding="utf-8")

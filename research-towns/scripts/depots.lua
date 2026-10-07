@@ -13,6 +13,27 @@ M.KINDS = {
   ["rt-goods-depot"] = "goods", ["rt-fluid-depot"] = "fluid", ["rt-power-depot"] = "power", ["rt-town-board"] = "board",
 }
 
+--- Skrytý spotřebič města pod městskou rozvodnou (prototypes/depots.lua).
+M.LOAD = "rt-power-load"
+
+--- Spotřebič městské rozvodny (platný), nebo nil.
+--- @return LuaEntity|nil
+local function load_of(depot)
+  return depot.load and depot.load.valid and depot.load or nil
+end
+
+--- Zajistí rozvodně skrytý spotřebič města na jejím místě (nová rozvodna, starší save).
+local function ensure_load(depot)
+  if depot.kind ~= "power" or load_of(depot) or not depot.entity.valid then return end
+  local entity = depot.entity
+  depot.load = entity.surface.create_entity({ name = M.LOAD, position = entity.position, force = entity.force })
+end
+
+--- Zajistí spotřebiče všech městských rozvoden (po změně verze modu).
+function M.ensure_loads()
+  for _, depot in pairs(storage.depots) do ensure_load(depot) end
+end
+
 --- Jména prototypů překladišť.
 function M.names()
   return { "rt-goods-depot", "rt-fluid-depot", "rt-power-depot", "rt-town-board" }
@@ -25,22 +46,23 @@ function M.apply_town_power(town)
   local list = {}
   for key in pairs(town.depots) do
     local depot = storage.depots[key]
-    if depot and depot.kind == "power" and depot.entity.valid then list[#list + 1] = depot end
+    if depot and depot.kind == "power" and load_of(depot) then list[#list + 1] = depot end
   end
   -- Ruina (a cizí město) elektřinu neodebírá.
   local total = town.state == "partner" and levels.power_per_tick(town.level, config.level_count()) or 0
   for _, depot in ipairs(list) do
     local usage = total / #list
-    depot.entity.power_usage = usage
-    depot.entity.electric_buffer_size = math.max(1, usage * 2)
+    depot.load.power_usage = usage
+    depot.load.electric_buffer_size = math.max(1, usage * 2)
   end
 end
 
 --- Vypne odběr rozvodny bez města.
 local function release_power(depot)
-  if depot.kind == "power" and depot.entity.valid then
-    depot.entity.power_usage = 0
-    depot.entity.electric_buffer_size = 1
+  local load = depot.kind == "power" and load_of(depot)
+  if load then
+    load.power_usage = 0
+    load.electric_buffer_size = 1
   end
 end
 
@@ -107,6 +129,7 @@ function M.add(entity, tags)
     depot.mode = board.is_mode(mode) and mode or "hall"
   end
   storage.depots[depot.key] = depot
+  ensure_load(depot)
   -- Odstranění bez události (jiný mod, editor) ohlásí on_object_destroyed.
   script.register_on_object_destroyed(entity)
   release_power(depot)
@@ -119,6 +142,7 @@ function M.remove(key)
   local depot = storage.depots[key]
   if not depot then return end
   storage.depots[key] = nil
+  if depot.load and depot.load.valid then depot.load.destroy() end
   local town = depot.town and storage.towns[depot.town]
   if town then
     town.depots[key] = nil
@@ -162,15 +186,24 @@ function M.collect(town, sinks)
   end
 end
 
---- Je spotřeba města pokrytá? (aspoň jedna rozvodna a každá má v zásobníku aspoň jeden tick odběru)
+--- Bere spotřebič elektřinu přes městskou rozvodnu? (je ve stejné elektrické síti jako ona – klasická rozvodna,
+--- která spotřebič jen přikryje plochou bez městské rozvodny v síti, se nepočítá)
+local function fed_by_pole(depot)
+  local load = load_of(depot)
+  return load ~= nil and depot.entity.valid and load.electric_network_id ~= nil
+    and load.electric_network_id == depot.entity.electric_network_id
+end
+
+--- Je spotřeba města pokrytá? (aspoň jedna rozvodna; každá napájená přes sebe a s aspoň jedním tickem odběru
+--- v zásobníku)
 function M.power_ok(town)
   local any = false
   for key in pairs(town.depots) do
     local depot = storage.depots[key]
     if depot and depot.kind == "power" then
       any = true
-      local entity = depot.entity
-      if not entity.valid or entity.energy < entity.power_usage then return false end
+      local load = load_of(depot)
+      if not (load and fed_by_pole(depot)) or load.energy < load.power_usage then return false end
     end
   end
   return any
@@ -181,13 +214,19 @@ function M.power_percent(town)
   local worst
   for key in pairs(town.depots) do
     local depot = storage.depots[key]
-    local entity = depot and depot.kind == "power" and depot.entity
-    if entity and entity.valid and entity.power_usage > 0 then
-      local ratio = math.min(1, entity.energy / entity.power_usage)
+    local entity = depot and depot.kind == "power" and load_of(depot)
+    if entity and entity.power_usage > 0 then
+      local ratio = fed_by_pole(depot) and math.min(1, entity.energy / entity.power_usage) or 0
       if not worst or ratio < worst then worst = ratio end
     end
   end
   return math.floor((worst or 0) * 100)
+end
+
+--- Spotřebič městské rozvodny (testy).
+function M.load_of(key)
+  local depot = storage.depots[key]
+  return depot and load_of(depot)
 end
 
 --- Síla překladišť města (první podle unit_number, tabule se nepočítá), nebo nil.

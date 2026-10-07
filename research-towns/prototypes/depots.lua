@@ -67,19 +67,46 @@ local led = { filename = "__base__/graphics/entity/combinator/activity-leds/cons
 board.activity_led_sprites = led
 board.activity_led_light_offsets = { lamp, lamp, lamp, lamp }
 
-local power = derive(data.raw["electric-energy-interface"]["electric-energy-interface"], "rt-power-depot")
-power.picture = picture("rt-power-depot")
-power.animation = nil
-power.continuous_animation = nil
+-- Městská rozvodna: skutečná rozvodna (sloup) – hráč ji připojí drátem ke své síti; napájí jen sama sebe (pod ní
+-- skrytý spotřebič města rt-power-load, staví ho skript). Elektřina jde do města jen přes ni.
+local power = derive(data.raw["electric-pole"]["substation"], "rt-power-depot")
+local pole_picture = picture("rt-power-depot")
+for _, layer in ipairs(pole_picture.layers) do layer.direction_count = 1 end
+power.pictures = pole_picture
 power.flags = { "placeable-neutral", "player-creation" }
-power.gui_mode = "none"
-power.energy_production = "0W"
-power.energy_usage = "0W"
--- Odběr (power_usage) a zásobník nastavuje skript podle úrovně města; limit toku jen omezuje špičku.
-power.energy_source = {
+power.supply_area_distance = 1
+power.maximum_wire_distance = 18
+local pole_wire, pole_shadow = sprites.power_wire, sprites.power_wire_shadow
+power.connection_points = { {
+  wire = { copper = pole_wire, red = { pole_wire[1] - 0.1, pole_wire[2] }, green = { pole_wire[1] + 0.1, pole_wire[2] } },
+  shadow = { copper = pole_shadow, red = { pole_shadow[1] - 0.1, pole_shadow[2] },
+    green = { pole_shadow[1] + 0.1, pole_shadow[2] } },
+} }
+power.radius_visualisation_picture = nil
+
+-- Skrytý spotřebič města pod městskou rozvodnou: odběr (power_usage) a zásobník nastavuje skript podle úrovně
+-- města; limit toku jen omezuje špičku. Nejde vybrat, nemá kolizi ani grafiku.
+local load = table.deepcopy(data.raw["electric-energy-interface"]["electric-energy-interface"])
+load.name = "rt-power-load"
+load.hidden = true
+load.minable = nil
+load.flags = { "not-on-map", "not-selectable-in-game", "not-blueprintable", "not-deconstructable", "hide-alt-info",
+  "placeable-off-grid", "not-upgradable", "no-copy-paste" }
+load.collision_mask = { layers = {} }
+load.collision_box = { { -0.4, -0.4 }, { 0.4, 0.4 } }
+load.selection_box = nil
+load.selectable_in_game = false
+load.picture = { filename = "__core__/graphics/empty.png", size = 1 }
+load.animation = nil
+load.continuous_animation = nil
+load.gui_mode = "none"
+load.energy_production = "0W"
+load.energy_usage = "0W"
+load.energy_source = {
   type = "electric", usage_priority = "secondary-input",
   buffer_capacity = "1MJ", input_flow_limit = "2GW", output_flow_limit = "0W",
 }
+load.localised_name = { "entity-name.rt-power-depot" }
 
 --- Předmět a recept překladiště.
 local function item_and_recipe(entity, order, ingredients)
@@ -92,7 +119,7 @@ local function item_and_recipe(entity, order, ingredients)
   }
 end
 
-data:extend({ goods, fluid, power, board })
+data:extend({ goods, fluid, power, load, board })
 data:extend({ item_and_recipe(goods, "b", {
   { type = "item", name = "iron-chest", amount = 2 }, { type = "item", name = "iron-gear-wheel", amount = 5 } }) })
 data:extend({ item_and_recipe(fluid, "c", {

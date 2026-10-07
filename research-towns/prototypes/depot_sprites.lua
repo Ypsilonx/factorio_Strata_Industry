@@ -8,4 +8,6 @@ return {
   gauge = { { 0.690, -0.390 }, { 0.810, 0.353 } },
   board_wire = { -0.340, -0.990 },
   board_lamp = { 0.340, -0.955 },
+  power_wire = { 0.800, -2.156 },
+  power_wire_shadow = { 4.276, 0.250 },
 }

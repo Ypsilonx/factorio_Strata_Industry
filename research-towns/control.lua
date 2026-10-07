@@ -145,6 +145,7 @@ script.on_event(defines.events.on_entity_settings_pasted, on_settings_pasted)
 script.on_event(defines.events.on_player_setup_blueprint, on_setup_blueprint)
 script.on_event(defines.events.on_technology_effects_reset, specializations.on_effects_reset)
 script.on_event(defines.events.on_runtime_mod_setting_changed, specializations.on_setting_changed)
+script.on_event(defines.events.on_selected_entity_changed, network.on_selected)
 -- Obnova otevřených panelů; bez otevřeného okna jen jedna kontrola prázdné tabulky.
 script.on_nth_tick(gui.REFRESH_TICKS, gui.refresh)
 -- Objevení měst hráči (60 se nekryje s TOWN_INTERVAL ani REFRESH_TICKS – stejné číslo by handler přepsalo).
@@ -157,6 +158,8 @@ end)
 script.on_configuration_changed(function()
   state.init()
   scheduler.clear()
+  -- Městská rozvodna je sloup se skrytým spotřebičem – starší save spotřebiče nemá.
+  depots.ensure_loads()
   -- Pozice nočních světel z Blenderu se mohly změnit – vykreslit znovu (domy při towns.refresh níže).
   lights.reset()
   for _, node in pairs(storage.nodes) do

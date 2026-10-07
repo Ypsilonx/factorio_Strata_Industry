@@ -80,8 +80,9 @@ return {
       local usage = 1e6 / 60
       -- Konkurenční spotřebič stejné priority (rozvodna mimo dosah města) chce 3× příkon města.
       local other = H.place(ctx, "rt-power-depot", -16, 18)
-      other.power_usage = 3 * usage
-      other.electric_buffer_size = 6 * usage
+      local other_load = remote.call(H.REMOTE, "power_load", other.unit_number)
+      other_load.power_usage = 3 * usage
+      other_load.electric_buffer_size = 6 * usage
       -- Zdroj pokryje jen 60 % celkové poptávky.
       local source = ctx.surface.find_entity("electric-energy-interface", { ctx.origin.x - 13.5, ctx.origin.y + 13.5 })
       source.power_production = 0.6 * 4 * usage
@@ -91,6 +92,26 @@ return {
       H.process(ctx.town)
       H.check(not H.status(ctx.town).power_ok, "elektřina hlášena jako pokrytá při přetížené síti")
     end } },
+  },
+  {
+    name = "elektřina jde do města jen přes městskou rozvodnu (klasická rozvodna bez drátu k ní nestačí)",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      ctx.pole = H.place(ctx, "rt-power-depot", -4, 10)
+      -- Klasická rozvodna svou plochou přikryje i městskou rozvodnu.
+      H.power(ctx, -10, 13)
+    end,
+    steps = {
+      { ticks = 30, run = function(ctx)
+        H.process(ctx.town)
+        H.check(H.status(ctx.town).power_ok, "připojená městská rozvodna nedodává")
+        ctx.pole.get_wire_connector(defines.wire_connector_id.pole_copper, false).disconnect_all()
+      end },
+      { ticks = 30, run = function(ctx)
+        H.process(ctx.town)
+        H.check(not H.status(ctx.town).power_ok, "město bere elektřinu i bez drátu k městské rozvodně")
+      end },
+    },
   },
   {
     name = "bez elektřiny radnice nezkoumá",

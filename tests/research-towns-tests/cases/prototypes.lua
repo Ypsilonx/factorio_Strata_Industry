@@ -12,9 +12,10 @@ return {
     H.check(has_green, "úroveň 2 bez zelené: " .. serpent.line(second))
   end } } },
   { name = "překladiště a dům ukazují dosah", steps = { { ticks = 1, run = function()
+    -- Městská rozvodna je sloup – hra u něj ukazuje plochu napájení, ne vlastní vizualizaci dosahu.
     local reach = {
       ["rt-goods-depot"] = levels.DEPOT_REACH, ["rt-fluid-depot"] = levels.DEPOT_REACH,
-      ["rt-power-depot"] = levels.DEPOT_REACH, ["rt-house"] = levels.HOUSE_REACH,
+      ["rt-house"] = levels.HOUSE_REACH,
     }
     for name, distance in pairs(reach) do
       local proto = prototypes.entity[name]

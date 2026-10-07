@@ -36,7 +36,7 @@ return {
         H.check(remote.call(R, "town_of", ctx.house.unit_number) == ctx.town, "dům se odpojil")
         H.check(#s.requirements > 0 and s.level_progress == 0, "cena obnovy chybí")
         H.process(ctx.town)
-        H.check(ctx.power.power_usage == 0, "rozvodna ruiny odebírá elektřinu")
+        H.check(remote.call(R, "power_load", ctx.power.unit_number).power_usage == 0, "rozvodna ruiny odebírá elektřinu")
         H.check(remote.call(R, "light_count", ruin.unit_number) == 0, "ruina svítí")
       end },
     },

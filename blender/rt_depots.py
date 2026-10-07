@@ -20,6 +20,10 @@ GAUGE = (0.75, -0.6, 0.35, 1.4)
 #: Úchyt drátů a lucerna (kontrolka) tabule.
 BOARD_WIRE = (-0.34, 0.0, 1.4)
 BOARD_LAMP = (0.34, 0.0, 1.35)
+#: Úchyt měděného drátu městské rozvodny (střed ráhna sloupu nad izolátory) a délka stínu drátu na obrazovce
+#: na jednotku výšky (podle vanilla rozvodny: drát 86 px nad zemí, stín 136 px vpravo).
+POWER_WIRE = (0.8, 0.6, 2.2)
+WIRE_SHADOW_PER_HEIGHT = 1.58
 #: Zmenšení ikon předmětů ze hry na paletách a v regálech (ikona 64 px = 1 dlaždice).
 ITEM_SCALE = 0.4
 #: Zboží ve skladu (ikony ze hry) na paletách před skladem: pozice palet a předměty na nich.
@@ -126,11 +130,12 @@ def power(b):
     b.box("RT_Sign", (0.25, -0.47, 0.6), (0.2, 0.02, 0.16), "hay", bevel=0.005)
     for x in (-0.5, -0.1, 0.3):
         b.cylinder("RT_Insulator", (x, 0.35, 1.25), 0.07, 0.2, "plaster", segments=10, bevel=0.01)
-    b.cylinder("RT_Pole", (0.8, 0.6, 0.04), 0.07, 2.2, "wood_beam", segments=8)
-    b.box("RT_Crossarm", (0.8, 0.6, 2.0), (0.6, 0.08, 0.08), "wood_beam", bevel=0.01)
-    for x in (0.55, 1.05):
-        b.cylinder("RT_PoleInsulator", (x, 0.6, 2.08), 0.04, 0.12, "plaster", segments=8, bevel=0)
-        b.beam("RT_Wire", (x, 0.6, 2.18), (x - 0.85, 0.35, 1.4), 0.02, "iron")
+    px, py, pz = POWER_WIRE
+    b.cylinder("RT_Pole", (px, py, 0.04), 0.07, pz, "wood_beam", segments=8)
+    b.box("RT_Crossarm", (px, py, pz - 0.2), (0.6, 0.08, 0.08), "wood_beam", bevel=0.01)
+    for x in (px - 0.25, px + 0.25):
+        b.cylinder("RT_PoleInsulator", (x, py, pz - 0.12), 0.04, 0.12, "plaster", segments=8, bevel=0)
+        b.beam("RT_Wire", (x, py, pz - 0.02), (x - 0.85, 0.35, 1.4), 0.02, "iron")
     return b.count
 
 

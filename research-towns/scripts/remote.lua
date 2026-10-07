@@ -6,6 +6,7 @@ local worldgen = require("scripts.worldgen")
 local network = require("scripts.network")
 local lights = require("scripts.lights")
 local specializations = require("scripts.specializations")
+local depots = require("scripts.depots")
 
 --- Město podle id, nebo nil.
 local function town(id)
@@ -108,9 +109,17 @@ remote.add_interface("research-towns", {
     node.level = level
     network.refresh_house(node)
   end,
+  --- Skrytý spotřebič městské rozvodny (testy).
+  power_load = function(unit_number)
+    return depots.load_of(unit_number)
+  end,
   --- Počet nočních světel radnice nebo domu (testy).
   light_count = function(unit_number)
     return lights.count(unit_number)
+  end,
+  --- Je skrytý chodník spojení dvou budov vidět? (testy)
+  link_path_visible = function(a, b)
+    return network.link_path_visible(a, b)
   end,
   --- Počet vykreslených objektů spojení dvou budov (testy).
   link_renders = function(a, b)
