@@ -6,6 +6,8 @@ local milestones = require("scripts.milestones")
 local names = require("scripts.names")
 local network = require("scripts.network")
 local lights = require("scripts.lights")
+local specializations = require("scripts.specializations")
+local spec = require("shared.specialization")
 local scheduler = require("scripts.scheduler")
 local story = require("shared.story")
 local houses = require("scripts.houses")
@@ -122,6 +124,7 @@ local function new_town(hall, state)
   }
   storage.towns[id] = town
   index_add(town)
+  specializations.assign(town)
   return town
 end
 
@@ -279,6 +282,7 @@ function M.refresh(town)
   depots.apply_town_power(town)
   M.update_bonus(town)
   draw_labels(town)
+  specializations.apply(town.hall.force)
 end
 
 --- Povýší město o úroveň, pokud to podmínky dovolí.
@@ -366,6 +370,7 @@ function M.status(town)
       requirements = with_delivered(requirements, progress), house_requirements = {}, houses_to_upgrade = 0,
       upkeep = {}, power_watts = 0, power_percent = 0,
       level_progress = milestones.fraction(requirements, progress), house_upgrade_progress = nil,
+      specialization = town.specialization, spec_bonus = spec.town_bonus(town.level, specializations.multiplier()),
     }
   end
   local count = config.level_count()
@@ -389,6 +394,8 @@ function M.status(town)
     level_progress = level_progress(town),
     house_upgrade_progress = milestones.fraction(house_reqs, town.house_progress),
     upkeep = upkeep_status(town, #candidates), upkeep_ok = town.upkeep_ok,
+    specialization = town.specialization, spec_bonus = spec.town_bonus(town.level, specializations.multiplier()),
+    spec_total = town.specialization and specializations.force_total(town.hall.force, town.specialization) or 0,
   }
 end
 
@@ -520,6 +527,7 @@ function M.on_hall_died(key)
   town.power_ok = false
   depots.apply_town_power(town)
   draw_labels(town)
+  specializations.apply(ruin.force)
   ruin.force.print({ "rt.town-ruined", town.name, gps(ruin) })
 end
 
@@ -539,6 +547,7 @@ function M.on_hall_removed(key)
       local depot = storage.depots[depot_key]
       if depot then depots.resolve(depot) end
     end
+    specializations.apply_all()
   end
   M.on_network_changed(touched)
 end

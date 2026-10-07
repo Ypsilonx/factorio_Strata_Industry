@@ -2,6 +2,7 @@
 local towns = require("scripts.towns")
 local config = require("scripts.config")
 local board = require("scripts.board")
+local specializations = require("scripts.specializations")
 local levels = require("shared.levels")
 
 local M = {}
@@ -17,6 +18,7 @@ M.NAMES = {
   frame = "rt_town_frame",
   name = "rt_town_name",
   level = "rt_town_level",
+  specialization = "rt_town_specialization",
   houses = "rt_town_houses",
   productivity = "rt_town_productivity",
   power = "rt_town_power",
@@ -70,6 +72,7 @@ function M.ensure(player)
   })
   frame.add({ type = "textfield", name = n.name, tooltip = { "rt.gui-rename" } })
   frame.add({ type = "label", name = n.level })
+  frame.add({ type = "label", name = n.specialization })
   frame.add({ type = "label", name = n.houses })
   frame.add({ type = "label", name = n.productivity })
   frame.add({ type = "label", name = n.power })
@@ -150,12 +153,32 @@ local function set_header(header, caption, fraction)
   header[n.header_percent].caption = { "rt.gui-progress", board.percent(fraction) }
 end
 
+--- Procenta s jedním desetinným místem jen u neceločíselných hodnot (2 %, 2,5 %).
+local function percent(value)
+  local p = value * 100
+  return math.abs(p - math.floor(p + 0.5)) < 1e-6 and string.format("%d", math.floor(p + 0.5)) or string.format("%.1f", p)
+end
+
+--- Řádek specializace: materiál, bonus města a celkový bonus síly; u cizího města a ruiny co by dalo jako partner.
+local function set_specialization(label, status)
+  label.visible = status.specialization ~= nil
+  if not status.specialization then return end
+  local name, icon = specializations.label(status.specialization)
+  if status.state == "partner" then
+    label.caption = { "rt.gui-specialization", icon, name, percent(status.spec_bonus), percent(status.spec_total) }
+  else
+    label.caption = { "rt.gui-specialization-offer", icon, name, percent(status.spec_bonus) }
+  end
+  label.tooltip = { "rt.gui-specialization-tooltip" }
+end
+
 --- Naplní panel hráče stavem města.
 local function fill(player, town)
   local frame = player.gui.relative[M.NAMES.frame]
   if not frame then return end
   local n = M.NAMES
   local status = towns.status(town)
+  set_specialization(frame[n.specialization], status)
   -- Cizí město ukazuje jen dar, ruina cenu obnovy; partnerské vrátí viditelnost sekcí.
   local partner = status.state == "partner"
   for _, key in ipairs({ n.houses, n.power, n.house_header, n.house_requirements, n.upkeep_status, n.upkeep, n.upgrade }) do

@@ -179,7 +179,25 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
 - Rychlost radnice podle úrovně: vzorec místo tabulky; v Pyanodonu doladit po zkušebním hraní (víc měst =
   paralelní výzkum).
 
-### Specializace měst (plán 2)
+### Specializace měst (plán 2d – hotovo 2026-10-07)
+- Rozhodnutí: specializace = **jeden základní materiál**, partnerské město zvyšuje síle produktivitu **všech receptů,
+  které ho vyrábějí jako hlavní výrobek** (`LuaRecipe.productivity_bonus`; do receptu se přičítá jen rozdíl proti
+  minule, takže výzkumy produktivity zůstanou; po `reset_technology_effects` se přidá znovu) – méně těžby.
+- Materiály z dat hry (`prototypes/specializations.lua`): `SPEC_COUNT` (10) nejpoužívanějších vyrobitelných
+  meziproduktů podle počtu receptů, kde jsou surovinou. Vynechá: skryté recepty a recyklaci, recepty bez rozkladu
+  pro počítání (barely), obaly kapalin (předmět z kapaliny, ze kterého recept tutéž kapalinu vrátí), suroviny ze
+  světa (ložiska, stromy, ryby, čerpané kapaliny – ne `simple-entity`, ruiny na Fulgoře dávají ocel), vědu,
+  vlastní předměty `rt-`. Lití ze Space Age se počítá jako výrobce. Výsledek v `create.log` (`specializace …`).
+- **Každé město jinou:** nové město dostane specializaci, kterou má zatím nejméně měst (mezi rovnými podle id) –
+  prvních `SPEC_COUNT` měst má každé jinou, sousední města se liší.
+- Bonus: `SPEC_STEP` (1 %) × úroveň, nejvýš `SPEC_TOWN_MAX` (15 %) na město; další města stejné specializace
+  téže síly přidají jen `SPEC_DECAY`^pořadí (50 %, 25 %…), celkem nejvýš `SPEC_MAX` (25 %), dolů na celá procenta
+  (hra drží produktivitu receptu po celých procentech). Vše × mapové nastavení „Síla specializací“ (za běhu,
+  `on_runtime_mod_setting_changed` přepočte). Počítají se jen
+  partnerská města; ruina, cizí a neobjevené město ne. Panel ukazuje specializaci i u cizího města (co by dalo).
+- Původní návrh níže (skupiny receptů, preference surovin milníků) zůstává jako nápad, nerealizováno.
+
+### Specializace měst (plán 2 – původní návrh)
 - Každé vygenerované město dostane specializaci (např. kovy, elektronika, chemie, stavebniny) určenou ze skupin
   receptů ve hře (ne natvrdo podle jmen – kompatibilita s overhauly).
 - Bonus: produktivita receptů dané skupiny pro celou sílu (`LuaRecipe.productivity_bonus`), roste s úrovní města.

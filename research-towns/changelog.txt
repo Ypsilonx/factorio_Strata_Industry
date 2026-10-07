@@ -19,3 +19,5 @@ Date: 2026-10-06
     - Town halls and houses light up their surroundings at night (windows, lanterns, lamps and fires).
     - Researching town halls absorb pollution, and so do top-level houses (startup setting to adjust).
     - A town hall destroyed by the biters leaves ruins; the town survives and is rebuilt at the same level with materials delivered through its depots.
+    - Town specializations: each town is skilled in one basic material derived from the game data; a partner town raises the productivity of all recipes making it by 1 % per level (at most 15 % per town, 25 % per material, diminishing returns for repeats).
+    - Map setting "Town specialization strength" (can be changed in a running game).

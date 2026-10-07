@@ -6,6 +6,7 @@ local network = require("scripts.network")
 local lights = require("scripts.lights")
 local depots = require("scripts.depots")
 local towns = require("scripts.towns")
+local specializations = require("scripts.specializations")
 local gui = require("scripts.gui")
 local worldgen = require("scripts.worldgen")
 local discovery = require("scripts.discovery")
@@ -142,6 +143,8 @@ script.on_event(defines.events.on_gui_confirmed, gui.on_confirmed)
 script.on_event(defines.events.on_gui_selection_state_changed, gui.on_selection_changed)
 script.on_event(defines.events.on_entity_settings_pasted, on_settings_pasted)
 script.on_event(defines.events.on_player_setup_blueprint, on_setup_blueprint)
+script.on_event(defines.events.on_technology_effects_reset, specializations.on_effects_reset)
+script.on_event(defines.events.on_runtime_mod_setting_changed, specializations.on_setting_changed)
 -- Obnova otevřených panelů; bez otevřeného okna jen jedna kontrola prázdné tabulky.
 script.on_nth_tick(gui.REFRESH_TICKS, gui.refresh)
 -- Objevení měst hráči (60 se nekryje s TOWN_INTERVAL ani REFRESH_TICKS – stejné číslo by handler přepsalo).
@@ -159,6 +162,11 @@ script.on_configuration_changed(function()
   for _, node in pairs(storage.nodes) do
     if node.kind == "house" and node.entity.valid then network.refresh_house(node) end
   end
+  -- Specializace: starší save je nemá, po změně modů mohla zmizet (přidělení v pořadí id – stejné výsledky).
+  local ids = {}
+  for id in pairs(storage.towns) do ids[#ids + 1] = id end
+  table.sort(ids)
+  for _, id in ipairs(ids) do specializations.assign(storage.towns[id]) end
   for _, town in pairs(storage.towns) do
     towns.refresh_lights(town)
   end
@@ -170,6 +178,7 @@ script.on_configuration_changed(function()
       scheduler.schedule(town, game.tick + 1)
     end
   end
+  specializations.apply_all()
   -- Starší save má spojení jako jednoduché čáry – překreslit na chodník a šňůru.
   network.redraw_links()
   worldgen.ensure()

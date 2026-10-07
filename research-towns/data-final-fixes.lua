@@ -4,6 +4,7 @@ local levels = require("shared.levels")
 local science = require("prototypes.science")
 local labs = require("prototypes.labs")
 local hall = require("prototypes.hall")
+local specializations = require("prototypes.specializations")
 
 local removed = labs.remove(data.raw, "rt-house")
 local lab_names = {}
@@ -41,6 +42,13 @@ for level = 1, count do
 end
 -- Nekonečné úrovně: základ posledního pásma, runtime ho násobí milestone_scale(úroveň).
 mod_data.infinite = milestone(count)
+
+-- Specializace měst: nejpoužívanější vyrobitelné meziprodukty a recepty, kterým město dá bonus k produktivitě.
+mod_data.specializations = specializations.collect(data.raw, function(key) return availability[key] ~= nil end,
+  levels.SPEC_COUNT)
+for _, entry in ipairs(mod_data.specializations) do
+  log("research-towns: specializace " .. entry.type .. "/" .. entry.name .. ": " .. table.concat(entry.recipes, ", "))
+end
 
 data:extend({ { type = "mod-data", name = "rt-levels", data = mod_data } })
 

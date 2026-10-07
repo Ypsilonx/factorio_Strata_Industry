@@ -57,6 +57,14 @@ M.UPKEEP_BUFFER_SECONDS = 300
 M.HALL_ABSORB_FIRST = 30
 M.HALL_ABSORB_LAST = 1000
 M.HOUSE_ABSORB = 15
+--- Specializace měst: počet materiálů (nejpoužívanější meziprodukty), bonus k produktivitě jejich receptů za úroveň
+--- partnerského města a strop na město; další města stejné specializace přidají jen SPEC_DECAY^pořadí, celkem nejvýš
+--- SPEC_MAX. Vše × mapové nastavení „Síla specializací“ (rt-specialization-multiplier).
+M.SPEC_COUNT = 10
+M.SPEC_STEP = 0.01
+M.SPEC_TOWN_MAX = 0.15
+M.SPEC_DECAY = 0.5
+M.SPEC_MAX = 0.25
 --- Obnova ruiny radnice: podíl surovin milníku současné úrovně (bez vědy), nahoru na celé kusy.
 M.REPAIR_SHARE = 0.5
 

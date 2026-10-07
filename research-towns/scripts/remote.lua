@@ -5,6 +5,7 @@ local config = require("scripts.config")
 local worldgen = require("scripts.worldgen")
 local network = require("scripts.network")
 local lights = require("scripts.lights")
+local specializations = require("scripts.specializations")
 
 --- Město podle id, nebo nil.
 local function town(id)
@@ -88,6 +89,17 @@ remote.add_interface("research-towns", {
   --- Styl vykresleného spojení dvou budov ("garland" | "wood" | "glass"), nebo nil (testy).
   link_style = function(a, b)
     return network.link_style(a, b)
+  end,
+  --- Vnutí městu specializaci (testy) a přepočte bonusy jeho síly.
+  set_specialization = function(id, name)
+    local t = town(id)
+    if not t then return end
+    t.specialization = name
+    if t.hall.valid then specializations.apply(t.hall.force) end
+  end,
+  --- Nastaví mapové nastavení „Síla specializací“ (testy – nastavení smí měnit jen vlastní mod).
+  set_specialization_multiplier = function(value)
+    settings.global["rt-specialization-multiplier"] = { value = value }
   end,
   --- Nastaví úroveň domu (testy) a obnoví jeho vzhled.
   set_house_level = function(unit_number, level)
