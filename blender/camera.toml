@@ -15,16 +15,24 @@ samples = 64
 [sun]
 # Teplé slunce zleva shora, stín doprava dolů jako u vanilla budov.
 rotation_deg = [-12.0, -48.0, 0.0]
-strength = 5.4
+strength = 7.5
 angle_deg = 4.0
 color = [1.0, 0.95, 0.86]
 
 [fill]
 # Chladné doplňkové světlo bez stínu.
 rotation_deg = [50.0, 30.0, 0.0]
-strength = 0.8
+strength = 1.5
 color = [0.8, 0.88, 1.0]
 
 [world]
 color = [0.42, 0.42, 0.45]
-strength = 0.75
+strength = 0.3
+
+[grade]
+# Doladění základní vrstvy k vanilla vzhledu (rt_render.grade). Vanilla budovy mají kontrast jasu ~0,20
+# a sytost ~0,4 (výpis „vzhled“ při renderu); 1.0 = beze změny.
+saturation = 1.0
+contrast = 1.1
+# Střední jas, kolem kterého se kontrast roztahuje (sRGB 0–1).
+pivot = 0.3

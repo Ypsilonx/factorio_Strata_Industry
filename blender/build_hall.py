@@ -4,6 +4,8 @@ Spuštění (headless, z kořene repozitáře):
     "C:/STEAM/steamapps/common/Blender/blender.exe" -b --factory-startup --python blender/build_hall.py -- --calibrate
 
 Přepínače:
+    --scene K N   jen postavit scénu stavby K (hall | house) ve vzhledu N bez renderu – pro prohlížení
+                  v otevřeném Blenderu přes MCP (exec skriptu se sys.argv = [..., "--", "--scene", "hall", "3"])
     --calibrate   zkušební deska 3×3 se sloupky přes vanilla laboratoř → blender/renders/calibration.png
     --variant N   vzhled radnice N (1–5): vrstvy a náhled blender/renders/preview-N.png
     --house N     vzhled domu N (1–5, = úroveň domu): vrstvy a náhled blender/renders/preview-house-N.png
@@ -128,7 +130,7 @@ def render_hall(variant):
         f"hall-{variant}", lambda collection, parent: rt_hall.build(collection, parent, mats, variant),
         HALL_TILES, HALL_TOP, HALL_MARGIN, rt_materials.set_glow)
     print(f"RADNICE {variant}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, posun nahoru {center_up} dlaždic, "
-          f"jas {R.luminance(base):.3f}")
+          f"{R.look(base)}")
     return base, light_px, shadow, center_up
 
 
@@ -143,7 +145,7 @@ def render_house(variant):
         f"house-{variant}", lambda collection, parent: rt_house.build(collection, parent, mats, variant),
         HOUSE_TILES, HOUSE_TOP, HOUSE_MARGIN, rt_materials.set_glow)
     print(f"DŮM {variant}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, posun nahoru {center_up} dlaždic, "
-          f"jas {R.luminance(base):.3f}")
+          f"{R.look(base)}")
     return base, light_px, shadow, center_up
 
 
@@ -191,6 +193,31 @@ def render_skywalk(kind):
     out.mkdir(parents=True, exist_ok=True)
     R.save_pixels(pixels, out / f"skywalk-{kind}.png")
     print(f"LÁVKA {kind}: {pixels.shape[1]}×{pixels.shape[0]} px")
+
+
+#: Stavby pro --scene: druh → (modul modelu, půdorys, místo nahoře, okraj).
+SCENES = {"hall": (rt_hall, HALL_TILES, HALL_TOP, HALL_MARGIN), "house": (rt_house, HOUSE_TILES, HOUSE_TOP, HOUSE_MARGIN)}
+
+
+def show_scene(kind, variant):
+    """Postaví scénu stavby bez renderu a ukáže ji v otevřeném Blenderu (přes MCP): pohled kamery hry,
+    náhled materiálů v Cycles. Pro prohlížení modelu – sprity se dál renderují headless."""
+    window = bpy.context.window
+    if window and window.scene.name == R.SCENE_NAME:
+        window.scene = bpy.data.scenes.get("Scene") or bpy.data.scenes.new("Scene")
+    module, footprint, top, margin = SCENES[kind]
+    mats = rt_materials.library()
+    scene, *_ , parts = R.build_scene(lambda collection, parent: module.build(collection, parent, mats, variant),
+                                      footprint, top, margin)
+    rt_materials.set_glow(False)
+    if window:
+        window.scene = scene
+        for area in window.screen.areas:
+            if area.type == "VIEW_3D":
+                space = area.spaces.active
+                space.region_3d.view_perspective = "CAMERA"
+                space.shading.type = "RENDERED"
+    print(f"SCÉNA {kind} {variant}: {parts} dílů")
 
 
 def vanilla_frame(path, width, height):
@@ -293,7 +320,7 @@ def render_depots(install_mod):
         base, light_px, shadow, center_up, parts = R.render_layers(
             name, lambda collection, parent, n=name: rt_depots.build(collection, parent, mats, n),
             footprint, top, margin, rt_materials.set_glow)
-        print(f"PŘEKLADIŠTĚ {name}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, jas {R.luminance(base):.3f}")
+        print(f"PŘEKLADIŠTĚ {name}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, {R.look(base)}")
         preview(name, base, light_px, shadow)
         if install_mod:
             out = entity_dir("depots")
@@ -363,6 +390,9 @@ def overview():
 
 if __name__ == "__main__":
     args = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
+    if "--scene" in args:
+        i = args.index("--scene")
+        show_scene(args[i + 1], int(args[i + 2]))
     if "--calibrate" in args:
         calibrate()
     if "--thumbnail" in args:

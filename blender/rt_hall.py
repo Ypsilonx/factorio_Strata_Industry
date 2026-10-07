@@ -204,10 +204,18 @@ def barrel(b, x, y, rng):
         b.cylinder("RT_Hoop", (x, y, z), r + 0.012, 0.03, "wood_beam", segments=14, bevel=0)
 
 
+#: Zmenšení dřevěné bedny ze hry (1 dlaždice) vedle domů – v měřítku města.
+CHEST_SCALE = 0.4
+
+
 def crate(b, x, y, rng, z=0.06):
-    """Bedna z prken."""
+    """Bedna: na zemi dřevěná bedna ze hry (zmenšená), na stole stánku bedna z prken (3D)."""
     s = rng.uniform(0.25, 0.35)
-    b.box("RT_Crate", (x, y, z), (s, s, s * 0.85), "planks", bevel=0.03, rotation=("Z", rng.uniform(-0.3, 0.3)))
+    turn = rng.uniform(-0.3, 0.3)
+    if z <= 0.06:
+        place_sprite(b, x, y, rt_sprites.machine("wooden-chest"), "RT_Chest", scale=CHEST_SCALE)
+        return
+    b.box("RT_Crate", (x, y, z), (s, s, s * 0.85), "planks", bevel=0.03, rotation=("Z", turn))
 
 
 def tree(b, x, y, rng):
@@ -216,10 +224,11 @@ def tree(b, x, y, rng):
     place_sprite(b, x, y, sprite, "RT_Tree")
 
 
-def place_sprite(b, x, y, sprite, name="RT_Machine"):
-    """Vloží vanilla sprite (rt_sprites.machine / tree) s patou v místním bodě (x, y) stavby."""
+def place_sprite(b, x, y, sprite, name="RT_Machine", scale=1.0, z=0.0):
+    """Vloží vanilla sprite (rt_sprites.machine / tree) s patou v místním bodě (x, y) stavby ve výšce z
+    (střecha); scale zmenší."""
     p = b.matrix @ Vector((x, y, 0.0))
-    return rt_sprites.card(b.collection, p.x, p.y * math.sqrt(2.0), sprite, name=name)
+    return rt_sprites.card(b.collection, p.x, p.y * math.sqrt(2.0), sprite, name=name, scale=scale, z=z)
 
 
 def machine(b, x, y, name):
@@ -248,8 +257,16 @@ def pole_line(b, poles, kind="small-pole"):
         wire(b, (x0, y0, top), (x1, y1, top))
 
 
+#: Zmenšení elektrické lampy ze hry (od vzhledu 4) v měřítku města.
+LAMP_SCALE = 0.6
+
+
 def lamp_post(b, x, y):
-    """Olejová lampa na železném sloupu (od vzhledu 2): sloup, rameno, svítící lucerna se stříškou."""
+    """Lampa u cesty: vzhled 2–3 olejová lampa na železném sloupu (sloup, svítící lucerna se stříškou),
+    od vzhledu 4 elektrická lampa ze hry (v noci svítí její světlo ze hry)."""
+    if b.variant >= 4:
+        place_sprite(b, x, y, rt_sprites.machine("small-lamp"), "RT_Lamp", scale=LAMP_SCALE)
+        return
     b.cylinder("RT_LampBase", (x, y, 0.06), 0.1, 0.15, "stone", segments=10)
     b.cylinder("RT_LampPost", (x, y, 0.2), 0.04, 1.35, "iron", segments=8, bevel=0)
     b.box("RT_Lamp", (x, y, 1.45), (0.16, 0.16, 0.22), "window", bevel=0.01)
@@ -399,6 +416,8 @@ def smithy(b, rng):
 
 #: Elektrické sloupy od elektrárny kolem náměstí a podél ulice (od vzhledu 2).
 POLES = [(3.3, 3.2), (2.9, 1.0), (2.6, -1.6), (1.6, -3.6), (1.25, -5.4), (1.25, -7.0)]
+#: Volný poloměr kolem sloupu, kam se nesmí postavit dům (dlaždice; viz OVERLAP).
+POLE_CLEAR = 0.5
 
 
 def power_plant(b):
@@ -470,7 +489,7 @@ def radar_site(b):
 #: zmizí (zbořeny kvůli stavbě). Náhoda domů se spotřebuje stejně, zbytek města se nepohne.
 ERA_SITES = [
     (5.0, 5.0, 2.7, 2, power_plant),
-    (-4.9, 3.4, 1.1, 2, None),  # dvůr manufaktury (montážní stroj a bedny)
+    (-5.3, 2.9, 1.8, 2, None),  # dvůr manufaktury (montážní stroj a bedny)
     (-5.2, -5.3, 2.3, 3, warehouse),
     (6.0, -1.6, 1.0, 3, water_tower),
     (5.3, -4.8, 2.0, 4, tank_farm),
@@ -478,18 +497,32 @@ ERA_SITES = [
 ]
 
 
-def rebuilt(b, x, y):
-    """Padne místo (x, y) do zóny přestavby aktivní v tomto vzhledu?"""
-    return any(b.variant >= since and math.hypot(x - zx, y - zy) < r for zx, zy, r, since, _ in ERA_SITES)
+#: Kolik poloměru zóny stavby nového věku se rezervuje pro domy už od vzhledu 1 (menší = víc domů, ale
+#: okraj domu může zasáhnout do stavby – ten dům se pak ve vzhledu stavby zbourá, viz rebuilt).
+ERA_RESERVE = 0.8
+
+
+def rebuilt(b, x, y, radius=0.0):
+    """Zasáhne stavba o poloměru radius na místě (x, y) do zóny přestavby aktivní v tomto vzhledu?
+    Stačí překryv poloviny poloměru – okraj domu nesmí trčet do stroje."""
+    return any(b.variant >= since and math.hypot(x - zx, y - zy) < r + radius * 0.5 for zx, zy, r, since, _ in ERA_SITES)
+
+
+#: Omítky činžáků od vzhledu 4 (každý činžák jiná podle rozměru) a barvy markýz nad vchodem.
+TENEMENT_PLASTERS = ["plaster_ochre", "plaster_pink", "plaster", "plaster_grey"]
+AWNINGS = ["cloth_red", "cloth_blue"]
+#: Zmenšení solárního panelu ze hry na střeše činžáku (od vzhledu 4).
+ROOF_SOLAR_SCALE = 0.3
 
 
 def tenement(b, sx, sy, rng, floors=None):
-    """Činžák (od vzhledu 3) na místě starého domu: 3 patra cihel (od 4 omítnutý beton, od 5 čtyři patra),
-    mřížka oken na obou stranách, plochá střecha s atikou a komíny; ve vzhledu 5 zahrada
-    na střeše."""
+    """Činžák (od vzhledu 3) na místě starého domu: 3 patra cihel (od 4 barevná omítka a markýza nad vchodem,
+    od 5 čtyři patra), mřížka oken na obou stranách, plochá střecha s atikou, komínem a technikou; ve vzhledu 5
+    zahrada na střeše. Barvy podle vlastní náhody z rozměru – náhoda města (rng) se spotřebuje stejně."""
     floors = floors or (4 if b.variant >= 5 else 3)
     floor_h = 1.05
-    wall = "brick" if b.variant == 3 else "plaster_grey"
+    style = random.Random(int(sx * 997 + sy * 31))
+    wall = "brick" if b.variant == 3 else style.choice(TENEMENT_PLASTERS)
     b.box("RT_Tenement", (0, 0, 0.04), (sx, sy, floors * floor_h), wall)
     top = 0.04 + floors * floor_h
     for f in range(floors):
@@ -501,17 +534,49 @@ def tenement(b, sx, sy, rng, floors=None):
         if f > 0:
             b.box("RT_Ledge", (0, 0, z - 0.25), (sx + 0.06, sy + 0.06, 0.06), "stone", bevel=0.01)
     door(b, 0.0, -sy / 2, w=0.5, h=0.85)
-    b.box("RT_Roof", (0, 0, top), (sx, sy, 0.08), "concrete", bevel=0.01)
+    if b.variant >= 4:
+        b.box("RT_Awning", (0, -sy / 2 - 0.22, 0.92), (0.85, 0.45, 0.04), style.choice(AWNINGS), bevel=0.01,
+              rotation=("X", 0.35))
+    b.box("RT_Roof", (0, 0, top), (sx, sy, 0.08), "tar_roof", bevel=0.01)
     for side in (-1, 1):
         b.box("RT_Parapet", (0, side * (sy / 2 - 0.05), top), (sx, 0.1, 0.25), wall, bevel=0.01)
         b.box("RT_Parapet", (side * (sx / 2 - 0.05), 0, top), (0.1, sy, 0.25), wall, bevel=0.01)
     b.box("RT_Chimney", (sx * 0.3, sy * 0.2, top), (0.3, 0.3, 0.6), "brick")
+    b.box("RT_ChimneyCap", (sx * 0.3, sy * 0.2, top + 0.6), (0.38, 0.38, 0.05), "stone", bevel=0.01)
+    roof_clutter(b, sx, sy, top + 0.08)
     if b.variant >= 5:
         # Město vědy: zahrada na střeše (keře stojí na střeše – blob ve výšce střechy).
-        b.box("RT_RoofGarden", (0, 0, top + 0.08), (sx - 0.3, sy - 0.3, 0.12), "grass", bevel=0.03)
+        b.box("RT_RoofGarden", (sx * 0.1, -sy * 0.1, top + 0.08), (sx * 0.6, sy * 0.55, 0.12), "grass", bevel=0.03)
         for _ in range(3):
-            b.blob("RT_RoofBush", (rng.uniform(-sx * 0.3, sx * 0.3), rng.uniform(-sy * 0.3, sy * 0.3), top + 0.3),
-                   rng.uniform(0.2, 0.32), "foliage", rng, squash=0.7)
+            b.blob("RT_RoofBush", (sx * 0.1 + rng.uniform(-sx * 0.2, sx * 0.2), -sy * 0.1 + rng.uniform(-sy * 0.15, sy * 0.15),
+                                   top + 0.3), rng.uniform(0.15, 0.24), "foliage", rng, squash=0.7)
+
+
+def roof_clutter(b, sx, sy, z):
+    """Technika na ploché střeše činžáku: televizní anténa, větrací hlavice a potrubí; vzhled 3 vzduchotechnika
+    a světlík, od vzhledu 4 solární panel ze hry. Vlastní náhoda podle rozměru – nespotřebuje náhodu města."""
+    rng = random.Random(int(sx * 1000 + sy * 100))
+    # Anténa: stožár se dvěma ráhny a vzpěrou.
+    mx, my = sx * 0.35, -sy * 0.32
+    b.cylinder("RT_AntennaMast", (mx, my, z), 0.025, 1.1, "iron", segments=6, bevel=0)
+    for h, span in ((0.85, 0.32), (1.0, 0.22)):
+        b.beam("RT_AntennaBar", (mx - span, my, z + h), (mx + span, my, z + h), 0.025, "metal_bright")
+    b.beam("RT_AntennaStay", (mx, my, z + 0.6), (mx - 0.25, my + 0.2, z), 0.02, "iron")
+    for _ in range(rng.randint(2, 3)):
+        x, y = rng.uniform(-sx * 0.35, sx * 0.1), rng.uniform(-sy * 0.3, sy * 0.3)
+        if b.variant < 5:
+            b.cylinder("RT_Vent", (x, y, z), 0.07, 0.22, "iron", segments=10, bevel=0)
+            b.cylinder("RT_VentCap", (x, y, z + 0.22), 0.12, 0.06, "iron", top_radius=0.02, segments=10, bevel=0)
+    ax, ay = -sx * 0.2, -sy * 0.2
+    if b.variant >= 4:
+        place_sprite(b, -sx * 0.12, sy * 0.05, rt_sprites.machine("solar-panel"), "RT_RoofSolar",
+                     scale=ROOF_SOLAR_SCALE, z=z)
+        return
+    b.box("RT_AirUnit", (ax, ay, z), (0.45, 0.32, 0.26), "iron", bevel=0.02)
+    b.cylinder("RT_AirFan", (ax, ay, z + 0.26), 0.11, 0.02, "metal_bright", segments=14, bevel=0)
+    b.box("RT_Skylight", (sx * 0.05, sy * 0.15, z), (0.4, 0.5, 0.1), "glass", bevel=0.01)
+    b.beam("RT_RoofPipe", (ax + 0.22, ay, z + 0.08), (sx * 0.3, ay, z + 0.08), 0.06, "rust_pipe")
+    b.beam("RT_RoofPipe", (sx * 0.3, ay, z + 0.08), (sx * 0.3, sy * 0.2 - 0.15, z + 0.08), 0.06, "rust_pipe")
 
 
 def manufactory(b, rng):
@@ -625,7 +690,7 @@ def square(b, rng):
 
 def grove(b, x, y, rng):
     """Háj nebo zahrada: trávník, strom, keře, kupka sena, záhon ohrazený plotem."""
-    b.cylinder("RT_Lawn", (x, y, 0.06), rng.uniform(1.1, 1.4), 0.04, "grass", segments=20, bevel=0.03)
+    b.cylinder("RT_Lawn", (x, y, 0.06), rng.uniform(1.1, 1.4), 0.02, "lawn", segments=20, bevel=0)
     tree(b, x + rng.uniform(-0.3, 0.3), y + rng.uniform(-0.2, 0.3), rng)
     for _ in range(rng.randint(1, 3)):
         a = rng.uniform(0, 2 * math.pi)
@@ -669,17 +734,28 @@ def build(collection, parent, mats, variant=1):
     # (-0.6, 2.0) = volné prostranství před průčelím badatelny – stromy by ho zakryly.
     occupied = [(-0.6, 4.6, 2.6), (1.7, 5.5, 1.3), (-4.4, 5.3, 1.6), (cx, cy, SQUARE_R + 0.3), (-0.6, 2.0, 2.0),
                 (0.0, -5.0, 1.0), (0.0, -6.6, 1.3)]
-    houses = place_houses(b, variant, occupied)
+    # Sloupy (od vzhledu 2) a zóny staveb nových věků jsou pro domy rezervované ve všech vzhledech: domy stojí
+    # všude stejně, sloup neprochází střechou a stroj nestojí v domě. V raných vzhledech zóny vyplní zeleň.
+    occupied += [(x, y, POLE_CLEAR) for x, y in POLES]
+    reserved = [(zx, zy, r * ERA_RESERVE) for zx, zy, r, _, _ in ERA_SITES]
+    taken = occupied + reserved
+    houses = place_houses(b, variant, taken)
+    occupied += taken[len(occupied) + len(reserved):]  # místa domů (zeleň se jim vyhne, zónám jen aktivním)
     square(b, random.Random(1300))
+    # Stavby nových věků a sloupy: háje, stromy a keře se tam nesmí dostat. Zóny staveb, které ještě nestojí,
+    # zatím obdělává osada (statek se záhony) – ne les.
+    occupied += [(zx, zy, r) for zx, zy, r, since, _ in ERA_SITES if variant >= since]
+    if variant >= 2:
+        occupied += [(x, y, 0.4) for x, y in POLES]
+    for i, (zx, zy, r, since, _) in enumerate(ERA_SITES):
+        if variant < since and r >= FARM_MIN_ZONE:
+            homestead(b, zx, zy, r, random.Random(1700 + i))
+            occupied.append((zx, zy, r))
     rng = random.Random(1400)
     for x, y in GROVES:
         if not any(math.hypot(x - ox, y - oy) < orad + 0.4 for ox, oy, orad in occupied):
             grove(b, x, y, rng)
             occupied.append((x, y, 1.2))
-    if variant >= 2:
-        # Elektrárna a sloupy: stromy a keře se tam nesmí dostat.
-        occupied += [(zx, zy, r) for zx, zy, r, since, _ in ERA_SITES if variant >= since]
-        occupied += [(x, y, 0.4) for x, y in POLES]
     fill_greenery(b, random.Random(1500), occupied)
     gate(b, random.Random(1600))
     print(f"RADNICE: {houses} domů a chýší")
@@ -715,7 +791,7 @@ def place_houses(b, variant, occupied):
         up = random.Random(5001 + count)
         occupied.append((x, y, radius))
         count += 1
-        if rebuilt(b, x, y):
+        if rebuilt(b, x, y, radius):
             continue  # dům zbořen kvůli stavbě nové éry (místo zůstane obsazené, pořadí domů stejné)
         # Čelo stavby k náměstí, s malou náhodnou odchylkou.
         facing = math.atan2(cy - y, cx - x) + math.pi / 2 + local.uniform(-0.25, 0.25)
@@ -742,6 +818,38 @@ def cobbled_path(b, x, y, radius):
         b.box("RT_Path", (0, 0, 0.06), (end - start, 0.55, 0.025), "cobble", bevel=0.01)
 
 
+#: Kolik volných stromů se nejvýš přidá do mezer (víc = les, město zaniká).
+FREE_TREES = 3
+#: Nejmenší zóna stavby nového věku, kterou do té doby obdělává statek (menší zůstane volná).
+FARM_MIN_ZONE = 1.5
+
+
+def homestead(b, x, y, r, rng):
+    """Statek osady na místě budoucí stavby: záhony s plodinami, plot, hranice dřeva, bedna ze hry a seno."""
+    w = r * 1.2
+    b.box("RT_Field", (x, y, 0.06), (w, w * 0.8, 0.03), "field", bevel=0.01)
+    crops = rng.choice(("foliage", "foliage_light", "hay"))
+    for i in range(5):
+        row_y = y - w * 0.32 + i * w * 0.16
+        b.box("RT_FieldRow", (x, row_y, 0.09), (w * 0.9, 0.07, 0.03), "earth", bevel=0.01)
+        for k in range(int(w / 0.22)):
+            b.blob("RT_Crop", (x - w * 0.42 + k * 0.22, row_y, 0.14), 0.07, crops, rng, squash=0.8)
+    count = int(w / 0.28)
+    fy = y - w * 0.45
+    for k in range(count + 1):
+        b.box("RT_Picket", (x - w / 2 + k * w / count, fy, 0.06), (0.05, 0.05, 0.36), "wood", bevel=0.01)
+    b.beam("RT_FenceRail", (x - w / 2, fy, 0.28), (x + w / 2, fy, 0.28), 0.04, "wood")
+    # Hranice dřeva a bedna ze hry u vstupu na statek.
+    wx, wy = x + w * 0.55, y - w * 0.2
+    for layer in range(3):
+        for k in range(4 - layer):
+            ly = wy - 0.18 + (k + layer * 0.5) * 0.12
+            b.beam("RT_Log", (wx - 0.3, ly, 0.1 + layer * 0.1), (wx + 0.3, ly, 0.1 + layer * 0.1), 0.1, "wood_beam")
+    place_sprite(b, x - w * 0.6, y - w * 0.5, rt_sprites.machine("wooden-chest"), "RT_Chest", scale=CHEST_SCALE)
+    if rng.random() < 0.6:
+        b.blob("RT_Hay", (x + w * 0.5, y + w * 0.4, 0.25), 0.35, "hay", rng, squash=0.9)
+
+
 def fill_greenery(b, rng, occupied):
     """Do zbylých mezer stromy a keře."""
     trees = 0
@@ -749,7 +857,7 @@ def fill_greenery(b, rng, occupied):
         x, y = rng.uniform(-HALF + 0.6, HALF - 0.6), rng.uniform(-HALF + 0.6, HALF - 0.6)
         if any(math.hypot(x - ox, y - oy) < orad + 0.5 for ox, oy, orad in occupied):
             continue
-        if trees < 6 and rng.random() < 0.5:
+        if trees < FREE_TREES and rng.random() < 0.5:
             tree(b, x, y, rng)
             occupied.append((x, y, 0.9))
             trees += 1

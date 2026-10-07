@@ -207,18 +207,58 @@ def over(dst, src, x=0, y=0):
     return out
 
 
+REC709 = np.array([0.2126, 0.7152, 0.0722])
+
+
 def luminance(pixels):
     """Průměrný jas (sRGB, Rec. 709) neprůhledných pixelů."""
     mask = pixels[..., 3] > 0.5
     rgb = pixels[mask][:, :3]
-    return float((rgb @ np.array([0.2126, 0.7152, 0.0722])).mean()) if len(rgb) else 0.0
+    return float((rgb @ REC709).mean()) if len(rgb) else 0.0
 
 
-def render_layers(name, build, footprint, top, margin, set_glow):
-    """Vyrenderuje model do tří vrstev: základ (svítidla zhasnutá), světla (jen emise, alfa z jasu – ve hře
-    additive) a stín (model neviditelný pro kameru, podložka zachytí stín). build(collection, parent) postaví
-    model a vrátí počet dílů; objekty RT_Plaza (nádvoří, dvorek) stín nevrhají – zakryly by podložku.
-    set_glow(on) přepíná svítící materiály. Vrátí (base, light, shadow, center_up, díly)."""
+def look(pixels):
+    """Souhrn vzhledu neprůhledných pixelů pro srovnání s vanilla sprity: jas, kontrast (směrodatná odchylka jasu),
+    stíny a světla (5. a 95. percentil jasu) a průměrná sytost."""
+    rgb = pixels[pixels[..., 3] > 0.9][:, :3]
+    lum = rgb @ REC709
+    high, low = rgb.max(axis=1), rgb.min(axis=1)
+    sat = (high - low) / np.maximum(high, 1e-6)
+    return (f"jas {lum.mean():.3f} kontrast {lum.std():.3f} stíny {np.percentile(lum, 5):.3f} "
+            f"světla {np.percentile(lum, 95):.3f} sytost {sat.mean():.3f}")
+
+
+def grade(pixels):
+    """Barevné doladění základní vrstvy k vanilla vzhledu (camera.toml [grade]): sytost kolem jasu pixelu
+    a kontrast kolem středního jasu pivot. Ve sRGB, alfa beze změny."""
+    cfg = CONFIG["grade"]
+    rgb = pixels[..., :3]
+    lum = (rgb @ REC709)[..., None]
+    rgb = lum + (rgb - lum) * cfg["saturation"]
+    rgb = cfg["pivot"] + (rgb - cfg["pivot"]) * cfg["contrast"]
+    out = pixels.copy()
+    out[..., :3] = np.clip(rgb, 0.0, 1.0)
+    return out
+
+
+def fade_edges(pixels, tiles):
+    """Plynule ztlumí krytí k pravému a dolnímu okraji v pásu široké tiles dlaždic (= okraj záběru, dál je
+    stavba). Dlouhé stíny (stromy, stroje ze hry) přesahují záběr – bez vyznění by končily ostrou hranou."""
+    h, w = pixels.shape[:2]
+    n = int(tiles * PX)
+    if n == 0:
+        return pixels
+    ramp = np.clip(np.arange(n, 0, -1, dtype=np.float32) / n, 0.0, 1.0) ** 1.5
+    out = pixels.copy()
+    out[:, w - n:, 3] *= ramp[None, :]
+    out[h - n:, :, 3] *= ramp[:, None]
+    return out
+
+
+def build_scene(build, footprint, top, margin):
+    """Postaví scénu: render, kamera hry, světla, podložka stínu a model (build(collection, parent) → počet
+    dílů). Vrátí (scéna, kolekce, světla, podložka, posun středu nahoru, díly). Bez renderu – i pro prohlížení
+    modelu v otevřeném Blenderu (build_hall.py --scene)."""
     width, height, center_up = frame(footprint, top=top, bottom=margin, side=margin)
     scene, collection = fresh_scene()
     parent = root(collection)
@@ -227,6 +267,63 @@ def render_layers(name, build, footprint, top, margin, set_glow):
     lights = setup_lights(collection)
     ground = add_ground(collection, width, height)
     parts = build(collection, parent)
+    return scene, collection, lights, ground, center_up, parts
+
+
+#: Síla stínu budov na spritech ze hry (násobí krytí lapače stínu; 1 = jak spočítal Cycles) – ladit podle stínů na nádvoří.
+CARD_SHADOW = 1.0
+#: Náklon plochy spritu dozadu při zachytávání stínu (°): svislou plochu slunce (zleva shora, mírně od severu)
+#: nesvítí, takže by stín nezachytila. Výška se zkrátí, aby se v projekci kryla pixel na pixel.
+CARD_TILT_DEG = 35.0
+
+
+def render_card_shadow(scene, ground, model, path):
+    """Stín budov na spritech ze hry (svislé plochy rt_card): plochy jako lapače stínu, naklopené dozadu
+    kolem spodní hrany a zkrácené na stejnou projekci; ostatní díly kameře neviditelné, ale vrhají stín.
+    Vrátí krytí stínu (výška, šířka) v cílovém rozlišení."""
+    elevation = math.radians(CAM["elevation_deg"])
+    tilt = math.radians(CARD_TILT_DEG)
+    cards = [o for o in model if o.get("rt_card")]
+    saved = [(o.location.copy(), o.rotation_euler.copy(), o.scale.copy()) for o in cards]
+    for obj in cards:
+        # Plocha leží v místní rovině XY (výška = osa Y), po otočení o 90° kolem X je svislá.
+        half = max(v.co.y for v in obj.data.vertices)
+        bottom = obj.location.copy()
+        bottom.z -= half
+        squash = math.cos(elevation) / math.cos(elevation - tilt)
+        obj.scale.y = squash
+        obj.rotation_euler.x = math.pi / 2 - tilt
+        obj.location = (bottom.x, bottom.y + half * squash * math.sin(tilt), bottom.z + half * squash * math.cos(tilt))
+        obj.is_shadow_catcher = True
+        obj.visible_camera = True
+    # Lapač stínu potřebuje materiál, který přijímá světlo: místo emise spritu matná bílá (průhlednost zůstane).
+    swapped = []
+    for mat in {slot.material for obj in cards for slot in obj.material_slots}:
+        nt = mat.node_tree
+        mix = next(n for n in nt.nodes if n.type == "MIX_SHADER")
+        emission = mix.inputs[2].links[0].from_socket
+        diffuse = nt.nodes.new("ShaderNodeBsdfDiffuse")
+        nt.links.new(diffuse.outputs["BSDF"], mix.inputs[2])
+        swapped.append((nt, mix, emission, diffuse))
+    ground.hide_render = True
+    try:
+        return downsample(render(scene, path))[..., 3]
+    finally:
+        for nt, mix, emission, diffuse in swapped:
+            nt.links.new(emission, mix.inputs[2])
+            nt.nodes.remove(diffuse)
+        for obj, (location, rotation, scale) in zip(cards, saved):
+            obj.location, obj.rotation_euler, obj.scale = location, rotation, scale
+            obj.is_shadow_catcher = False
+        ground.hide_render = False
+
+
+def render_layers(name, build, footprint, top, margin, set_glow):
+    """Vyrenderuje model do tří vrstev: základ (svítidla zhasnutá), světla (jen emise, alfa z jasu – ve hře
+    additive) a stín (model neviditelný pro kameru, podložka zachytí stín). build(collection, parent) postaví
+    model a vrátí počet dílů; objekty RT_Plaza (nádvoří, dvorek) stín nevrhají – zakryly by podložku.
+    set_glow(on) přepíná svítící materiály. Vrátí (base, light, shadow, center_up, díly)."""
+    scene, collection, lights, ground, center_up, parts = build_scene(build, footprint, top, margin)
     model = [o for o in collection.objects if o.type == "MESH" and o is not ground]
     renders = HERE / "renders"
     renders.mkdir(exist_ok=True)
@@ -245,8 +342,8 @@ def render_layers(name, build, footprint, top, margin, set_glow):
     light_px[..., 3] = np.clip(light_px[..., :3].max(axis=-1) * 1.5, 0.0, 1.0) * light_px[..., 3]
     for light in lights:
         light.hide_render = False
-    world_strength.default_value = default_world
     set_glow(False)
+    world_strength.default_value = default_world
 
     ground.hide_render = False
     for obj in model:
@@ -256,4 +353,8 @@ def render_layers(name, build, footprint, top, margin, set_glow):
     shadow_raw = downsample(render(scene, renders / f"{name}-shadow-raw.png"))
     shadow = np.zeros_like(shadow_raw)
     shadow[..., 3] = shadow_raw[..., 3]
+    shadow = fade_edges(shadow, margin)
+    card_shadow = render_card_shadow(scene, ground, model, renders / f"{name}-cards-raw.png")
+    base[..., :3] *= 1.0 - (card_shadow * CARD_SHADOW)[..., None]
+    base = fade_edges(grade(base), margin)
     return base, light_px, shadow, center_up, parts

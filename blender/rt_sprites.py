@@ -27,6 +27,7 @@ MACHINES = {
     "assembler-1": [("assembling-machine-1/assembling-machine-1.png", 214, 226, 0, 2)],
     "assembler-2": [("assembling-machine-2/assembling-machine-2.png", 214, 218, 0, 4)],
     "iron-chest": [("iron-chest/iron-chest.png", 66, 76, -0.5, -0.5)],
+    "wooden-chest": [("wooden-chest/wooden-chest.png", 62, 72, 0.5, -2)],
     "storage-tank": [("storage-tank/storage-tank.png", 219, 235, -0.25, -1.25)],
     "radar": [("radar/radar.png", 196, 254, 1, -16)],
     "roboport": [("roboport/roboport-base.png", 228, 277, 2, -2.25),
@@ -35,16 +36,42 @@ MACHINES = {
     "solar-panel": [("solar-panel/solar-panel.png", 230, 224, -3, 3.5)],
     "accumulator": [("accumulator/accumulator.png", 130, 189, 0, -11)],
     "chemical-plant": [("chemical-plant/chemical-plant.png", 220, 292, 0.5, -9)],
+    "small-lamp": [("small-lamp/lamp.png", 83, 70, 0.25, 3)],
 }
+#: Stíny strojů (draw_as_shadow ve hře): jméno → (soubor, šířka, výška, posun x, y) – z base/prototypes/entity.
+SHADOWS = {
+    "small-pole": ("small-electric-pole/small-electric-pole-shadow.png", 256, 52, 51, 3),
+    "boiler": ("boiler/boiler-N-shadow.png", 274, 164, 20.5, 9),
+    "steam-engine": ("steam-engine/steam-engine-H-shadow.png", 508, 160, 48, 24),
+    "assembler-1": ("assembling-machine-1/assembling-machine-1-shadow.png", 190, 165, 8.5, 5),
+    "iron-chest": ("iron-chest/iron-chest-shadow.png", 110, 50, 10.5, 6),
+    "wooden-chest": ("wooden-chest/wooden-chest-shadow.png", 104, 40, 10, 6.5),
+    "storage-tank": ("storage-tank/storage-tank-shadow.png", 291, 153, 29.75, 22.25),
+    "radar": ("radar/radar-shadow.png", 336, 170, 39, 6),
+    "roboport": ("roboport/roboport-shadow.png", 294, 201, 28.5, 9.25),
+    "solar-panel": ("solar-panel/solar-panel-shadow.png", 220, 180, 9.5, 6),
+    "accumulator": ("accumulator/accumulator-shadow.png", 234, 106, 29, 6),
+    "chemical-plant": ("chemical-plant/chemical-plant-shadow.png", 312, 222, 27, 6),
+    "small-lamp": ("small-lamp/lamp-shadow.png", 76, 47, 4, 4.75),
+}
+#: Světla strojů (rozsvícená lampa – jen ve světelné vrstvě): jméno → (soubor, šířka, výška, posun x, y).
+GLOWS = {
+    "small-lamp": ("small-lamp/lamp-light.png", 90, 78, 0, -7),
+}
+#: Síla stínu ze hry v renderu (krytí černé), aby ladil se stíny modelu.
+SHADOW_ALPHA = 0.6
+#: Výška spodní hrany svislé plochy spritu nad zemí – nad nádvořím, aby ho nezakrylo (viz card).
+CARD_LIFT = 0.12
+
 #: Výška horního úchytu drátu nad zemí (dlaždice ve světě) pro sloupy – podle vrcholu spritu.
 POLE_TOP = {"small-pole": 4.1, "medium-pole": 4.6}
 
-#: Stromy: (typ, písmeno, kmen (š, v, posun), listí (š, v, posun)). Listnaté tree-02 převažují.
+#: Stromy: (typ, písmeno, kmen (š, v, posun), listí (š, v, posun), stín (š, v, posun)). Listnaté tree-02 převažují.
 TREES = [
-    ("02", "a", (162, 324, 1, -65), (184, 310, 0, -74)),
-    ("02", "b", (150, 286, -3, -59), (184, 274, -2, -62)),
-    ("02", "a", (162, 324, 1, -65), (184, 310, 0, -74)),
-    ("01", "a", (140, 340, 2, -69), (184, 306, -1, -74)),
+    ("02", "a", (162, 324, 1, -65), (184, 310, 0, -74), (384, 130, 92, -2)),
+    ("02", "b", (150, 286, -3, -59), (184, 274, -2, -62), (372, 134, 86, 1)),
+    ("02", "a", (162, 324, 1, -65), (184, 310, 0, -74), (384, 130, 92, -2)),
+    ("01", "a", (140, 340, 2, -69), (184, 306, -1, -74), (324, 134, 61, -2)),
 ]
 #: Odstíny listí (tint jako ve hře) z barev tree-02 a tree-01, ztlumené LEAF_DIM kvůli souladu s městem.
 LEAF_COLORS = [(190, 215, 132), (150, 201, 111), (194, 208, 87), (118, 243, 152)]
@@ -94,17 +121,29 @@ def compose(key, layers):
     return path, width, height, ((left + right) / 2 / PX, (top + bottom) / 2 / PX)
 
 
+def _shadow(key, file, w, h, sx, sy):
+    """Stín ze hry složený do cache (stejný formát jako sprite – viz compose)."""
+    frame = _load(FACTORIO_DATA / "base/graphics/entity" / file)[:h, :w].copy()
+    return compose(key + "-shadow", [(frame, sx * 2, sy * 2)])
+
+
 def machine(name):
-    """Složený sprite stroje z MACHINES."""
+    """Složený sprite stroje z MACHINES, jeho stín a světlo ze hry (nebo None). Vrátí (sprite, stín, světlo)."""
     layers = []
     for file, w, h, sx, sy in MACHINES[name]:
         layers.append((_load(FACTORIO_DATA / "base/graphics/entity" / file)[:h, :w].copy(), sx * 2, sy * 2))
-    return compose(name, layers)
+    shadow = _shadow(name, *SHADOWS[name]) if name in SHADOWS else None
+    glow = None
+    if name in GLOWS:
+        file, w, h, sx, sy = GLOWS[name]
+        frame = _load(FACTORIO_DATA / "base/graphics/entity" / file)[:h, :w].copy()
+        glow = compose(name + "-glow", [(frame, sx * 2, sy * 2)])
+    return compose(name, layers), shadow, glow
 
 
 def tree(index, color_index):
-    """Složený strom: kmen + listí obarvené tintem (plná koruna = první snímek)."""
-    kind, letter, trunk, leaves = TREES[index]
+    """Složený strom: kmen + listí obarvené tintem (plná koruna = první snímek) a stín. Vrátí (sprite, stín)."""
+    kind, letter, trunk, leaves, shadow = TREES[index]
     layers = []
     for part, (w, h, sx, sy) in (("trunk", trunk), ("leaves", leaves)):
         frame = _load(FACTORIO_DATA / f"base/graphics/entity/tree/{kind}/tree-{kind}-{letter}-{part}.png")[:h, :w]
@@ -112,7 +151,8 @@ def tree(index, color_index):
         if part == "leaves":
             frame[..., :3] *= np.array(LEAF_COLORS[color_index], dtype=np.float32) / 255.0 * LEAF_DIM
         layers.append((frame, sx * 2, sy * 2))
-    return compose(f"tree-{kind}-{letter}-{color_index}", layers)
+    shadow = _shadow(f"tree-{kind}-{letter}", f"tree/{kind}/tree-{kind}-{letter}-shadow.png", *shadow)
+    return compose(f"tree-{kind}-{letter}-{color_index}", layers), shadow
 
 
 def material(path):
@@ -143,21 +183,133 @@ def material(path):
     return mat
 
 
-def card(collection, x, y, sprite, elevation_deg=45.0, name="RT_Card", z=0.0):
-    """Vloží složený sprite (výsledek machine/tree) s patou v bodě (x, y) světových souřadnic (už s natažením
-    osy Y) jako svislou plochu natáhnutou na výšku o 1/cos(elevace); z = výška paty nad zemí (střecha)."""
-    path, width, height, (cx, cy) = sprite
-    e = math.radians(elevation_deg)
-    w, h = width / PX, height / PX / math.cos(e)
+def _plane(collection, name, w, h, mat):
+    """Obdélník w × h v rovině XY se středem v počátku a UV přes celý obrázek."""
     mesh = bpy.data.meshes.new(name)
     mesh.from_pydata([(-w / 2, -h / 2, 0), (w / 2, -h / 2, 0), (w / 2, h / 2, 0), (-w / 2, h / 2, 0)], [],
                      [(0, 1, 2, 3)])
     mesh.uv_layers.new()
     for loop, uv in zip(mesh.uv_layers[0].data, ((0, 0), (1, 0), (1, 1), (0, 1))):
         loop.uv = uv
-    mesh.materials.append(material(path))
+    mesh.materials.append(mat)
     obj = bpy.data.objects.new(name, mesh)
-    obj.location = (x + cx, y, z - cy / math.cos(e))
-    obj.rotation_euler = (math.pi / 2, 0.0, 0.0)
+    obj.visible_shadow = False
     collection.objects.link(obj)
+    return obj
+
+
+def shadow_material(path):
+    """Neosvětlený stín ze hry: černá s krytím alfa × SHADOW_ALPHA (rt_unlit – ve světelné vrstvě nesvítí)."""
+    name = "RT_Shadow_" + path.stem
+    mat = bpy.data.materials.get(name)
+    if mat:
+        return mat
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = bpy.data.images.load(str(path), check_existing=True)
+    emission = nt.nodes.new("ShaderNodeEmission")
+    emission.inputs["Color"].default_value = (0.0, 0.0, 0.0, 1.0)
+    transparent = nt.nodes.new("ShaderNodeBsdfTransparent")
+    strength = nt.nodes.new("ShaderNodeMath")
+    strength.operation = "MULTIPLY"
+    strength.inputs[1].default_value = SHADOW_ALPHA
+    nt.links.new(tex.outputs["Alpha"], strength.inputs[0])
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(strength.outputs["Value"], mix.inputs["Fac"])
+    nt.links.new(transparent.outputs["BSDF"], mix.inputs[1])
+    nt.links.new(emission.outputs["Emission"], mix.inputs[2])
+    nt.links.new(mix.outputs["Shader"], out.inputs["Surface"])
+    mat["rt_unlit"] = True
+    return mat
+
+
+def card(collection, x, y, sprites, elevation_deg=45.0, name="RT_Card", z=0.0, scale=1.0):
+    """Vloží sprite ze hry (výsledek machine/tree = (sprite, stín[, světlo])) s patou v bodě (x, y) světových
+    souřadnic (už s natažením osy Y); z = výška paty nad zemí (střecha), scale = zmenšení (bedny v měřítku města).
+
+    Sprite je svislá plocha natažená na výšku o 1/cos(elevace). Plocha se posune po paprsku ke kameře, až je
+    její spodní hrana CARD_LIFT nad zemí – v projekci se nic nezmění, ale nádvoří už nezakryje spodek stroje.
+    Plocha nevrhá stín; místo něj se na zem položí stín ze hry (vodorovná plocha). Světlo (rozsvícená lampa)
+    je stejná plocha těsně před spritem, viditelná jen ve světelné vrstvě (glow_material)."""
+    sprite, shadow, *extra = sprites
+    e = math.radians(elevation_deg)
+    obj, slide = _card_plane(collection, name, x, y, z, sprite, material(sprite[0]), e, scale, None)
+    obj["rt_card"] = True  # maska spritů ze hry pro stín budov (rt_render.render_layers)
+    if shadow:
+        decal(collection, x, y, shadow, z, elevation_deg, scale)
+    if extra and extra[0]:
+        _card_plane(collection, name + "_Light", x, y, z, extra[0], glow_material(extra[0][0]), e, scale,
+                               slide + GLOW_IN_FRONT)
+    return obj
+
+
+#: O kolik je plocha světla spritu blíž ke kameře než sprite (aby ho překryla).
+GLOW_IN_FRONT = 0.02
+
+
+def _card_plane(collection, name, x, y, z, sprite, mat, e, scale, slide):
+    """Svislá plocha spritu s patou v (x, y, z), posunutá po paprsku ke kameře o slide (None = tak, aby spodní
+    hrana byla CARD_LIFT nad patou). Vrátí (objekt, použitý posun)."""
+    path, width, height, (cx, cy) = sprite
+    w, h = width / PX * scale, height / PX / math.cos(e) * scale
+    cx, cy = cx * scale, cy * scale
+    obj = _plane(collection, name, w, h, mat)
+    location = [x + cx, y, z - cy / math.cos(e)]
+    if slide is None:
+        bottom = location[2] - h / 2
+        slide = max(0.0, (z + CARD_LIFT - bottom) / math.sin(e))
+    location[1] -= slide * math.cos(e)
+    location[2] += slide * math.sin(e)
+    obj.location = location
+    obj.rotation_euler = (math.pi / 2, 0.0, 0.0)
+    return obj, slide
+
+
+def glow_material(path):
+    """Světlo ze hry (rozsvícená lampa): emise barvy obrázku, krytí = alfa × vypínač RT_Switch. V základní vrstvě
+    vypnuté (průhledné), ve světelné zapnuté – přepíná rt_materials.set_glow (příznak rt_glow_card)."""
+    name = "RT_Glow_" + path.stem
+    mat = bpy.data.materials.get(name)
+    if mat:
+        return mat
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    nt.nodes.clear()
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = bpy.data.images.load(str(path), check_existing=True)
+    emission = nt.nodes.new("ShaderNodeEmission")
+    nt.links.new(tex.outputs["Color"], emission.inputs["Color"])
+    switch = nt.nodes.new("ShaderNodeValue")
+    switch.name = "RT_Switch"
+    switch.outputs[0].default_value = 0.0
+    factor = nt.nodes.new("ShaderNodeMath")
+    factor.operation = "MULTIPLY"
+    nt.links.new(tex.outputs["Alpha"], factor.inputs[0])
+    nt.links.new(switch.outputs[0], factor.inputs[1])
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(factor.outputs["Value"], mix.inputs["Fac"])
+    nt.links.new(nt.nodes.new("ShaderNodeBsdfTransparent").outputs["BSDF"], mix.inputs[1])
+    nt.links.new(emission.outputs["Emission"], mix.inputs[2])
+    nt.links.new(mix.outputs["Shader"], out.inputs["Surface"])
+    mat["rt_glow_card"] = True
+    return mat
+
+
+#: Výška stínu ze hry nad zemí (nad nádvořím a cestami); posun v ose Y ji v projekci vyrovná.
+DECAL_Z = 0.1
+
+
+def decal(collection, x, y, shadow, z=0.0, elevation_deg=45.0, scale=1.0):
+    """Položí stín ze hry na zem s patou entity v (x, y): vodorovná plocha, v projekci 64 px na dlaždici."""
+    path, width, height, (cx, cy) = shadow
+    e = math.radians(elevation_deg)
+    cx, cy = cx * scale, cy * scale
+    obj = _plane(collection, "RT_Decal", width / PX * scale, height / PX / math.sin(e) * scale, shadow_material(path))
+    obj.location = (x + cx, y - cy / math.sin(e) - DECAL_Z, z + DECAL_Z)
     return obj

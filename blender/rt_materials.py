@@ -7,6 +7,8 @@ v základní vrstvě jsou tmavé, ve světelné vrstvě svítí.
 
 import bpy
 
+import rt_terrain
+
 # Paleta (lineární RGB) – laditelné hodnoty vzhledu, tlumené kvůli souladu s vanillou.
 PALETTE = {
     "stone": (0.20, 0.185, 0.165),
@@ -37,7 +39,27 @@ PALETTE = {
     "fire": (1.0, 0.45, 0.12),
     "window": (1.0, 0.68, 0.32),
 }
+#: Zesílení sytosti celé palety (1.0 = beze změny) – vanilla budovy jsou sytější, než by odpovídalo realitě.
+PALETTE_SATURATION = 1.3
+
+
+def _saturate(color, factor):
+    """Roztáhne barvu (lineární RGB) od její šedé (průměru složek) o factor; záporné složky ořízne."""
+    grey = sum(color) / 3.0
+    return tuple(max(0.0, grey + (c - grey) * factor) for c in color)
+
+
+PALETTE = {key: _saturate(color, PALETTE_SATURATION) for key, color in PALETTE.items()}
 GRIME = (0.018, 0.016, 0.013)
+#: Podíl mechu na střechách (tráva ze hry) a síla rzi na plechu – laditelné.
+MOSS = 0.8
+#: Ztmavení terénu ze hry – textury jsou předem nasvícené, pod sluncem renderu by byly přepálené.
+GROUND_TINT = 0.6
+RUST = 0.7
+#: Počet řad došků na metr spádu (hustota vrstev doškové střechy).
+THATCH_ROWS = 4.5
+#: Odstíny tašek: násobky barvy šindele (každý dům si vybere jeden) – terakota, hnědá, tmavá, okrová.
+ROOF_TINTS = [(1.6, 0.9, 0.7), (1.0, 1.0, 1.0), (0.6, 0.62, 0.7), (1.5, 1.2, 0.7)]
 #: Síla emise svítících materiálů ve světelné vrstvě.
 GLOW_STRENGTH = 0.9
 
@@ -163,10 +185,25 @@ def _age(nt, color):
     return mix(nt, math(nt, "MULTIPLY", math(nt, "MULTIPLY", low, splash), AGE_GROUND_DIRT), color, MUD)
 
 
-def _finish(nt, bsdf, color, crevice, grime=0.6, roughness=0.85):
-    """Patina, špína v koutech, drsnost a výstup barvy."""
+#: Vzhled jako vanilla budovy: světlé ošoupané hrany (podíl zesvětlení) a hlubší tma v koutech (násobič grime).
+EDGE_HIGHLIGHT = 0.45
+EDGE_LIGHTEN = 2.2
+CREVICE_DEPTH = 1.5
+
+
+def _finish(nt, bsdf, color, crevice, edge, grime=0.6, roughness=0.85):
+    """Patina, světlé ošoupané hrany, špína v koutech, drsnost a výstup barvy."""
     color = _age(nt, color)
-    color = mix(nt, math(nt, "MULTIPLY", crevice, grime, clamp=True), color, GRIME)
+    lighter = nt.nodes.new("ShaderNodeMix")
+    lighter.data_type = "RGBA"
+    lighter.blend_type = "MULTIPLY"
+    lighter.clamp_result = True
+    _set(nt, _socket(lighter, "Factor", "VALUE"), 1.0)
+    _set(nt, _socket(lighter, "A", "RGBA"), color)
+    _set(nt, _socket(lighter, "B", "RGBA"), (EDGE_LIGHTEN,) * 3)
+    lighter = next(s for s in lighter.outputs if s.type == "RGBA")
+    color = mix(nt, math(nt, "MULTIPLY", edge, EDGE_HIGHLIGHT), color, lighter)
+    color = mix(nt, math(nt, "MULTIPLY", crevice, grime * CREVICE_DEPTH, clamp=True), color, GRIME)
     nt.links.new(color, bsdf.inputs["Base Color"])
     bsdf.inputs["Roughness"].default_value = roughness
 
@@ -187,8 +224,8 @@ def stone(name="RT_Stone", base=None, dark=None, scale=3.0):
     color = mix(nt, joints, color, dark)
     # Mech a lišejník v nepravidelných skvrnách.
     moss = ramp(nt, noise(nt, coords, 2.2, detail=8.0), 0.62, 0.78)
-    color = mix(nt, math(nt, "MULTIPLY", moss, 0.45), color, PALETTE["foliage"])
-    _finish(nt, bsdf, color, crevice)
+    color = mix(nt, math(nt, "MULTIPLY", moss, 0.45 * MOSS), color, rt_terrain.color(nt, "moss", scale=3.0))
+    _finish(nt, bsdf, color, crevice, edge)
     _bump(nt, bsdf, math(nt, "SUBTRACT", math(nt, "MULTIPLY", blotch, 0.3), joints), 0.6)
     return mat
 
@@ -202,21 +239,35 @@ def wood(name="RT_Wood", base=None, dark=None, along="z"):
     grain = noise(nt, coords, 6.0, detail=6.0, stretch=stretch)
     color = mix(nt, grain, dark, base)
     color = mix(nt, math(nt, "MULTIPLY", edge, 0.3), color, tuple(c * 1.6 for c in base))
-    _finish(nt, bsdf, color, crevice, grime=0.7)
+    _finish(nt, bsdf, color, crevice, edge, grime=0.7)
     _bump(nt, bsdf, grain, 0.4)
     return mat
 
 
 def thatch(name="RT_Thatch"):
-    """Došková střecha: stébla po spádu (osa z protažená), tmavší šmouhy a mech v koutech."""
+    """Došková střecha: řady došků po spádu (tmavé spáry mezi vrstvami), stébla, světlejší konce stébel
+    na spodní hraně řady, tmavší šmouhy a mech z trávy ze hry."""
     mat, nt, bsdf = _new(name)
     coords, crevice, edge = _masks(nt)
-    straw = noise(nt, coords, 14.0, detail=4.0, roughness=0.7, stretch=(6.0, 6.0, 0.4))
+    wave = nt.nodes.new("ShaderNodeTexWave")
+    wave.wave_type = "BANDS"
+    wave.bands_direction = "Z"
+    wave.wave_profile = "SAW"
+    wave.inputs["Scale"].default_value = THATCH_ROWS
+    wave.inputs["Distortion"].default_value = 2.0
+    wave.inputs["Detail"].default_value = 3.0
+    nt.links.new(coords, wave.inputs["Vector"])
+    rows = wave.outputs["Fac"]
+    straw = noise(nt, coords, 22.0, detail=4.0, roughness=0.75, stretch=(8.0, 8.0, 0.3))
     patches = noise(nt, coords, 2.5)
+    moss = ramp(nt, noise(nt, coords, 2.0), 0.62, 0.75)
     color = mix(nt, straw, PALETTE["thatch_dark"], PALETTE["thatch"])
-    color = mix(nt, ramp(nt, patches, 0.5, 0.75), color, PALETTE["thatch_dark"])
-    _finish(nt, bsdf, color, crevice, grime=0.8, roughness=0.95)
-    _bump(nt, bsdf, straw, 0.8)
+    color = mix(nt, math(nt, "MULTIPLY", ramp(nt, rows, 0.75, 1.0), 0.5), color, tuple(c * 1.5 for c in PALETTE["thatch"]))
+    color = mix(nt, ramp(nt, rows, 0.3, 0.0), color, tuple(c * 0.5 for c in PALETTE["thatch_dark"]))
+    color = mix(nt, math(nt, "MULTIPLY", ramp(nt, patches, 0.5, 0.75), 0.6), color, PALETTE["thatch_dark"])
+    color = mix(nt, math(nt, "MULTIPLY", moss, 0.6 * MOSS), color, rt_terrain.color(nt, "moss", scale=3.0))
+    _finish(nt, bsdf, color, crevice, edge, grime=0.8, roughness=0.95)
+    _bump(nt, bsdf, math(nt, "ADD", rows, math(nt, "MULTIPLY", straw, 0.5)), 1.0)
     return mat
 
 
@@ -229,26 +280,14 @@ def plaster(name="RT_Plaster", base=None):
     chips = ramp(nt, noise(nt, coords, 12.0, detail=10.0), 0.66, 0.7)
     color = mix(nt, math(nt, "MULTIPLY", blotch, 0.5), base, tuple(c * 0.8 for c in base))
     color = mix(nt, chips, color, PALETTE["clay"])
-    _finish(nt, bsdf, color, crevice, grime=0.5)
+    _finish(nt, bsdf, color, crevice, edge, grime=0.5)
     _bump(nt, bsdf, math(nt, "MULTIPLY", chips, -1.0), 0.3)
     return mat
 
 
-def packed_earth(name="RT_Earth"):
-    """Udusaná hlína nádvoří: skvrny, vyšlapané cesty světlejší, drobné kamínky."""
-    mat, nt, bsdf = _new(name)
-    coords, crevice, edge = _masks(nt)
-    blotch = noise(nt, coords, 1.2, detail=6.0)
-    pebbles = ramp(nt, noise(nt, coords, 40.0, detail=2.0), 0.68, 0.72)
-    color = mix(nt, blotch, PALETTE["clay_dark"], PALETTE["clay"])
-    color = mix(nt, math(nt, "MULTIPLY", pebbles, 0.7), color, PALETTE["stone"])
-    _finish(nt, bsdf, color, crevice, grime=0.4, roughness=0.95)
-    _bump(nt, bsdf, math(nt, "ADD", blotch, pebbles), 0.3)
-    return mat
-
-
-def shingles(name, base, scale=9.0):
-    """Šindel / břidlice: řady destiček (vlny podél spádu) s nepravidelným odstínem a mechem."""
+def shingles(name, base, scale=9.0, tints=None):
+    """Šindel / břidlice: řady destiček (vlny podél spádu) s nepravidelným odstínem a mechem z trávy ze hry.
+    tints = násobky barvy, z nichž si každá střecha vybere podle náhody objektu (každý dům jiné tašky)."""
     mat, nt, bsdf = _new(name)
     coords, crevice, edge = _masks(nt)
     wave = nt.nodes.new("ShaderNodeTexWave")
@@ -259,13 +298,79 @@ def shingles(name, base, scale=9.0):
     nt.links.new(coords, wave.inputs["Vector"])
     rows = ramp(nt, wave.outputs["Fac"], 0.2, 0.9)
     tiles = noise(nt, coords, 22.0, detail=2.0)
-    moss = ramp(nt, noise(nt, coords, 3.0), 0.62, 0.75)
-    color = mix(nt, math(nt, "MULTIPLY", tiles, 0.8), tuple(c * 0.7 for c in base), tuple(c * 1.4 for c in base))
-    color = mix(nt, math(nt, "MULTIPLY", rows, 0.4), color, tuple(c * 0.5 for c in base))
-    color = mix(nt, math(nt, "MULTIPLY", moss, 0.7), color, PALETTE["foliage"])
-    _finish(nt, bsdf, color, crevice, grime=0.6, roughness=0.8)
+    moss = ramp(nt, noise(nt, coords, 3.0), 0.6, 0.72)
+    if tints:
+        # Barva střechy podle náhody objektu: skokový přechod mezi odstíny tints.
+        variety = nt.nodes.new("ShaderNodeValToRGB")
+        variety.color_ramp.interpolation = "CONSTANT"
+        elements = variety.color_ramp.elements
+        while len(elements) < len(tints):
+            elements.new(0.0)
+        for i, (element, tint) in enumerate(zip(elements, tints)):
+            element.position = i / len(tints)
+            element.color = (*(min(1.0, b * t) for b, t in zip(base, tint)), 1.0)
+        nt.links.new(nt.nodes.new("ShaderNodeObjectInfo").outputs["Random"], variety.inputs["Fac"])
+        roof = variety.outputs["Color"]
+    else:
+        roof = base
+    shade = math(nt, "MULTIPLY", tiles, 0.8)
+    color = mix(nt, shade, _scaled(nt, roof, 0.7), _scaled(nt, roof, 1.4))
+    color = mix(nt, math(nt, "MULTIPLY", rows, 0.4), color, _scaled(nt, roof, 0.5))
+    color = mix(nt, math(nt, "MULTIPLY", moss, MOSS), color, rt_terrain.color(nt, "moss", scale=3.0))
+    _finish(nt, bsdf, color, crevice, edge, grime=0.6, roughness=0.8)
     _bump(nt, bsdf, math(nt, "ADD", rows, tiles), 0.7)
     return mat
+
+
+def ground(name, key, grime=0.4, fade=False):
+    """Terén ze hry (rt_terrain: hlína, tráva, dlažba, beton) – nádvoří, cesty, plochy; tmavší v koutech.
+    fade = okraj plochy se nepravidelně rozplyne do průhledna (trávník přechází do hlíny jako ve hře)."""
+    mat, nt, bsdf = _new(name)
+    coords, crevice, edge = _masks(nt)
+    color = _scaled(nt, rt_terrain.color(nt, key), GROUND_TINT)
+    if fade:
+        _fade_edge(mat, nt, bsdf, coords)
+    color = mix(nt, math(nt, "MULTIPLY", crevice, grime, clamp=True), color, GRIME)
+    nt.links.new(color, bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.95
+    return mat
+
+
+def _fade_edge(mat, nt, bsdf, coords):
+    """Rozplyne okraj plochy (vzdálenost od středu v Generated souřadnicích + šum) do průhledna."""
+    generated = nt.nodes.new("ShaderNodeTexCoord").outputs["Generated"]
+    center = nt.nodes.new("ShaderNodeVectorMath")
+    center.operation = "SUBTRACT"
+    nt.links.new(generated, center.inputs[0])
+    center.inputs[1].default_value = (0.5, 0.5, 0.5)
+    flat = nt.nodes.new("ShaderNodeVectorMath")
+    flat.operation = "MULTIPLY"
+    nt.links.new(center.outputs["Vector"], flat.inputs[0])
+    flat.inputs[1].default_value = (2.0, 2.0, 0.0)
+    distance = nt.nodes.new("ShaderNodeVectorMath")
+    distance.operation = "LENGTH"
+    nt.links.new(flat.outputs["Vector"], distance.inputs[0])
+    ragged = math(nt, "ADD", distance.outputs["Value"], math(nt, "MULTIPLY", noise(nt, coords, 3.0), 0.5))
+    opacity = ramp(nt, ragged, 1.15, 0.7)
+    out = next(n for n in nt.nodes if n.type == "OUTPUT_MATERIAL")
+    shader = nt.nodes.new("ShaderNodeMixShader")
+    nt.links.new(opacity, shader.inputs["Fac"])
+    nt.links.new(nt.nodes.new("ShaderNodeBsdfTransparent").outputs["BSDF"], shader.inputs[1])
+    nt.links.new(bsdf.outputs["BSDF"], shader.inputs[2])
+    nt.links.new(shader.outputs["Shader"], out.inputs["Surface"])
+
+
+def _scaled(nt, color, factor):
+    """Barva (konstanta nebo výstup uzlu) vynásobená číslem."""
+    if not isinstance(color, bpy.types.NodeSocket):
+        return tuple(c * factor for c in color)
+    node = nt.nodes.new("ShaderNodeMix")
+    node.data_type = "RGBA"
+    node.blend_type = "MULTIPLY"
+    _set(nt, _socket(node, "Factor", "VALUE"), 1.0)
+    _set(nt, _socket(node, "A", "RGBA"), color)
+    _set(nt, _socket(node, "B", "RGBA"), (factor,) * 3)
+    return next(s for s in node.outputs if s.type == "RGBA")
 
 
 def brick(name="RT_Brick", base=None):
@@ -282,7 +387,7 @@ def brick(name="RT_Brick", base=None):
     nt.links.new(coords, tex.inputs["Vector"])
     soot = ramp(nt, noise(nt, coords, 3.0), 0.6, 0.8)
     color = mix(nt, math(nt, "MULTIPLY", soot, 0.4), tex.outputs["Color"], GRIME)
-    _finish(nt, bsdf, color, crevice, grime=0.6)
+    _finish(nt, bsdf, color, crevice, edge, grime=0.6)
     _bump(nt, bsdf, math(nt, "SUBTRACT", 1.0, tex.outputs["Fac"]), 0.6)
     return mat
 
@@ -303,7 +408,7 @@ def concrete(name="RT_Concrete", base=(0.17, 0.165, 0.155)):
     nt.links.new(coords, tex.inputs["Vector"])
     stains = noise(nt, coords, 2.0, detail=8.0)
     color = mix(nt, math(nt, "MULTIPLY", ramp(nt, stains, 0.45, 0.75), 0.4), tex.outputs["Color"], GRIME)
-    _finish(nt, bsdf, color, crevice, grime=0.4, roughness=0.9)
+    _finish(nt, bsdf, color, crevice, edge, grime=0.4, roughness=0.9)
     _bump(nt, bsdf, math(nt, "SUBTRACT", 1.0, tex.outputs["Fac"]), 0.4)
     return mat
 
@@ -319,11 +424,14 @@ def corrugated(name="RT_Corrugated", base=None):
     wave.wave_profile = "SIN"
     wave.inputs["Scale"].default_value = 30.0
     nt.links.new(coords, wave.inputs["Vector"])
-    rust = ramp(nt, noise(nt, coords, 4.0, detail=8.0), 0.55, 0.7)
-    streaks = ramp(nt, noise(nt, coords, 6.0, stretch=(8.0, 8.0, 0.4)), 0.6, 0.75)
+    # Rez stéká v pruzích po spádu a sedí v koutech a u hran – ne v kropenatých skvrnách.
+    streaks = ramp(nt, noise(nt, coords, 3.0, detail=4.0, stretch=(10.0, 10.0, 0.5)), 0.55, 0.8)
+    tone = noise(nt, coords, 0.8, detail=2.0)
     color = mix(nt, math(nt, "MULTIPLY", wave.outputs["Fac"], 0.25), base, tuple(c * 1.25 for c in base))
-    color = mix(nt, math(nt, "ADD", rust, math(nt, "MULTIPLY", streaks, 0.5), clamp=True), color, PALETTE["rust"])
-    _finish(nt, bsdf, color, crevice, grime=0.5, roughness=0.6)
+    color = mix(nt, math(nt, "MULTIPLY", tone, 0.35), color, tuple(c * 0.75 for c in base))
+    rust = math(nt, "ADD", math(nt, "MULTIPLY", streaks, RUST), math(nt, "MULTIPLY", crevice, RUST), clamp=True)
+    color = mix(nt, rust, color, PALETTE["rust"])
+    _finish(nt, bsdf, color, crevice, edge, grime=0.5, roughness=0.6)
     bsdf.inputs["Metallic"].default_value = 0.4
     _bump(nt, bsdf, wave.outputs["Fac"], 0.5)
     return mat
@@ -338,7 +446,7 @@ def foliage(name="RT_Foliage", base=None, dark=None, scale=6.0):
     clumps = noise(nt, coords, scale)
     color = mix(nt, ramp(nt, leaves, 0.35, 0.65), dark, base)
     color = mix(nt, math(nt, "MULTIPLY", ramp(nt, clumps, 0.6, 0.8), 0.5), color, tuple(c * 1.6 for c in base))
-    _finish(nt, bsdf, color, crevice, grime=0.7, roughness=0.9)
+    _finish(nt, bsdf, color, crevice, edge, grime=0.7, roughness=0.9)
     _bump(nt, bsdf, leaves, 1.2)
     return mat
 
@@ -349,7 +457,17 @@ def cloth(name, base):
     coords, crevice, edge = _masks(nt)
     fade = noise(nt, coords, 4.0)
     color = mix(nt, math(nt, "MULTIPLY", fade, 0.6), base, tuple(c * 1.5 for c in base))
-    _finish(nt, bsdf, color, crevice, grime=0.4, roughness=0.9)
+    _finish(nt, bsdf, color, crevice, edge, grime=0.4, roughness=0.9)
+    return mat
+
+
+def glass(name="RT_Glass", base=(0.03, 0.045, 0.06)):
+    """Sklo (kopule, světlíky, prosklené stěny): tmavé, lesklé, odráží oblohu – samo nesvítí (v noci by
+    celá kopule zářila jako placka)."""
+    mat, nt, bsdf = _new(name)
+    bsdf.inputs["Base Color"].default_value = (*base, 1.0)
+    bsdf.inputs["Roughness"].default_value = 0.08
+    bsdf.inputs["Metallic"].default_value = 0.3
     return mat
 
 
@@ -370,6 +488,9 @@ def set_glow(on):
         if mat.get("rt_glow"):
             bsdf = mat.node_tree.nodes.get("Principled BSDF")
             bsdf.inputs["Emission Strength"].default_value = GLOW_STRENGTH if on else 0.0
+        elif mat.get("rt_glow_card"):
+            # Světla ze hry (rozsvícená lampa): jen ve světelné vrstvě.
+            mat.node_tree.nodes["RT_Switch"].outputs[0].default_value = 1.0 if on else 0.0
         elif mat.get("rt_unlit"):
             # Neosvětlené sprity (vanilla stromy) ve světelné vrstvě zhasnout – samy nesvítí.
             emission = next(n for n in mat.node_tree.nodes if n.type == "EMISSION")
@@ -389,21 +510,26 @@ def library():
         "plaster_ochre": plaster("RT_PlasterOchre", PALETTE["plaster_ochre"]),
         "plaster_grey": plaster("RT_PlasterGrey", PALETTE["plaster_grey"]),
         "plaster_pink": plaster("RT_PlasterPink", PALETTE["plaster_pink"]),
-        "shingle": shingles("RT_Shingle", PALETTE["shingle"]),
+        "shingle": shingles("RT_Shingle", PALETTE["shingle"], tints=ROOF_TINTS),
         "slate": shingles("RT_Slate", PALETTE["slate"], scale=14.0),
-        "cobble": stone("RT_Cobble", base=(0.12, 0.11, 0.095), dark=(0.05, 0.045, 0.04), scale=14.0),
+        "cobble": ground("RT_Cobble", "cobble"),
         "foliage": foliage(),
         "foliage_light": foliage("RT_FoliageLight", base=(0.08, 0.10, 0.03), scale=8.0),
-        "grass": foliage("RT_Grass", base=PALETTE["grass"], scale=14.0),
+        "grass": ground("RT_Grass", "grass"),
+        "lawn": ground("RT_Lawn", "grass", fade=True),
+        "field": ground("RT_Field", "dry"),
         "hay": thatch(),
         "cloth_red": cloth("RT_ClothRed", PALETTE["cloth_red"]),
         "cloth_blue": cloth("RT_ClothBlue", PALETTE["cloth_blue"]),
         "brick": brick(),
         "corrugated": corrugated(),
         "iron": corrugated("RT_Iron", PALETTE["iron"]),
-        "concrete": concrete(),
-        "glass": glow("RT_Glass", (0.1, 0.18, 0.24), base=(0.03, 0.04, 0.05)),
-        "earth": packed_earth(),
+        "concrete": ground("RT_Concrete", "concrete"),
+        "tar_roof": concrete("RT_TarRoof", base=(0.055, 0.05, 0.045)),
+        "metal_bright": corrugated("RT_MetalBright", (0.32, 0.31, 0.29)),
+        "rust_pipe": corrugated("RT_RustPipe", PALETTE["rust"]),
+        "glass": glass(),
+        "earth": ground("RT_Earth", "earth"),
         "window": glow("RT_Window", PALETTE["window"]),
         "fire": glow("RT_Fire", PALETTE["fire"], base=(0.03, 0.02, 0.015)),
     }
