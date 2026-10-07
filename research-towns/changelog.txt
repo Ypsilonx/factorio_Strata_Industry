@@ -1,25 +1,27 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.0
-Date: 2026-10-06
+Date: 2026-10-07
   Features:
-    - Town halls replace labs; towns level up from goods, fluids and power delivered through depots.
-    - Story: the people of Nauvis as research partners – flavour texts, town upgrade messages and Tips and tricks.
+    - Town halls replace labs: research happens in the towns of the people of Nauvis, supplied with science packs, goods, fluids and power through depots.
+    - Towns are placed by the map generator (Towns slider, visible in the map preview); the first town near the landing site is your partner right away.
+    - Other towns are discovered by walking up to them; deliver a gift through a depot to make them your partners.
     - Each town level opens one science pack; infinite levels beyond the last science add research productivity.
-    - Houses have their own level and are upgraded with surplus deliveries; total speed bonus capped at +120 %.
-    - Towns continuously consume the materials of completed milestones (startup setting to adjust).
-    - Town board sends the town's requests to the circuit network.
-    - Towns are placed by the map generator (Towns slider, visible in the map preview); the first town near the spawn is your partner right away.
-    - Other towns are discovered by walking up to them; deliver a gift through a depot to make them partners.
-    - Progress bars to the next town level and house upgrade, also as town board signals.
-    - House level shown as a number above the house in Alt mode.
-    - Upkeep in whole items per minute; town halls keep a 5 minute stock, which the town board requests in full.
-    - New graphics: town halls in five eras (settlement, automation, logistics, chemistry, city of science) and houses by house level.
-    - New graphics for depots (a 2×2 goods warehouse with goods from the game, a fluid tank with an operator hut), the town substation and the town board.
-    - Town buildings are connected by a path with a garland of flags and lanterns, later by wooden and paved walkways on the ground.
-    - Town halls and houses light up their surroundings at night (windows, lanterns, lamps and fires).
-    - Researching town halls absorb pollution, and so do top-level houses (startup setting to adjust).
+    - Houses speed up research and are upgraded with surplus deliveries; total speed bonus capped at +120 %.
+    - Towns continuously use the materials of completed milestones (whole items per minute, a 5 minute stock).
+    - Town specializations: each town is skilled in one basic material derived from the game data; from town level 6 a partner town raises the productivity of all recipes making it (1 % per level above 5, at most 15 % per town and 25 % per material, diminishing returns for repeats).
+    - Researching town halls and level 5 houses absorb pollution.
     - A town hall destroyed by the biters leaves ruins; the town survives and is rebuilt at the same level with materials delivered through its depots.
-    - Town specializations: each town is skilled in one basic material derived from the game data; a partner town raises the productivity of all recipes making it by 1 % per level above 5 (at most 15 % per town, 25 % per material, diminishing returns for repeats).
-    - Map setting "Town specialization strength" (can be changed in a running game).
-    - The town substation is a real substation connected to your grid with a wire; the town takes power only through it.
-    - Town paths are shown only when hovering a house or town hall (the network route), garlands stay visible.
+    - Town substation: a real substation connected to your grid with a wire; the town takes power only through it.
+    - Town board sends the town's requests and progress to the circuit network.
+    - Town hall panel with milestone, house upgrade, upkeep and specialization; progress bars.
+    - Mod settings: material upkeep multiplier, pollution absorption multiplier (startup) and town specialization strength (map setting, can be changed in a running game).
+    - Story: the people of Nauvis as research partners – flavour texts, town messages and Tips and tricks.
+  Graphics:
+    - Town halls in five eras (settlement, automation, logistics, chemistry, city of science), rebuilt with your research; houses by house level; ruins of each era.
+    - Machines, trees, ground textures and items from the game in the town renders.
+    - Depots: a 2×2 goods warehouse with goods on pallets, a fluid tank with an operator hut, the town substation and a town board.
+    - Town halls and houses light up their surroundings at night.
+    - Town buildings are linked by garlands of flags and lanterns, later by wooden and paved walkways; hover a building to see the paths of its town network.
+  Compatibility:
+    - Factorio 2.0 base game and Space Age.
+    - Tested with Bob's mods and Pyanodon: sciences, milestone materials, labs and specializations are derived automatically.
