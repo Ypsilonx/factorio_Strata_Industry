@@ -11,6 +11,14 @@ local function non_decreasing(n, f)
 end
 
 return {
+  { "pohlcování znečištění: radnice od HALL_ABSORB_FIRST do HALL_ABSORB_LAST, dům jen na nejvyšší úrovni", function()
+    A.truthy(math.abs(levels.hall_absorption(1, 7) - levels.HALL_ABSORB_FIRST) < 1e-9, "první věda")
+    A.truthy(math.abs(levels.hall_absorption(7, 7) - levels.HALL_ABSORB_LAST) < 1e-6, "poslední věda")
+    A.truthy(math.abs(levels.hall_absorption(1, 1) - levels.HALL_ABSORB_FIRST) < 1e-9, "jediná věda")
+    A.truthy(non_decreasing(18, function(t) return levels.hall_absorption(t, 18) end), "roste i pro 18 úrovní")
+    A.eq(levels.house_absorption(levels.HOUSE_LEVEL_MAX - 1), 0, "dům pod stropem nepohlcuje")
+    A.eq(levels.house_absorption(levels.HOUSE_LEVEL_MAX), levels.HOUSE_ABSORB, "dům na nejvyšší úrovni")
+  end },
   { "rychlost radnice od SPEED_FIRST do SPEED_LAST", function()
     A.eq(levels.researching_speed(1, 7), levels.SPEED_FIRST, "první úroveň")
     A.eq(levels.researching_speed(7, 7), levels.SPEED_LAST, "poslední věda")

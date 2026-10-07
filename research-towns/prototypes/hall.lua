@@ -60,7 +60,9 @@ function M.create(level, count, sciences)
   hall.on_animation = animation(variant, true)
   hall.off_animation = animation(variant, false)
   -- Elektřinu města odebírají rozvodny; radnici zapíná/vypíná skript (disabled_by_script).
-  hall.energy_source = { type = "void" }
+  -- Při výzkumu pohlcuje znečištění (záporné emise; počítají se jen při spotřebě, tedy když radnice zkoumá).
+  local absorb = levels.hall_absorption(level, count) * settings.startup["rt-pollution-absorption"].value
+  hall.energy_source = { type = "void", emissions_per_minute = { pollution = -absorb } }
   hall.energy_usage = "1W"
   hall.researching_speed = levels.researching_speed(level, count)
   hall.inputs = sciences

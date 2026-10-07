@@ -24,6 +24,7 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 - **Houses** – build houses within reach of the town hall (at most 5 in a row). Connected houses speed up
   research (+120 % at most) and are upgraded one by one with surplus deliveries.
 - **Upkeep** – a town keeps using the materials of its completed milestones; keep the supply lines running.
+- **Clean air** – a researching town hall absorbs pollution (more with each science), and so do top-level houses.
 - **Depots** – goods, fluid and power depots supply the nearest town; a **town board** sends the town's
   requests (including progress in %) to the circuit network.
 - **Five eras of graphics** – the town hall is rebuilt with your research: a settlement of wood and thatch,

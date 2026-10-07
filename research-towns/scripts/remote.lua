@@ -89,6 +89,13 @@ remote.add_interface("research-towns", {
   link_style = function(a, b)
     return network.link_style(a, b)
   end,
+  --- Nastaví úroveň domu (testy) a obnoví jeho vzhled.
+  set_house_level = function(unit_number, level)
+    local node = storage.nodes[unit_number]
+    if not (node and node.kind == "house") then error("není dům: " .. tostring(unit_number)) end
+    node.level = level
+    network.refresh_house(node)
+  end,
   --- Počet nočních světel radnice nebo domu (testy).
   light_count = function(unit_number)
     return lights.count(unit_number)

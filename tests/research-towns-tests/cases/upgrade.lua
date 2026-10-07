@@ -79,15 +79,21 @@ return {
       force.technologies["automation-science-pack"].researched = true
       force.add_research("automation")
       H.hall(ctx.town).insert({ name = "automation-science-pack", count = 50 })
+      -- Pohlcovat jde jen existující znečištění.
+      H.hall(ctx.town).surface.pollute(H.hall(ctx.town).position, 5000)
     end,
     steps = {
       { ticks = 30, run = function(ctx)
         H.process(ctx.town)
         H.check(H.status(ctx.town).power_ok, "elektřina nepokryta")
       end },
-      { ticks = 600, run = function()
+      { ticks = 600, run = function(ctx)
         local force = game.forces.player
         H.check(force.research_progress > 0 or force.technologies["automation"].researched, "výzkum nepostoupil")
+        local hall = H.hall(ctx.town)
+        local stats = hall.surface.pollution_statistics
+        local absorbed = (stats.output_counts[hall.name] or 0) + math.max(0, -(stats.input_counts[hall.name] or 0))
+        H.check(absorbed > 0, "zkoumající radnice nepohlcuje znečištění (statistika)")
       end },
     },
   },

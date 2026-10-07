@@ -181,9 +181,11 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   Víc měst stejné specializace se nesčítá naplno (klesající přínos), respektuje strop produktivity.
 - Milníky specializovaného města preferují suroviny jeho skupiny.
 
-### Pohlcování znečištění (plán 2)
-- Radnice při výzkumu pohlcuje znečištění (záporné emise prototypu – ověřit), domy pohlcují skriptem při
-  zpracování města (`surface.pollute` se zápornou hodnotou – ověřit). Množství podle úrovně, konstanty k ladění.
+### Pohlcování znečištění (plán 2b – hotovo 2026-10-07)
+- Radnice při výzkumu pohlcuje znečištění: záporné `emissions_per_minute` zdroje energie void (počítají se jen
+  při spotřebě = výzkumu; ověřeno ve statistice povrchu), 30/min na první vědě až 1000/min na poslední
+  (geometricky). Domy nejvyšší úrovně pohlcují skriptem 15/min při zpracování města (`surface.pollute` se zápornou
+  hodnotou, ve statistice jako `rt-house`). Pod nulu chunk nejde. Startup násobič „Násobič pohlcování znečištění“.
 
 ### Generátor měst (plán 2)
 - Vlastní `autoplace-control` „Města“ v okně nové mapy (četnost, velikost – jako biteři); generátor z něj čte hustotu

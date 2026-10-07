@@ -25,6 +25,29 @@ end
 
 return {
   {
+    name = "pohlcování znečištění: dům nejvyšší úrovně pohlcuje, nižší ne; radnice má záporné emise",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      ctx.house = H.house(ctx, 11, 0)
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        local surface, position = ctx.house.surface, ctx.house.position
+        surface.pollute(position, 1000)
+        local before = surface.get_pollution(position)
+        H.process(ctx.town)
+        H.check(surface.get_pollution(position) >= before - 1e-6, "dům úrovně 1 pohlcuje")
+        remote.call(R, "set_house_level", ctx.house.unit_number, levels.HOUSE_LEVEL_MAX)
+        before = surface.get_pollution(position)
+        H.process(ctx.town)
+        H.check(surface.get_pollution(position) < before, "dům nejvyšší úrovně nepohlcuje: "
+          .. before .. " → " .. surface.get_pollution(position))
+        local hall = prototypes.entity[H.hall(ctx.town).name]
+        H.check(hall.void_energy_source_prototype.emissions_per_joule.pollution < 0, "radnice nemá záporné emise")
+      end },
+    },
+  },
+  {
     name = "dodané suroviny vylepší dům a zvýší bonus",
     setup = function(ctx)
       ctx.town = H.town(ctx)

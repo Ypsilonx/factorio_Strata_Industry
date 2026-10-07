@@ -289,6 +289,20 @@ function M.upgrade(town)
   return true
 end
 
+--- Aktivní domy nejvyšší úrovně pohlcují znečištění v místě domu (za interval zpracování města; ve statistice
+--- znečištění jako dům).
+--- @param candidates table[] aktivní domy ({ key, level })
+local function absorb_pollution(candidates)
+  local share = config.absorption_multiplier() * levels.TOWN_INTERVAL / 3600
+  for _, house in ipairs(candidates) do
+    local amount = levels.house_absorption(house.level) * share
+    if amount > 0 then
+      local entity = storage.nodes[house.key].entity
+      entity.surface.pollute(entity.position, -amount, network.HOUSE)
+    end
+  end
+end
+
 --- Dávají aktivní domy města plný bonus k rychlosti?
 local function house_bonus_full(town, candidates)
   local list = {}
@@ -432,6 +446,7 @@ function M.process(town)
     M.update_bonus(town)
   end
   if not (town.beacon and town.beacon.valid) then M.update_bonus(town) end
+  absorb_pollution(candidates)
   -- Elektřina před spotřebou: radnice bez elektřiny nezkoumá, takže ani nespotřebovává.
   town.power_ok = depots.power_ok(town)
   if town.power_ok and wants_research(town.hall) then

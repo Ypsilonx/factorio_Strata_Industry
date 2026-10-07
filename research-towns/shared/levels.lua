@@ -52,6 +52,12 @@ M.HOUSE_UPKEEP_SHARE = 0.05
 --- požaduje celou zásobu, aby překladiště drželo dost i při nepravidelných dodávkách.
 M.UPKEEP_BUFFER_SECONDS = 300
 
+--- Pohlcování znečištění (za minutu, × startup násobič): radnice při výzkumu od první k poslední vědě
+--- (mezi nimi geometricky; pro srovnání kotel vypouští 30/min), aktivní dům nejvyšší úrovně stále.
+M.HALL_ABSORB_FIRST = 30
+M.HALL_ABSORB_LAST = 1000
+M.HOUSE_ABSORB = 15
+
 --- Pásma kandidátů surovin milníků od nejranějšího; tier_index je roztáhne na libovolný počet úrovní.
 --- Nad poslední vědou se používá poslední pásmo.
 M.TIERS = {
@@ -131,6 +137,17 @@ function M.power_mw(level, count)
   if count > 1 then mw = M.POWER_FIRST_MW * (M.POWER_LAST_MW / M.POWER_FIRST_MW) ^ ((tier - 1) / (count - 1)) end
   if level > count then mw = mw * (1 + M.POWER_INFINITE_GROWTH * (level - count)) end
   return mw
+end
+
+--- Kolik znečištění za minutu pohlcuje radnice vědecké úrovně tier z count při výzkumu (bez násobiče).
+function M.hall_absorption(tier, count)
+  if count <= 1 then return M.HALL_ABSORB_FIRST end
+  return M.HALL_ABSORB_FIRST * (M.HALL_ABSORB_LAST / M.HALL_ABSORB_FIRST) ^ ((tier - 1) / (count - 1))
+end
+
+--- Kolik znečištění za minutu pohlcuje aktivní dům úrovně house_level (jen nejvyšší úroveň; bez násobiče).
+function M.house_absorption(house_level)
+  return house_level >= M.HOUSE_LEVEL_MAX and M.HOUSE_ABSORB or 0
 end
 
 --- Příkon města v joulech za tick.

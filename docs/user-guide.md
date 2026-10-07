@@ -25,6 +25,8 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
 7. **Vylepšení domů** je dobrovolné: dodávky navíc vylepšují domy postupně jeden po druhém (stejné suroviny jako
    milník radnice, bez vědy) až do úrovně 5. Dům dává bonus (úroveň + 1) %, všechny domy dohromady nejvýš +120 %.
    Úroveň domu uvidíš jako číslo nad domem v Alt režimu.
+   **Znečištění:** radnice při výzkumu pohlcuje znečištění (víc s vyšší vědou) a domy úrovně 5 ho pohlcují
+   trvale. Množství nastavíš v nastavení modu (Násobič pohlcování znečištění).
 8. **Za poslední vědou** město roste dál; každá úroveň přidá produktivitu výzkumu radnice.
 9. **Městská tabule** posílá do obvodové sítě požadavky města – režim Radnice, Dům nebo Spotřeba zvolíš v jejím
    okně (Spotřeba = celá zásoba na 5 minut); navíc signály příkonu (MW), pokrytí elektřiny (%), postupu k další

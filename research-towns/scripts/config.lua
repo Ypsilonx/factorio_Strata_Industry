@@ -38,6 +38,11 @@ function M.upkeep_multiplier()
   return settings.startup["rt-upkeep-multiplier"].value
 end
 
+--- Startup násobič pohlcování znečištění.
+function M.absorption_multiplier()
+  return settings.startup["rt-pollution-absorption"].value
+end
+
 --- Vědy, které přijímá radnice dané úrovně.
 function M.sciences(level)
   return data.sciences[tostring(levels.hall_tier(level, data.level_count))]

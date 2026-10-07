@@ -18,6 +18,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Suroviny milníků (pásma kandidátů), kusů vědy, růst množství | `shared/levels.lua` → `TIERS`, `SCIENCE_PACKS`, `MILESTONE_GROWTH` |
 | Produktivita nekonečných úrovní | `shared/levels.lua` → `PRODUCTIVITY_MAX`, `PRODUCTIVITY_DECAY` |
 | Průběžná spotřeba, zásoba | `shared/levels.lua` → `UPKEEP_RATE`, `HOUSE_UPKEEP_SHARE`, `UPKEEP_BUFFER_SECONDS`; ve hře startup nastavení „Násobič spotřeby surovin“ |
+| Pohlcování znečištění (radnice při výzkumu, domy nejvyšší úrovně) | `shared/levels.lua` → `HALL_ABSORB_FIRST`, `HALL_ABSORB_LAST`, `HOUSE_ABSORB`; ve hře startup nastavení „Násobič pohlcování znečištění“ |
 | Max. domů v sérii, dosah domů a překladišť | `shared/levels.lua` → `MAX_HOUSE_DEPTH`, `HOUSE_REACH`, `DEPOT_REACH` |
 | Interval zpracování města | `shared/levels.lua` → `TOWN_INTERVAL` |
 | Krok bonusu, sloty beaconu | `shared/levels.lua` → `BONUS_STEP`, `BONUS_SLOTS` |
