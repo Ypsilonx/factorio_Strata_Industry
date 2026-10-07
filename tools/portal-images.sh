@@ -2,7 +2,8 @@
 # Nahraje obrázky z docs/screenshots/*.png na stránku modu na mods.factorio.com (Mod images API) a nastaví je
 # v pořadí podle jména souboru (01-…, 02-…). Mod už na portálu musí být. Obrázky, které na stránce byly, nahradí.
 # Použití: tools/portal-images.sh [--dry-run]
-# API klíč s oprávněním „ModPortal: Edit Mods“: FACTORIO_API_KEY, FACTORIO_API_KEY_FILE, jinak ~/.factorio-api-key.
+# API klíč s oprávněním „ModPortal: Edit Mods“: FACTORIO_API_KEY, jinak soubor FACTORIO_API_KEY_FILE (výchozí
+# ~/.factorio-api-key/all_api_key.txt).
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API="https://mods.factorio.com/api"
@@ -10,7 +11,7 @@ MOD="research-towns"
 DRY=0
 [ "${1:-}" = "--dry-run" ] && DRY=1
 
-KEY_FILE="${FACTORIO_API_KEY_FILE:-$HOME/.factorio-api-key}"
+KEY_FILE="${FACTORIO_API_KEY_FILE:-$HOME/.factorio-api-key/all_api_key.txt}"
 [ -z "${FACTORIO_API_KEY:-}" ] && [ -d "$KEY_FILE" ] && {
   echo "$KEY_FILE je složka – zadej soubor: FACTORIO_API_KEY_FILE=\"$KEY_FILE/<soubor>\""; exit 1; }
 KEY="${FACTORIO_API_KEY:-$(cat "$KEY_FILE" 2>/dev/null || true)}"

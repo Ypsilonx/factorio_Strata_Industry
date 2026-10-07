@@ -8,7 +8,7 @@
 #                    pak nastaví údaje jako --details
 #   --dry-run        jen kontroly a sestavení zipu, na portál nic neodešle
 # API klíč (https://factorio.com/profile → API keys): proměnná FACTORIO_API_KEY, nebo soubor s klíčem
-# v FACTORIO_API_KEY_FILE, jinak soubor ~/.factorio-api-key. Nikdy ne do repozitáře.
+# v FACTORIO_API_KEY_FILE (výchozí ~/.factorio-api-key/all_api_key.txt – klíče leží ve složce). Nikdy ne do repozitáře.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 API="https://mods.factorio.com/api"
@@ -30,7 +30,7 @@ for arg in "$@"; do
   esac
 done
 
-KEY_FILE="${FACTORIO_API_KEY_FILE:-$HOME/.factorio-api-key}"
+KEY_FILE="${FACTORIO_API_KEY_FILE:-$HOME/.factorio-api-key/all_api_key.txt}"
 if [ -z "${FACTORIO_API_KEY:-}" ] && [ -d "$KEY_FILE" ]; then
   echo "$KEY_FILE je složka, ne soubor s klíčem. Soubory v ní:"
   ls -1 "$KEY_FILE"

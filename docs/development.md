@@ -84,8 +84,8 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 ## Vydání na portál
 - Před vydáním: unit, vanilla, Space Age a compat (Bob's, `pymodpack`) zelené, ruční kontrola níže, `version`
   v `info.json` a sekce v `changelog.txt`.
-- API klíč z <https://factorio.com/profile> (oprávnění *Publish Mods*, *Upload Mods*, *Edit Mods*) v souboru;
-  u nás leží ve složce `~/.factorio-api-key/`, proto `FACTORIO_API_KEY_FILE=~/.factorio-api-key/all_api_key.txt`.
+- API klíč z <https://factorio.com/profile> (oprávnění *Publish Mods*, *Upload Mods*, *Edit Mods*);
+  leží ve složce `~/.factorio-api-key/`, skripty berou výchozí `all_api_key.txt` (jiný: `FACTORIO_API_KEY_FILE`).
 - `bash tools/publish.sh --new --dry-run` – kontroly bez odeslání; `--new` první vydání (založí mod, nastaví
   kategorii, licenci, tagy, titul, shrnutí z `info.json` a popis z `docs/mod-portal.md`), bez přepínače nová
   verze, `--details` nová verze + údaje. Kategorie, licence a tagy jsou nahoře v `tools/publish.sh`.
