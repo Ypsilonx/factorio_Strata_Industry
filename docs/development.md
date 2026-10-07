@@ -23,6 +23,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Krok bonusu, sloty beaconu | `shared/levels.lua` → `BONUS_STEP`, `BONUS_SLOTS` |
 | Pořadí věd → úrovně (algoritmus) | `prototypes/science.lua` → `bands` |
 | Recepty domu, překladišť a tabule | `prototypes/house.lua`, `prototypes/depots.lua` |
+| Překladiště v Blenderu (zboží na paletách, nádrž, průzor) | `blender/rt_depots.py` → `PALLETS`, `PALLET_ITEMS`, `ITEM_SCALE`, `TANK`, `GAUGE` |
 | Grafika z Blenderu (počet vzhledů, modely, paleta, světla) | `shared/levels.lua` → `VARIANTS`; `blender/rt_hall.py`, `rt_house.py`, `rt_depots.py` (modely), `rt_materials.py` → `PALETTE`, `blender/camera.toml` (projekce, světla); build `blender/build_hall.py` |
 | Vzhled jako vanilla (kontrast, sytost, hrany, kouty, rez, mech, tašky) | `blender/camera.toml` → `[sun]`, `[fill]`, `[world]` `strength`, `[grade]` `saturation`, `contrast`; `blender/rt_materials.py` → `PALETTE_SATURATION`, `EDGE_HIGHLIGHT`, `EDGE_LIGHTEN`, `CREVICE_DEPTH`, `RUST`, `MOSS`, `ROOF_TINTS`, `GROUND_TINT` |
 | Textury ze hry (terén, sprity strojů, stíny) | `blender/rt_terrain.py` → `TERRAINS`; `blender/rt_sprites.py` → `MACHINES`, `SHADOWS`, `SHADOW_ALPHA`, `CARD_LIFT`; stín budov na spritech `blender/rt_render.py` → `CARD_SHADOW`, `CARD_TILT_DEG`; vyznění stínů u okraje `fade_edges` |
@@ -107,6 +108,7 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
     je osvětlené, světla sedí na svítidlech spritu a po povýšení domu / města se vymění (žádná nezůstanou viset).
 19. Spojení: úroveň města 1–2 šňůra s praporky a lucernami, 3–4 dřevěná lávka, 5 prosklená lávka (leží na zemi
     pod budovami, natočená po směru spojení); nic nepřekáží chůzi ani stavbě pásů.
-20. Překladiště: bedna (zboží), káď s průzorem – kapalina je vidět v průzoru, potrubí se připojí v rozích,
-    rozvodna s rozsvíceným oknem, tabule – dráty se připínají na levý sloupek, kontrolka svítí v lucerně;
+20. Překladiště: sklad 2×2 se zbožím ze hry na paletách (výběr i dosah 2×2), nádrž s domkem obsluhy, ventily
+    a pákami – kapalina je vidět v průzoru na plášti nádrže, potrubí se připojí v rozích, rozvodna s rozsvíceným
+    oknem, barevná tabule s erbem – dráty se připínají na levý sloupek, kontrolka svítí v lucerně;
     ikony v inventáři odpovídají modelům.

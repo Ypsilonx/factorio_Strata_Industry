@@ -437,6 +437,28 @@ def corrugated(name="RT_Corrugated", base=None):
     return mat
 
 
+def tank(name="RT_Tank", base=(0.07, 0.08, 0.07)):
+    """Natřená ocelová nádrž: vodorovné spáry plechů, ošoupaná barva na hranách, rez stékající v pruzích
+    (jako vanilla nádrže a potrubí)."""
+    mat, nt, bsdf = _new(name)
+    coords, crevice, edge = _masks(nt)
+    seams = nt.nodes.new("ShaderNodeTexWave")
+    seams.wave_type = "BANDS"
+    seams.bands_direction = "Z"
+    seams.inputs["Scale"].default_value = 3.0
+    nt.links.new(coords, seams.inputs["Vector"])
+    seam = ramp(nt, seams.outputs["Fac"], 0.05, 0.0)
+    streaks = ramp(nt, noise(nt, coords, 3.5, detail=4.0, stretch=(10.0, 10.0, 0.5)), 0.55, 0.8)
+    tone = noise(nt, coords, 1.0, detail=2.0)
+    color = mix(nt, math(nt, "MULTIPLY", tone, 0.4), base, tuple(c * 1.4 for c in base))
+    color = mix(nt, seam, color, GRIME)
+    color = mix(nt, math(nt, "MULTIPLY", streaks, RUST), color, PALETTE["rust"])
+    _finish(nt, bsdf, color, crevice, edge, grime=0.5, roughness=0.5)
+    bsdf.inputs["Metallic"].default_value = 0.5
+    _bump(nt, bsdf, seam, 0.4)
+    return mat
+
+
 def foliage(name="RT_Foliage", base=None, dark=None, scale=6.0):
     """Listí, keře, tráva: shluky lístků (šum) s tmavými mezerami a světlejšími okraji."""
     base, dark = base or PALETTE["foliage"], dark or PALETTE["foliage_dark"]
@@ -528,6 +550,8 @@ def library():
         "tar_roof": concrete("RT_TarRoof", base=(0.055, 0.05, 0.045)),
         "metal_bright": corrugated("RT_MetalBright", (0.32, 0.31, 0.29)),
         "rust_pipe": corrugated("RT_RustPipe", PALETTE["rust"]),
+        "tank": tank(),
+        "paint_green": cloth("RT_PaintGreen", (0.035, 0.08, 0.045)),
         "glass": glass(),
         "earth": ground("RT_Earth", "earth"),
         "window": glow("RT_Window", PALETTE["window"]),

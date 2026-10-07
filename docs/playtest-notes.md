@@ -37,3 +37,17 @@ Vyřešeno 2026-10-06: spotřeba zaokrouhlená nahoru na celé kusy, číslo úr
 - [x] Zpoždění obnovy tabule po Shift+klik (vložení nastavení). Signály se přepíšou hned.
 - [x] Remote `set_board_mode` nekontroluje platnost režimu. Neplatný režim vyhodí chybu, neplatný tag z plánu → Radnice.
 - [x] Verze: zůstává 0.1.0 (mod zatím nebyl vydaný).
+
+## 2026-10-07 – vizuál po zkoušce ve hře (nápady na později)
+
+Hotovo: lávky na zemi, vzhled jako ve Factoriu (textury a sprity ze hry, stíny), detaily domů, noční světla,
+nová překladiště. Odloženo jako nápady – zatím se nedělá:
+
+- [ ] **Pracovní animace radnice** (radnice zkoumá): animace strojů ze hry v malých výřezech (montážní stroj,
+  parní stroj, kotel, radar, laboratoře), kouř z komínů skriptem, pulzující světla laboratoře a kopulí; po
+  úrovních viz návrh v konverzaci (osada: výheň a kouř → město vědy: laboratoře, kopule, antény). Radnice je
+  laboratoř – `on_animation` může mít víc snímků, statický základ s `repeat_count`.
+- [ ] **Vkladače ze hry** u dílen a skladů (skládají se z podstavce a ruky v poloze – nejlépe spolu s animací).
+- [ ] **Předměty ze hry po městě** (krok 6 plánu): ikony předmětů, které město spotřebovává nebo překladiště
+  právě obsahuje, rozházené kolem radnice, domů a na paletách skladu; kreslí skript, obnova jen při změně.
+- [ ] **Dvě kapaliny v překladišti kapalin** (varianta B/C) – zamítnuto kvůli složitosti, jeden vstup zůstává.

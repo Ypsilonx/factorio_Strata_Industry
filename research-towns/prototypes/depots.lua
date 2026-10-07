@@ -37,7 +37,11 @@ local function derive(source, name)
   return entity
 end
 
+-- Sklad 2×2 (bedna 1×1 byla na zboží, regál a palety moc malá).
 local goods = derive(data.raw.container["iron-chest"], "rt-goods-depot")
+goods.collision_box = { { -0.9, -0.9 }, { 0.9, 0.9 } }
+goods.selection_box = { { -1, -1 }, { 1, 1 } }
+goods.radius_visualisation_specification = reach.spec(goods, levels.DEPOT_REACH)
 goods.inventory_size = 48
 goods.picture = picture("rt-goods-depot")
 

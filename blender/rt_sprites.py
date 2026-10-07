@@ -155,6 +155,13 @@ def tree(index, color_index):
     return compose(f"tree-{kind}-{letter}-{color_index}", layers), shadow
 
 
+def item(name):
+    """Ikona předmětu ze hry (64 px, první mipmapa) s patou ve spodní hraně – předmět ležící na zemi nebo na paletě
+    se ve hře kreslí právě jako ikona čelem ke kameře. Vrátí (sprite, None) pro card."""
+    frame = _load(FACTORIO_DATA / "base/graphics/icons" / f"{name}.png")[:64, :64].copy()
+    return compose(f"item-{name}", [(frame, 0, -32)]), None
+
+
 def material(path):
     """Neosvětlený materiál spritu: barvy přímo ze spritu (už osvětleného hrou), průhlednost z alfy.
     Ve světelné vrstvě se emise vypne (rt_unlit) – sprity samy nesvítí."""
