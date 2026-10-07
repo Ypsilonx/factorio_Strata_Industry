@@ -20,8 +20,8 @@ local ROPE_SHADOW = { r = 0, g = 0, b = 0, a = 0.25 }
 --- Posun stínu šňůry na zemi (slunce zleva shora → stín doprava dolů).
 local ROPE_SHADOW_OFFSET = { x = 0.5, y = 0.35 }
 local LANTERN_COLOR = { r = 1, g = 0.72, b = 0.38, a = 1 }
---- Stín visuté lávky na zemi (tint spritu lávky).
-local WALKWAY_SHADOW = { r = 0, g = 0, b = 0, a = 0.35 }
+--- Vrstva lávky na zemi: nad vyšlapaným chodníkem (ground-patch), pod budovami i předměty na zemi.
+local WALKWAY_LAYER = "ground-patch-higher"
 --- Barva čísla úrovně nad domem (jen v Alt režimu).
 local LEVEL_COLOR = { r = 1, g = 0.85, b = 0.5 }
 
@@ -51,20 +51,16 @@ local function link_style(a, b)
   return links.style(levels.variant(town.level, config.level_count()))
 end
 
---- Visutá lávka mezi úchyty budov: úseky spritu natočené po směru spojení a jejich stín na zemi.
+--- Lávka (prkenná / dlážděná cesta) na zemi mezi středy budov: úseky spritu natočené po směru spojení.
+--- Leží pod budovami (vrstva nad vyšlapaným chodníkem), takže konce zakryje budova.
 local function draw_walkway(add, a, b, style, surface)
   local sprite = "rt-skywalk-" .. style
-  local o = ROPE_SHADOW_OFFSET
   local pa, pb = a.entity.position, b.entity.position
-  for _, s in ipairs(links.walkway({ x = pa.x + o.x, y = pa.y + o.y }, { x = pb.x + o.x, y = pb.y + o.y })) do
+  for _, s in ipairs(links.walkway(pa, pb)) do
     add(rendering.draw_sprite({ sprite = sprite, target = s.center, surface = surface, orientation = s.orientation,
-      x_scale = s.length, tint = WALKWAY_SHADOW, render_layer = "ground-patch-higher" }))
+      x_scale = s.length, render_layer = WALKWAY_LAYER }))
   end
-  for _, s in ipairs(links.walkway(anchor(a), anchor(b))) do
-    add(rendering.draw_sprite({ sprite = sprite, target = s.center, surface = surface, orientation = s.orientation,
-      x_scale = s.length, render_layer = "wires" }))
-  end
-  local middle = { x = (anchor(a).x + anchor(b).x) / 2, y = (anchor(a).y + anchor(b).y) / 2 }
+  local middle = { x = (pa.x + pb.x) / 2, y = (pa.y + pb.y) / 2 }
   add(rendering.draw_light({ sprite = "utility/light_small", target = middle, surface = surface, scale = 0.8,
     intensity = 0.5, minimum_darkness = 0.3, color = LANTERN_COLOR }))
 end

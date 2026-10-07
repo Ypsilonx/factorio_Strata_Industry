@@ -92,6 +92,10 @@ remote.add_interface("research-towns", {
   link_renders = function(a, b)
     return network.link_render_count(a, b)
   end,
+  --- Překreslí všechna spojení budov (starý save po změně vzhledu spojení).
+  redraw_links = function()
+    network.redraw_links()
+  end,
   --- Srovná město s aktuálními vzorci (jako po změně konfigurace).
   refresh_town = function(id)
     local t = town(id)

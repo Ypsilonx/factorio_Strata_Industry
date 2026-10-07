@@ -11,8 +11,8 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
    přivítají a požádají o dar (suroviny, které už vyrábíš). Dodej ho přes překladiště u jejich radnice
    a město se stane partnerem.
 1. **Radnice** zkoumá jako laboratoř. Každá úroveň města otevře **jednu novou vědu** (úroveň 1 = první věda).
-2. **Domy** (vyrobíš v montážním stroji) postav do dosahu radnice nebo jiného domu – propojí se visutým
-   chodníkem. Nejvýš 5 domů v sérii od radnice; dům dál je neaktivní (ikona varování). K povýšení potřebuje město
+2. **Domy** (vyrobíš v montážním stroji) postav do dosahu radnice nebo jiného domu – propojí se
+   chodníkem (šňůrou, později lávkou). Nejvýš 5 domů v sérii od radnice; dům dál je neaktivní (ikona varování). K povýšení potřebuje město
    4 aktivní domy na úroveň (nejvýš 20).
 3. **Městská rozvodna** u radnice nebo domu odebírá elektřinu města; bez ní radnice nezkoumá.
 4. **Překladiště zboží a kapalin** u radnice nebo aktivního domu dodávají suroviny. Pořadí: nejdřív zásoba pro

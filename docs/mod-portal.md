@@ -29,7 +29,7 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 - **Five eras of graphics** – the town hall is rebuilt with your research: a settlement of wood and thatch,
   then steam power and workshops, warehouses and tenements, tanks and a glass observatory, and finally a city
   of science with solar fields, a roboport and roof gardens. Houses follow their own level, and buildings are
-  linked by garlands of flags and lanterns, later by wooden and glass skywalks.
+  linked by garlands of flags and lanterns, later by wooden and paved walkways on the ground.
 - **Compatible with overhaul mods** – sciences, milestone materials and labs are derived from the game's data,
   nothing is hard-coded.
 
