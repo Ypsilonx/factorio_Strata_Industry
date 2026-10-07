@@ -32,6 +32,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Ruina (cena obnovy, vzhled trosek) | `shared/levels.lua` → `REPAIR_SHARE`; `blender/rt_ruin.py` → `GONE`, `KEEP`, `STUMP`, `CHARRED`, `RUBBLE_*`; render `build_hall.py --ruin N --install` |
 | Specializace měst (počet materiálů, bonus za úroveň, strop, klesající přínos) | `shared/levels.lua` → `SPEC_COUNT`, `SPEC_START_LEVEL`, `SPEC_STEP`, `SPEC_TOWN_MAX`, `SPEC_DECAY`, `SPEC_MAX`; ve hře mapové nastavení „Síla specializací měst“ (za běhu); výběr materiálů `prototypes/specializations.lua` |
 | Noční světla (barva, dosah, síla, od jaké tmy; sloučení svítidel) | `scripts/lights.lua` → `STYLE`, `MIN_DARKNESS`; pozice generuje `blender/build_hall.py --lights` (nebo `--install`) do `shared/night_lights.lua`, sloučení `LIGHT_CLUSTER` |
+| Kouř z komínů zkoumající radnice (interval, druh, rozptyl) | `scripts/smoke.lua` → `TICKS`, `NAME`, `SPREAD`; místa komínů generuje `blender/build_hall.py --lights` (`SMOKE_OBJECTS`) do `shared/night_lights.lua` |
 | Panel radnice: slotů na řádek, šířka progress baru | `scripts/gui.lua` → `SLOT_COLUMNS`, `BAR_WIDTH` |
 | Rozmístění měst, dar, objevení, první město | `shared/worldgen.lua` → `TOWN_CELL_BASE`, `TOWN_CELL_MAX`, `TOWN_CELL_MARGIN`, `TOWN_SITE_WINDOW`, `TOWN_SPAWN_CLEAR`, `TOWN_NEST_CLEAR`, `TOWN_PLAYER_CLEAR`, `DISCOVERY_RADIUS`, `GIFT_SHARE`, `FIRST_TOWN_*`, barva na mapě `MAP_COLOR` |
 | Spojení budov (chodník, šňůra, praporky, lucerny, lávky) | `scripts/network.lua` → `PATH_COLOR`, `PATH_WIDTH`, `ROPE_COLOR`, `ROPE_SHADOW_OFFSET`, `LANTERN_COLOR`, `WALKWAY_LAYER`; tvar a styl podle úrovně `scripts/links.lua` → `SAG_*`, `ANCHOR`, `FLAG_*`, `style`; textura lávek `blender/build_hall.py` → `skywalk_model` |
@@ -129,3 +130,5 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 23. Městská rozvodna: připoj ji drátem ke své síti – město má elektřinu; odpoj drát (klasická rozvodna ji dál
     přikrývá plochou) – město elektřinu nemá. Najetí myší na dům nebo radnici ukáže chodníky sítě města, bez
     najetí nejsou vidět.
+24. Kouř: radnice, která zkoumá, kouří z komínů (ve dne i v noci); bez vědy nebo elektřiny kouř přestane.
+    Městská rozvodna nehučí.

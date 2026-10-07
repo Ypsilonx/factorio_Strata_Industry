@@ -62,3 +62,6 @@ nová překladiště. Odloženo jako nápady – zatím se nedělá:
   na dům, radnici nebo trosky – chodníky celé sítě města (jako trasa potrubí). Šňůry s praporky zůstávají.
 - [x] **Specializace až po vybudování města:** bonus od úrovně 6, +1 % za každou úroveň nad 5 (`SPEC_START_LEVEL`);
   panel ji ukazuje vždy (u cizího města „jako partner od úrovně 6“).
+- [x] **Ve dne nejde poznat, že radnice zkoumá.** Zkoumající radnice kouří z komínů (`scripts/smoke.lua`, místa
+  komínů z Blenderu); bez výzkumu kouř přestane.
+- [x] **Městská rozvodna nepřetržitě hučí** (zvuk zděděný po vanilla rozvodně) – zvuk odstraněn.

@@ -11,6 +11,7 @@ local gui = require("scripts.gui")
 local worldgen = require("scripts.worldgen")
 local discovery = require("scripts.discovery")
 local board = require("scripts.board")
+local smoke = require("scripts.smoke")
 require("scripts.remote")
 
 --- Postavení domu nebo překladiště (hráč, robot, skript): připojí ho k městu.
@@ -148,6 +149,8 @@ script.on_event(defines.events.on_runtime_mod_setting_changed, specializations.o
 script.on_event(defines.events.on_selected_entity_changed, network.on_selected)
 -- Obnova otevřených panelů; bez otevřeného okna jen jedna kontrola prázdné tabulky.
 script.on_nth_tick(gui.REFRESH_TICKS, gui.refresh)
+-- Kouř z komínů pracujících radnic (9 se nekryje s 30, 60 ani TOWN_INTERVAL).
+script.on_nth_tick(smoke.TICKS, smoke.tick)
 -- Objevení měst hráči (60 se nekryje s TOWN_INTERVAL ani REFRESH_TICKS – stejné číslo by handler přepsalo).
 script.on_nth_tick(discovery.CHECK_TICKS, discovery.check)
 script.on_init(function()

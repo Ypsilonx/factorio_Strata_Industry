@@ -15,7 +15,7 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
 
 ## Výzkum a růst
 
-1. **Radnice** zkoumá jako laboratoř. Každá úroveň města otevře **jednu novou vědu** (úroveň 1 = první věda;
+1. **Radnice** zkoumá jako laboratoř. Když zkoumá, kouří z komínů – je to vidět i ve dne. Každá úroveň města otevře **jednu novou vědu** (úroveň 1 = první věda;
    vanilla 7 úrovní, Space Age 12, overhauly podle počtu věd).
 2. **Domy** (vyrobíš v montážním stroji) postav do dosahu radnice nebo jiného domu – propojí se chodníkem
    (šňůrou, později lávkou; vyšlapaný chodník – trasu sítě – uvidíš při najetí myší na dům nebo radnici).

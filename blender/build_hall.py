@@ -366,19 +366,46 @@ def night_lights(kind):
     return [tuple(c) for c in clusters]
 
 
-def write_night_lights(kind, variant, lights):
-    """Zapíše světla vzhledu do shared/night_lights.lua (řádek M.<druh>[<vzhled>]; ostatní řádky ponechá)."""
-    header = ("--- Noční světla radnice a domů – GENEROVÁNO blender/build_hall.py (--install), neupravovat ručně.\n"
-              "--- Posun od středu entity v dlaždicích (y dolů), druh světla a počet sloučených svítidel;\n"
-              "--- vykresluje scripts/lights.lua.\n"
-              "local M = { hall = {}, house = {} }\n")
-    text = NIGHT_LIGHTS.read_text(encoding="utf-8") if NIGHT_LIGHTS.exists() else header + "return M\n"
-    entries = ", ".join(f'{{ {x:.2f}, {y:.2f}, "{k}", {n} }}' for x, y, k, n in lights)
-    line = f"M.{kind}[{variant}] = {{ {entries} }}\n"
-    lines = [l for l in text.splitlines(keepends=True) if not l.startswith(f"M.{kind}[{variant}] =")]
-    lines.insert(lines.index("return M\n"), line)
+#: Místa kouře radnice, když zkoumá (vršek komínů a výheň) – podle jména dílu.
+SMOKE_OBJECTS = {"RT_Chimney", "RT_HallChimney", "RT_Forge"}
+
+
+def smoke_points(kind):
+    """Vršky komínů postavené scény promítnuté na obrazovku (posun od středu entity v dlaždicích, y dolů).
+    Vrátí [(x, y)]."""
+    scene = bpy.data.scenes[R.SCENE_NAME]
+    scene.view_layers[0].update()
+    points = []
+    for obj in scene.collection.all_objects:
+        if obj.type != "MESH" or re.sub(r"(_\d+)?(\.\d+)?$", "", obj.name) not in SMOKE_OBJECTS:
+            continue
+        corners = [obj.matrix_world @ Vector(c) for c in obj.bound_box]
+        x = sum(c.x for c in corners) / 8
+        y = sum(c.y for c in corners) / 8 / math.sqrt(2.0)
+        top = max(c.z for c in corners)
+        points.append((x, -y - top * rt_depots.SCREEN))
+    return points
+
+
+def write_night_lights(kind, variant, lights, smoke):
+    """Zapíše světla a místa kouře vzhledu do shared/night_lights.lua (řádky M.<druh>[<vzhled>] a
+    M.smoke_<druh>[<vzhled>]; ostatní řádky ponechá)."""
+    header = ("--- Noční světla a kouř radnice a domů – GENEROVÁNO blender/build_hall.py (--install, --lights), neupravovat\n"
+              "--- ručně. Posun od středu entity v dlaždicích (y dolů); světla: druh a počet sloučených svítidel\n"
+              "--- (scripts/lights.lua), kouř: vršky komínů, když radnice zkoumá (scripts/smoke.lua).\n"
+              "local M = { hall = {}, house = {}, smoke_hall = {}, smoke_house = {} }\n")
+    text = NIGHT_LIGHTS.read_text(encoding="utf-8") if NIGHT_LIGHTS.exists() else ""
+    if not text.startswith(header):
+        text = header + "return M\n"
+    rows = {
+        f"M.{kind}[{variant}] =": ", ".join(f'{{ {x:.2f}, {y:.2f}, "{k}", {n} }}' for x, y, k, n in lights),
+        f"M.smoke_{kind}[{variant}] =": ", ".join(f"{{ {x:.2f}, {y:.2f} }}" for x, y in smoke),
+    }
+    lines = [l for l in text.splitlines(keepends=True) if not any(l.startswith(p) for p in rows)]
+    for prefix, entries in rows.items():
+        lines.insert(lines.index("return M\n"), f"{prefix} {{ {entries} }}\n")
     NIGHT_LIGHTS.write_text("".join(lines), encoding="utf-8")
-    print(f"SVĚTLA {kind} {variant}: {len(lights)}")
+    print(f"SVĚTLA {kind} {variant}: {len(lights)}, kouř {len(smoke)}")
 
 
 def update_night_lights():
@@ -388,7 +415,7 @@ def update_night_lights():
             mats = rt_materials.library()
             R.build_scene(lambda collection, parent: module.build(collection, parent, mats, variant), footprint, top,
                           margin)
-            write_night_lights(kind, variant, night_lights(kind))
+            write_night_lights(kind, variant, night_lights(kind), smoke_points(kind))
 
 
 def install(kind, variant, base, light_px, shadow, center_up):
@@ -399,7 +426,7 @@ def install(kind, variant, base, light_px, shadow, center_up):
         R.save_pixels(pixels, entity_dir(kind) / f"{kind}-{variant}-{name}.png")
     R.save_pixels(icon(base), ICON_DIR / f"{kind}-{variant}.png")
     write_sprites_lua(kind, base.shape[1], base.shape[0], center_up)
-    write_night_lights(kind, variant, night_lights(kind))
+    write_night_lights(kind, variant, night_lights(kind), smoke_points(kind))
 
 
 def fill_missing(kind, source):

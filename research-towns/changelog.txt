@@ -21,6 +21,7 @@ Date: 2026-10-07
     - Machines, trees, ground textures and items from the game in the town renders.
     - Depots: a 2×2 goods warehouse with goods on pallets, a fluid tank with an operator hut, the town substation and a town board.
     - Town halls and houses light up their surroundings at night.
+    - A researching town hall smokes from its chimneys, so you can see it working by day.
     - Town buildings are linked by garlands of flags and lanterns, later by wooden and paved walkways; hover a building to see the paths of its town network.
   Compatibility:
     - Factorio 2.0 base game and Space Age.

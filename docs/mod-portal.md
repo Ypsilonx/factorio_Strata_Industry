@@ -57,6 +57,7 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
   then steam power and workshops, warehouses and tenements, tanks and a glass observatory, and finally a city
   of science with solar fields, a roboport and roof gardens. Houses follow their own level (cottage → tenement
   with solar panels and a roof garden). Machines, trees, ground and items come from the game itself.
+- **A researching town hall smokes** from its chimneys – you can see it working by day.
 - **At night** windows, lanterns, lamps and fires light up the town.
 - Buildings are linked by garlands of flags and lanterns, later by wooden and paved walkways on the ground. Hover a
   house or town hall to see the paths of its whole town network.

@@ -83,6 +83,8 @@ power.connection_points = { {
     green = { pole_shadow[1] + 0.1, pole_shadow[2] } },
 } }
 power.radius_visualisation_picture = nil
+-- Vanilla rozvodna nepřetržitě hučí (substation.ogg) – u městské rozvodny vedle radnice to ruší.
+power.working_sound = nil
 
 -- Skrytý spotřebič města pod městskou rozvodnou: odběr (power_usage) a zásobník nastavuje skript podle úrovně
 -- města; limit toku jen omezuje špičku. Nejde vybrat, nemá kolizi ani grafiku.
@@ -100,6 +102,7 @@ load.picture = { filename = "__core__/graphics/empty.png", size = 1 }
 load.animation = nil
 load.continuous_animation = nil
 load.gui_mode = "none"
+load.working_sound = nil
 load.energy_production = "0W"
 load.energy_usage = "0W"
 load.energy_source = {
