@@ -18,3 +18,4 @@ Date: 2026-10-06
     - Town buildings are connected by a path with a garland of flags and lanterns, later by wooden and paved walkways on the ground.
     - Town halls and houses light up their surroundings at night (windows, lanterns, lamps and fires).
     - Researching town halls absorb pollution, and so do top-level houses (startup setting to adjust).
+    - A town hall destroyed by the biters leaves ruins; the town survives and is rebuilt at the same level with materials delivered through its depots.

@@ -57,6 +57,8 @@ M.UPKEEP_BUFFER_SECONDS = 300
 M.HALL_ABSORB_FIRST = 30
 M.HALL_ABSORB_LAST = 1000
 M.HOUSE_ABSORB = 15
+--- Obnova ruiny radnice: podíl surovin milníku současné úrovně (bez vědy), nahoru na celé kusy.
+M.REPAIR_SHARE = 0.5
 
 --- Pásma kandidátů surovin milníků od nejranějšího; tier_index je roztáhne na libovolný počet úrovní.
 --- Nad poslední vědou se používá poslední pásmo.
@@ -105,6 +107,18 @@ end
 function M.hall_level(name)
   local level = name:match("^rt%-town%-hall%-(%d+)$")
   return level and tonumber(level)
+end
+
+--- Jméno prototypu ruiny radnice daného vzhledu (1..VARIANTS).
+function M.ruin_name(variant)
+  return "rt-town-ruin-" .. variant
+end
+
+--- Jména prototypů ruin všech vzhledů.
+function M.ruin_names()
+  local names = {}
+  for variant = 1, M.VARIANTS do names[variant] = M.ruin_name(variant) end
+  return names
 end
 
 --- Jména prototypů radnic 1..count.

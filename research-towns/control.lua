@@ -27,7 +27,12 @@ end
 local function on_removed(event)
   local entity = event.entity
   if levels.hall_level(entity.name) then
-    towns.on_hall_removed(entity.unit_number)
+    -- Zničená radnice (biteři) se změní v ruinu; jinak (skript) město zaniká.
+    if event.name == defines.events.on_entity_died then
+      towns.on_hall_died(entity.unit_number)
+    else
+      towns.on_hall_removed(entity.unit_number)
+    end
   elseif entity.name == network.HOUSE then
     towns.on_network_changed(network.remove(entity.unit_number))
   elseif depots.KINDS[entity.name] then

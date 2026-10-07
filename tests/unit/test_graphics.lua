@@ -56,4 +56,16 @@ return {
   end },
   { "radnice: vrstvy všech vzhledů a ikony", function() check_kind("hall") end },
   { "dům: vrstvy všech vzhledů a ikony", function() check_kind("house") end },
+  { "ruina: základ a stín všech vzhledů s rozměry radnice", function()
+    local sprites = require("prototypes.hall_sprites")
+    for variant = 1, levels.VARIANTS do
+      for _, layer in ipairs({ "base", "shadow" }) do
+        local path = string.format("research-towns/graphics/entity/ruin/ruin-%d-%s.png", variant, layer)
+        local w, h = png_size(path)
+        A.truthy(w, "chybí " .. path)
+        A.eq(w, sprites.width, path .. " šířka")
+        A.eq(h, sprites.height, path .. " výška")
+      end
+    end
+  end },
 }

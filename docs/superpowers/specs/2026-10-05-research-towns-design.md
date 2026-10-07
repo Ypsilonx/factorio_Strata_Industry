@@ -104,7 +104,12 @@ zaloguje. Výsledek jde do runtime přes prototyp `mod-data`.
 
 - Radnici nejde vytěžit. Po zničení (biteři) vznikne na stejném místě **ruina**; město si drží jméno, úroveň
   i postup milníku, ale nezkoumá a domy jsou neaktivní.
-- Ruina je bedna: hráč do ní dodá materiál na obnovu (cena roste s úrovní) a radnice se obnoví ve stejné úrovni.
+- ~~Ruina je bedna~~ – rozhodnuto 2026-10-07 (plán 2c): materiál na obnovu dodají **překladiště města** jako
+  u daru (cena = `REPAIR_SHARE` 50 % surovin milníku současné úrovně bez vědy, roste s úrovní); radnice se obnoví
+  ve stejné úrovni. Ruina je vypnutá nezničitelná laboratoř 15×15 (prototyp na každý vzhled, grafika = zničená
+  radnice z Blenderu `--ruin N`), aby se u ní otevřel panel města s cenou obnovy. Uzel sítě se přepojí na ruinu
+  (`network.replace_hall`) – domy, překladiště, postup, zásoba i beacon zůstanou; rozvodny neodebírají, nesvítí.
+  Jen zničení (`on_entity_died`) vytvoří ruinu; jiné odstranění (editor, jiný mod) město ruší jako dřív.
 - Zničené domy a překladiště se obnovují běžně (duchové, roboti).
 
 ## GUI radnice

@@ -11,6 +11,7 @@ runner.register(require("cases.houses"))
 runner.register(require("cases.upkeep"))
 runner.register(require("cases.board"))
 runner.register(require("cases.takeover"))
+runner.register(require("cases.ruins"))
 runner.register(require("cases.worldgen"))
 runner.register(require("cases.worldgen_count"))
 

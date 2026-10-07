@@ -9,6 +9,7 @@ Přepínače:
                   v otevřeném Blenderu přes MCP (exec skriptu se sys.argv = [..., "--", "--scene", "hall", "3"])
     --calibrate   zkušební deska 3×3 se sloupky přes vanilla laboratoř → blender/renders/calibration.png
     --variant N   vzhled radnice N (1–5): vrstvy a náhled blender/renders/preview-N.png
+    --ruin N      ruina radnice vzhledu N (model radnice zničený rt_ruin; s --install do graphics/entity/ruin)
     --house N     vzhled domu N (1–5, = úroveň domu): vrstvy a náhled blender/renders/preview-house-N.png
     --draft       rychlý náhled (méně vzorků)
     --overview    všech 5 vzhledů z modu vedle sebe → blender/renders/preview-all.png
@@ -48,6 +49,7 @@ import rt_hall  # noqa: E402
 import rt_depots  # noqa: E402
 import rt_house  # noqa: E402
 import rt_materials  # noqa: E402
+import rt_ruin  # noqa: E402
 import rt_render as R  # noqa: E402
 
 
@@ -136,6 +138,32 @@ def render_hall(variant):
     print(f"RADNICE {variant}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, posun nahoru {center_up} dlaždic, "
           f"{R.look(base)}")
     return base, light_px, shadow, center_up
+
+
+def render_ruin(variant):
+    """Vyrenderuje ruinu radnice daného vzhledu (model radnice zničený rt_ruin). Vrátí (base, light, shadow,
+    center_up) – světelná vrstva je prázdná (ruina nesvítí)."""
+    mats = rt_materials.library()
+
+    def build(collection, parent):
+        """Radnice a její zničení."""
+        b = rt_hall.Builder(collection, parent, mats, variant)
+        parts = rt_hall.build(collection, parent, mats, variant)
+        gone = rt_ruin.ruin(collection, b, mats)
+        return parts - gone
+
+    base, light_px, shadow, center_up, parts = R.render_layers(
+        f"ruin-{variant}", build, HALL_TILES, HALL_TOP, HALL_MARGIN, rt_materials.set_glow)
+    print(f"RUINA {variant}: {parts} dílů, {base.shape[1]}×{base.shape[0]} px, {R.look(base)}")
+    return base, light_px, shadow, center_up
+
+
+def install_ruin(variant, base, shadow):
+    """Zapíše vrstvy ruiny (základ a stín; rozměry stejné jako radnice) do graphics/entity/ruin."""
+    out = entity_dir("ruin")
+    out.mkdir(parents=True, exist_ok=True)
+    R.save_pixels(base, out / f"ruin-{variant}-base.png")
+    R.save_pixels(shadow, out / f"ruin-{variant}-shadow.png")
 
 
 #: Záběr domu: půdorys 3×3, nad ním 3,2 dlaždice na čtyřpatrový činžák, okraj 1 dlaždice na stín.
@@ -485,6 +513,12 @@ if __name__ == "__main__":
         if "--install" in args:
             install("hall", number, *layers)
             fill_missing("hall", number)
+    if "--ruin" in args:
+        number = int(args[args.index("--ruin") + 1])
+        layers = render_ruin(number)
+        preview(f"ruin-{number}", *layers[:3])
+        if "--install" in args:
+            install_ruin(number, layers[0], layers[2])
     if "--house" in args:
         number = int(args[args.index("--house") + 1])
         layers = render_house(number)

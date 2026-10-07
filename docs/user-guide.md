@@ -28,6 +28,9 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
    **Znečištění:** radnice při výzkumu pohlcuje znečištění (víc s vyšší vědou) a domy úrovně 5 ho pohlcují
    trvale. Množství nastavíš v nastavení modu (Násobič pohlcování znečištění).
 8. **Za poslední vědou** město roste dál; každá úroveň přidá produktivitu výzkumu radnice.
+   **Trosky:** když biteři radnici zničí, zůstanou trosky a město přežije (úroveň, postup, domy i překladiště).
+   Panel trosek ukáže cenu obnovy (polovina surovin milníku současné úrovně); dodej ji přes překladiště města
+   a radnice se obnoví ve stejné úrovni. Během obnovy město nezkoumá a neodebírá elektřinu.
 9. **Městská tabule** posílá do obvodové sítě požadavky města – režim Radnice, Dům nebo Spotřeba zvolíš v jejím
    okně (Spotřeba = celá zásoba na 5 minut); navíc signály příkonu (MW), pokrytí elektřiny (%), postupu k další
    úrovni (%) a postupu vylepšení domu (%).

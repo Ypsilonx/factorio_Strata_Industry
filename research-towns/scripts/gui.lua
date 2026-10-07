@@ -51,6 +51,13 @@ local function add_slots(frame, name)
   frame.add({ type = "table", name = name, column_count = M.SLOT_COLUMNS, style = "filter_slot_table" })
 end
 
+--- Prototypy, u jejichž okna se panel města ukáže: radnice a jejich ruiny.
+local function town_entity_names()
+  local names = config.hall_names()
+  for _, name in ipairs(levels.ruin_names()) do names[#names + 1] = name end
+  return names
+end
+
 --- Vytvoří (znovu) prázdný panel hráči.
 function M.ensure(player)
   local relative = player.gui.relative
@@ -59,7 +66,7 @@ function M.ensure(player)
   local frame = relative.add({
     type = "frame", name = n.frame, direction = "vertical", caption = { "rt.gui-title" },
     anchor = { gui = defines.relative_gui_type.lab_gui, position = defines.relative_gui_position.right,
-      names = config.hall_names() },
+      names = town_entity_names() },
   })
   frame.add({ type = "textfield", name = n.name, tooltip = { "rt.gui-rename" } })
   frame.add({ type = "label", name = n.level })
@@ -149,15 +156,16 @@ local function fill(player, town)
   if not frame then return end
   local n = M.NAMES
   local status = towns.status(town)
-  -- Cizí město ukazuje jen dar; partnerské vrátí viditelnost sekcí.
+  -- Cizí město ukazuje jen dar, ruina cenu obnovy; partnerské vrátí viditelnost sekcí.
   local partner = status.state == "partner"
   for _, key in ipairs({ n.houses, n.power, n.house_header, n.house_requirements, n.upkeep_status, n.upkeep, n.upgrade }) do
     frame[key].visible = partner
   end
   if not partner then
+    local ruin = status.state == "ruin"
     frame[n.productivity].visible = false
-    frame[n.level].caption = { "rt.gui-gift-hint" }
-    set_header(frame[n.level_header], { "rt.gui-gift" }, status.level_progress)
+    frame[n.level].caption = ruin and { "rt.gui-ruin-hint", status.level } or { "rt.gui-gift-hint" }
+    set_header(frame[n.level_header], ruin and { "rt.gui-ruin" } or { "rt.gui-gift" }, status.level_progress)
     fill_slots(frame[n.requirements], requirement_slots(status.requirements))
     return
   end

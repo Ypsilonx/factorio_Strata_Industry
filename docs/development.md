@@ -29,6 +29,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Vzhled jako vanilla (kontrast, sytost, hrany, kouty, rez, mech, tašky) | `blender/camera.toml` → `[sun]`, `[fill]`, `[world]` `strength`, `[grade]` `saturation`, `contrast`; `blender/rt_materials.py` → `PALETTE_SATURATION`, `EDGE_HIGHLIGHT`, `EDGE_LIGHTEN`, `CREVICE_DEPTH`, `RUST`, `MOSS`, `ROOF_TINTS`, `GROUND_TINT` |
 | Textury ze hry (terén, sprity strojů, stíny) | `blender/rt_terrain.py` → `TERRAINS`; `blender/rt_sprites.py` → `MACHINES`, `SHADOWS`, `SHADOW_ALPHA`, `CARD_LIFT`; stín budov na spritech `blender/rt_render.py` → `CARD_SHADOW`, `CARD_TILT_DEG`; vyznění stínů u okraje `fade_edges` |
 | Rozložení radnice (domy, statky, stromy, bedny) | `blender/rt_hall.py` → `ERA_SITES`, `ERA_RESERVE`, `POLE_CLEAR`, `FREE_TREES`, `FARM_MIN_ZONE`, `CHEST_SCALE`, `MAX_HOUSES` |
+| Ruina (cena obnovy, vzhled trosek) | `shared/levels.lua` → `REPAIR_SHARE`; `blender/rt_ruin.py` → `GONE`, `KEEP`, `STUMP`, `CHARRED`, `RUBBLE_*`; render `build_hall.py --ruin N --install` |
 | Noční světla (barva, dosah, síla, od jaké tmy; sloučení svítidel) | `scripts/lights.lua` → `STYLE`, `MIN_DARKNESS`; pozice generuje `blender/build_hall.py --lights` (nebo `--install`) do `shared/night_lights.lua`, sloučení `LIGHT_CLUSTER` |
 | Panel radnice: slotů na řádek, šířka progress baru | `scripts/gui.lua` → `SLOT_COLUMNS`, `BAR_WIDTH` |
 | Rozmístění měst, dar, objevení, první město | `shared/worldgen.lua` → `TOWN_CELL_BASE`, `TOWN_CELL_MAX`, `TOWN_CELL_MARGIN`, `TOWN_SITE_WINDOW`, `TOWN_SPAWN_CLEAR`, `TOWN_NEST_CLEAR`, `TOWN_PLAYER_CLEAR`, `DISCOVERY_RADIUS`, `GIFT_SHARE`, `FIRST_TOWN_*`, barva na mapě `MAP_COLOR` |
@@ -113,3 +114,7 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
     a pákami – kapalina je vidět v průzoru na plášti nádrže, potrubí se připojí v rozích, rozvodna s rozsvíceným
     oknem, barevná tabule s erbem – dráty se připínají na levý sloupek, kontrolka svítí v lucerně;
     ikony v inventáři odpovídají modelům.
+21. Ruina: zničit radnici (`/c game.player.selected.die()` s myší na radnici) – na místě trosky stejného vzhledu
+    (bez střech, sutiny), zpráva s odkazem, popisek „(trosky, úroveň N)“, panel ukazuje cenu obnovy, rozvodny
+    neodebírají, trosky nejdou zničit ani vytěžit; po dodání materiálu přes překladiště radnice stejné úrovně
+    a zpráva o obnově, domy i postup milníku zůstaly.

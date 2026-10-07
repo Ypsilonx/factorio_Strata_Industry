@@ -21,7 +21,8 @@ local PRODUCTIVITY_MODULE = "rt-productivity-module"
 
 --- Zajistí noční světla radnice podle jejího vzhledu (vzhled z úrovně prototypu radnice).
 function M.refresh_lights(town)
-  if not town.hall.valid then return end
+  -- Ruina nesvítí (její světla zmizela s radnicí).
+  if not town.hall.valid or town.state == "ruin" then return end
   local variant = levels.variant(levels.hall_level(town.hall.name), config.level_count())
   lights.ensure(town.hall, "hall", variant)
 end
@@ -38,7 +39,7 @@ end
 local function draw_labels(town)
   destroy_labels(town)
   local hall = town.hall
-  local text = { "rt.town-label", town.name, town.level }
+  local text = { town.state == "ruin" and "rt.town-label-ruin" or "rt.town-label", town.name, town.level }
   local above = { x = hall.position.x, y = hall.position.y - levels.HALL_SIZE / 2 - 1 }
   town.labels = {
     rendering.draw_text({ text = text, surface = hall.surface, target = above, color = LABEL_COLOR,
@@ -357,11 +358,14 @@ end
 --- Stav města pro GUI a remote rozhraní.
 function M.status(town)
   if town.state ~= "partner" then
+    -- Cizí město ukazuje dar, ruina cenu obnovy.
+    local requirements, progress = town.gift, town.progress
+    if town.state == "ruin" then requirements, progress = town.repair, town.repair_progress end
     return {
       id = town.id, name = town.name, level = town.level, state = town.state, hall = town.hall.unit_number,
-      requirements = with_delivered(town.gift, town.progress), house_requirements = {}, houses_to_upgrade = 0,
+      requirements = with_delivered(requirements, progress), house_requirements = {}, houses_to_upgrade = 0,
       upkeep = {}, power_watts = 0, power_percent = 0,
-      level_progress = milestones.fraction(town.gift, town.progress), house_upgrade_progress = nil,
+      level_progress = milestones.fraction(requirements, progress), house_upgrade_progress = nil,
     }
   end
   local count = config.level_count()
@@ -422,12 +426,46 @@ local function process_gift(town)
   end
 end
 
+--- Poloha radnice jako odkaz do chatu ([gps=…]).
+local function gps(entity)
+  return string.format("[gps=%d,%d,%s]", math.floor(entity.position.x), math.floor(entity.position.y),
+    entity.surface.name)
+end
+
+--- Ruinu nahradí radnice stejné úrovně: město je zase partnerské (postup milníku, zásoba, domy a překladiště
+--- zůstaly), elektřina, bonus, světla a popisky se srovnají.
+function M.restore(town)
+  local ruin = town.hall
+  local key, surface, position, force = ruin.unit_number, ruin.surface, ruin.position, ruin.force
+  ruin.destroy()
+  local hall = surface.create_entity({ name = config.hall_name(town.level), position = position, force = force })
+  network.replace_hall(key, hall)
+  town.hall = hall
+  town.state = "partner"
+  town.repair, town.repair_progress = nil, nil
+  -- Bez elektřiny nezkoumá; zapne ji první zpracování.
+  town.power_ok = false
+  M.refresh(town)
+  force.print({ "rt.town-restored", town.name, gps(hall) })
+end
+
+--- Ruina: sběr materiálu na obnovu z překladišť; po dodání celé ceny se radnice obnoví.
+local function process_repair(town)
+  depots.collect(town, { { requirements = town.repair, progress = town.repair_progress } })
+  if milestones.complete(town.repair, town.repair_progress) then
+    M.restore(town)
+  else
+    M.refresh_boards(town)
+  end
+end
+
 --- Pravidelné zpracování: dodávky z překladišť (zásoba spotřeby → milník radnice → vylepšení domu),
 --- vylepšení domu, spotřeba zásoby, kontrola elektřiny a zapnutí/vypnutí výzkumu.
 function M.process(town)
   if not town.hall.valid then return end
   if town.state ~= "partner" then
     if town.state == "discovered" then process_gift(town) end
+    if town.state == "ruin" then process_repair(town) end
     return
   end
   local candidates = network.house_candidates(town)
@@ -460,7 +498,33 @@ function M.process(town)
   M.refresh_boards(town)
 end
 
---- Radnice zanikla. Plán 1: město zaniká, domy se odpojí a překladiště uvolní (ruina přijde v plánu 2).
+--- Radnici partnerského města zničili biteři: na stejném místě vznikne nezničitelná ruina jejího vzhledu (hned –
+--- skript staví bez kontroly kolize, umírající radnice ještě stojí). Město si drží jméno, úroveň, postup milníku,
+--- zásobu, domy i překladiště; nezkoumá, neodebírá elektřinu a čeká na materiál na obnovu. Jiné město zaniká.
+--- @param key integer unit_number zničené radnice
+function M.on_hall_died(key)
+  local node = storage.nodes[key]
+  local town = node and storage.towns[node.town]
+  if not (town and town.state == "partner" and town.hall.valid) then return M.on_hall_removed(key) end
+  local old = town.hall
+  local variant = levels.variant(levels.hall_level(old.name), config.level_count())
+  local ruin = old.surface.create_entity({ name = levels.ruin_name(variant), position = old.position, force = old.force })
+  if not ruin then return M.on_hall_removed(key) end
+  ruin.destructible = false
+  ruin.disabled_by_script = true
+  network.replace_hall(key, ruin)
+  town.hall = ruin
+  town.state = "ruin"
+  town.repair = worldgen.gift(config.upgrade(town.level), levels.REPAIR_SHARE)
+  town.repair_progress = {}
+  town.power_ok = false
+  depots.apply_town_power(town)
+  draw_labels(town)
+  ruin.force.print({ "rt.town-ruined", town.name, gps(ruin) })
+end
+
+--- Radnice zmizela jinak (editor, jiný mod) nebo zanikla ruina: město zaniká, domy se odpojí a překladiště
+--- uvolní.
 function M.on_hall_removed(key)
   local node = storage.nodes[key]
   if not node then return end

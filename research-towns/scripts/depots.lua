@@ -27,10 +27,12 @@ function M.apply_town_power(town)
     local depot = storage.depots[key]
     if depot and depot.kind == "power" and depot.entity.valid then list[#list + 1] = depot end
   end
+  -- Ruina (a cizí město) elektřinu neodebírá.
+  local total = town.state == "partner" and levels.power_per_tick(town.level, config.level_count()) or 0
   for _, depot in ipairs(list) do
-    local usage = levels.power_per_tick(town.level, config.level_count()) / #list
+    local usage = total / #list
     depot.entity.power_usage = usage
-    depot.entity.electric_buffer_size = usage * 2
+    depot.entity.electric_buffer_size = math.max(1, usage * 2)
   end
 end
 

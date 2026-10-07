@@ -49,6 +49,8 @@ function M.create(level, count, sciences)
   -- get-by-unit-number: remote town_status vrací unit_number radnice, jiné mody ji podle něj dohledají.
   hall.flags = { "not-blueprintable", "not-deconstructable", "not-rotatable", "get-by-unit-number" }
   hall.minable = nil
+  -- Po zničení zůstane ruina (prototypes/ruin.lua), ne trosky laboratoře 3×3.
+  hall.corpse = nil
   hall.placeable_by = nil
   hall.fast_replaceable_group = nil
   hall.next_upgrade = nil
