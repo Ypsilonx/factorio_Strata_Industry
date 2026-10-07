@@ -107,7 +107,8 @@ local function hide_paths(player_index)
   for _, path in ipairs(storage.link_hover[player_index] or {}) do
     if path.valid then
       local players = {}
-      for _, p in ipairs(path.players) do
+      -- players je nil, dokud objekt není omezený na hráče.
+      for _, p in ipairs(path.players or {}) do
         local index = type(p) == "number" and p or p.index
         if index ~= player_index then players[#players + 1] = index end
       end
@@ -143,7 +144,8 @@ function M.on_selected(event)
       seen[pair] = true
       if path and path.valid then
         local players = {}
-        for _, p in ipairs(path.players) do players[#players + 1] = type(p) == "number" and p or p.index end
+        -- Skrytý chodník (visible = false) nikomu neukazujeme – staré seznamy hráčů se nepřebírají.
+        for _, p in ipairs(path.visible and path.players or {}) do players[#players + 1] = type(p) == "number" and p or p.index end
         players[#players + 1] = event.player_index
         path.players = players
         path.visible = true
