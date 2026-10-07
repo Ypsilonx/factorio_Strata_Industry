@@ -32,14 +32,15 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 - **Upkeep** – while researching, a town keeps using a small share of the materials of its completed milestones
   (whole items per minute, a 5 minute stock). Without it the town hall stops.
 - **Depots** – goods (2×2 warehouse), fluid and power depots supply the nearest town; the **town substation**
-  carries the town's power demand. A **town board** sends the town's requests (milestone, house upgrade or
-  upkeep) and progress in % to the circuit network.
+  is a real substation: connect it to your grid with a wire – the town takes power only through it.
+  A **town board** sends the town's requests (milestone, house upgrade or upkeep) and progress in % to the
+  circuit network.
 
 ### Bonuses for your factory
 - **Specializations** – every town is skilled in one basic material, derived from the game's data (vanilla:
   iron and copper plates, steel, gears, cables, pipes, circuits…; overhaul mods get their own). Neighbouring
   towns always differ. A partner town raises the **productivity of all recipes that make its material** (including
-  Space Age casting) by +1 % per town level, at most +15 % per town – you need less ore. More towns with the same
+  Space Age casting) by +1 % for every town level above 5 (from level 6 on), at most +15 % per town – you need less ore. More towns with the same
   specialization add only half, a quarter… of their bonus, +25 % per material at most. The town hall panel shows
   the specialization of every town, even one that is not your partner yet – choose your partners wisely.
   Bonuses from productivity research are kept.
@@ -57,7 +58,8 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
   of science with solar fields, a roboport and roof gardens. Houses follow their own level (cottage → tenement
   with solar panels and a roof garden). Machines, trees, ground and items come from the game itself.
 - **At night** windows, lanterns, lamps and fires light up the town.
-- Buildings are linked by garlands of flags and lanterns, later by wooden and paved walkways on the ground.
+- Buildings are linked by garlands of flags and lanterns, later by wooden and paved walkways on the ground. Hover a
+  house or town hall to see the paths of its whole town network.
 
 ## Mod settings
 
@@ -65,7 +67,7 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 |---|---|---|---|
 | Material upkeep multiplier | startup | 1 | How much material towns use continuously (0 = no upkeep). Lower it for slow overhauls such as Pyanodon. |
 | Pollution absorption multiplier | startup | 1 | How much pollution town halls and level 5 houses absorb (0 = none). |
-| Town specialization strength | map (runtime) | 1 | Multiplies the specialization bonus and its caps (0.5 = half, 0 = off). Can be changed in a running game – bonuses update immediately. |
+| Town specialization strength | map (runtime) | 1 | Multiplies the specialization bonus (from town level 6) and its caps (0.5 = half, 0 = off). Can be changed in a running game – bonuses update immediately. |
 
 The number and spacing of towns are set with the **Towns** slider in the map generator (frequency, size).
 
@@ -73,7 +75,8 @@ The number and spacing of towns are set with the **Towns** slider in the map gen
 
 1. Start a new map (or add the mod to an existing save – towns are added to the explored map).
 2. Find your first town 100–200 tiles from the landing site and open its town hall.
-3. Build a town substation next to it and power it, insert red science packs – research starts.
+3. Build a town substation next to it, connect it to your grid with a wire and insert red science packs – research
+   starts.
 4. Build houses and depots, deliver the milestone, press **Upgrade town**.
 5. Explore: every new town you reach asks for a gift and then researches with you – and brings its specialization.
 

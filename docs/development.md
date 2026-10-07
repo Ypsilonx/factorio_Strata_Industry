@@ -30,7 +30,7 @@ Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. 
 | Textury ze hry (terén, sprity strojů, stíny) | `blender/rt_terrain.py` → `TERRAINS`; `blender/rt_sprites.py` → `MACHINES`, `SHADOWS`, `SHADOW_ALPHA`, `CARD_LIFT`; stín budov na spritech `blender/rt_render.py` → `CARD_SHADOW`, `CARD_TILT_DEG`; vyznění stínů u okraje `fade_edges` |
 | Rozložení radnice (domy, statky, stromy, bedny) | `blender/rt_hall.py` → `ERA_SITES`, `ERA_RESERVE`, `POLE_CLEAR`, `FREE_TREES`, `FARM_MIN_ZONE`, `CHEST_SCALE`, `MAX_HOUSES` |
 | Ruina (cena obnovy, vzhled trosek) | `shared/levels.lua` → `REPAIR_SHARE`; `blender/rt_ruin.py` → `GONE`, `KEEP`, `STUMP`, `CHARRED`, `RUBBLE_*`; render `build_hall.py --ruin N --install` |
-| Specializace měst (počet materiálů, bonus za úroveň, strop, klesající přínos) | `shared/levels.lua` → `SPEC_COUNT`, `SPEC_STEP`, `SPEC_TOWN_MAX`, `SPEC_DECAY`, `SPEC_MAX`; ve hře mapové nastavení „Síla specializací měst“ (za běhu); výběr materiálů `prototypes/specializations.lua` |
+| Specializace měst (počet materiálů, bonus za úroveň, strop, klesající přínos) | `shared/levels.lua` → `SPEC_COUNT`, `SPEC_START_LEVEL`, `SPEC_STEP`, `SPEC_TOWN_MAX`, `SPEC_DECAY`, `SPEC_MAX`; ve hře mapové nastavení „Síla specializací měst“ (za běhu); výběr materiálů `prototypes/specializations.lua` |
 | Noční světla (barva, dosah, síla, od jaké tmy; sloučení svítidel) | `scripts/lights.lua` → `STYLE`, `MIN_DARKNESS`; pozice generuje `blender/build_hall.py --lights` (nebo `--install`) do `shared/night_lights.lua`, sloučení `LIGHT_CLUSTER` |
 | Panel radnice: slotů na řádek, šířka progress baru | `scripts/gui.lua` → `SLOT_COLUMNS`, `BAR_WIDTH` |
 | Rozmístění měst, dar, objevení, první město | `shared/worldgen.lua` → `TOWN_CELL_BASE`, `TOWN_CELL_MAX`, `TOWN_CELL_MARGIN`, `TOWN_SITE_WINDOW`, `TOWN_SPAWN_CLEAR`, `TOWN_NEST_CLEAR`, `TOWN_PLAYER_CLEAR`, `DISCOVERY_RADIUS`, `GIFT_SHARE`, `FIRST_TOWN_*`, barva na mapě `MAP_COLOR` |
@@ -126,3 +126,6 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 22. Specializace: panel radnice ukazuje materiál s ikonou, bonus města a celkový bonus síly (u cizího města „jako
     partner +X %“); sousední města mají různé; v okně receptu (např. železné pláty) je vidět bonus produktivity;
     po zničení radnice bonus zmizí, po obnově se vrátí.
+23. Městská rozvodna: připoj ji drátem ke své síti – město má elektřinu; odpoj drát (klasická rozvodna ji dál
+    přikrývá plochou) – město elektřinu nemá. Najetí myší na dům nebo radnici ukáže chodníky sítě města, bez
+    najetí nejsou vidět.

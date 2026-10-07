@@ -18,9 +18,12 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
 1. **Radnice** zkoumá jako laboratoř. Každá úroveň města otevře **jednu novou vědu** (úroveň 1 = první věda;
    vanilla 7 úrovní, Space Age 12, overhauly podle počtu věd).
 2. **Domy** (vyrobíš v montážním stroji) postav do dosahu radnice nebo jiného domu – propojí se chodníkem
-   (šňůrou, později lávkou). Nejvýš 5 domů v sérii od radnice; dům dál je neaktivní (ikona varování). K povýšení
+   (šňůrou, později lávkou; vyšlapaný chodník – trasu sítě – uvidíš při najetí myší na dům nebo radnici).
+   Nejvýš 5 domů v sérii od radnice; dům dál je neaktivní (ikona varování). K povýšení
    potřebuje město 4 aktivní domy na úroveň (nejvýš 20).
-3. **Městská rozvodna** u radnice nebo domu odebírá elektřinu města; bez ní radnice nezkoumá.
+3. **Městská rozvodna** u radnice nebo domu odebírá elektřinu města; bez ní radnice nezkoumá. Je to skutečná
+   rozvodna – připoj ji drátem ke své síti (jako klasickou rozvodnu). Město bere elektřinu jen přes ni; klasická
+   rozvodna u radnice nestačí.
 4. **Překladiště zboží (sklad 2×2) a kapalin** u radnice nebo aktivního domu dodávají suroviny. Pořadí: nejdřív
    zásoba pro provoz, pak milník radnice (nová věda + suroviny), pak vylepšení domů. Co nikdo nepotřebuje, zůstane.
 5. Až je milník splněný a máš dost domů, klikni v panelu radnice na **Povýšit město**. Progress bar v panelu
@@ -40,7 +43,7 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
 - **Specializace:** každé město se vyzná v jednom základním materiálu, který se odvodí z dat hry (vanilla:
   železné a měděné pláty, ocel, ozubená kola, kabely, trubky, obvody…; overhauly mají vlastní). Sousední města
   mají vždy různé. Partnerské město zvyšuje **produktivitu všech receptů, které ten materiál vyrábějí** (i lití
-  ve Space Age) o +1 % za úroveň města, nejvýš +15 % na město – potřebuješ méně rudy. Další města se stejnou
+  ve Space Age) o +1 % za každou úroveň města nad 5 (zapne se od úrovně 6), nejvýš +15 % na město – potřebuješ méně rudy. Další města se stejnou
   specializací přidají jen polovinu, čtvrtinu… svého bonusu, celkem nejvýš +25 % na materiál. Bonus se počítá
   v celých procentech (tak ho drží hra). Specializaci uvidíš v panelu radnice u každého města, i u toho, které
   ještě není partner – vybírej partnery chytře. Bonusy z výzkumů produktivity zůstávají.
@@ -60,7 +63,7 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
 |---|---|---|---|
 | Násobič spotřeby surovin | při spuštění (startup) | 1 | Kolik surovin města průběžně spotřebovávají (0 = bez spotřeby). Pro pomalé overhauly jako Pyanodon ho sniž. |
 | Násobič pohlcování znečištění | při spuštění (startup) | 1 | Kolik znečištění pohlcují radnice a domy úrovně 5 (0 = vůbec). |
-| Síla specializací měst | mapa (za běhu) | 1 | Násobí bonus specializací i jeho stropy (0,5 = poloviční, 0 = vypnuto). Jde měnit i v rozehrané hře (Nastavení → Mody → Mapa), bonusy se hned přepočítají. |
+| Síla specializací měst | mapa (za běhu) | 1 | Násobí bonus specializací (od úrovně města 6) i jeho stropy (0,5 = poloviční, 0 = vypnuto). Jde měnit i v rozehrané hře (Nastavení → Mody → Mapa), bonusy se hned přepočítají. |
 
 Četnost a velikost měst nastavíš posuvníkem **Města** v generátoru mapy.
 

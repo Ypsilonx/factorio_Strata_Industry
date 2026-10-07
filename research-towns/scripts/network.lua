@@ -73,8 +73,10 @@ local function draw_link(a, b)
   local pa, pb = a.entity.position, b.entity.position
   local list = { style = link_style(a, b) }
   local function add(object) list[#list + 1] = object end
-  add(rendering.draw_line({ color = PATH_COLOR, width = PATH_WIDTH, from = pa, to = pb, surface = surface,
-    render_layer = "ground-patch" }))
+  -- Vyšlapaný chodník je skrytý; ukáže se jen při najetí myší na budovu města (M.on_selected) jako trasa sítě.
+  list.path = rendering.draw_line({ color = PATH_COLOR, width = PATH_WIDTH, from = pa, to = pb, surface = surface,
+    render_layer = "ground-patch", visible = false })
+  add(list.path)
   if list.style ~= "garland" then
     draw_walkway(add, a, b, list.style, surface)
     return list
@@ -98,6 +100,66 @@ local function draw_link(a, b)
       intensity = 0.6, minimum_darkness = 0.3, color = LANTERN_COLOR }))
   end
   return list
+end
+
+--- Skryje hráči chodníky, které mu ukázalo najetí myší.
+local function hide_paths(player_index)
+  for _, path in ipairs(storage.link_hover[player_index] or {}) do
+    if path.valid then
+      local players = {}
+      for _, p in ipairs(path.players) do
+        local index = type(p) == "number" and p or p.index
+        if index ~= player_index then players[#players + 1] = index end
+      end
+      path.players = players
+      -- Prázdný seznam hráčů = vidí všichni – bez dalšího hráče skrýt úplně.
+      path.visible = #players > 0
+    end
+  end
+  storage.link_hover[player_index] = nil
+end
+
+--- Najetí myší na budovu města: hráči se ukážou chodníky celé sítě města (bez města jen spojení té budovy),
+--- jako trasa u potrubí; předchozí ukázané se skryjí.
+function M.on_selected(event)
+  local player = game.get_player(event.player_index)
+  hide_paths(event.player_index)
+  local selected = player and player.selected
+  local node = selected and selected.unit_number and storage.nodes[selected.unit_number]
+  if not node then return end
+  local keys = { node.key }
+  if node.town then
+    keys = {}
+    for key, other in pairs(storage.nodes) do
+      if other.town == node.town then keys[#keys + 1] = key end
+    end
+  end
+  local shown, seen = {}, {}
+  for _, key in ipairs(keys) do
+    for other in pairs(storage.nodes[key].links) do
+      local pair = pair_key(key, other)
+      local value = storage.renders[pair]
+      local path = not seen[pair] and type(value) == "table" and value.path
+      seen[pair] = true
+      if path and path.valid then
+        local players = {}
+        for _, p in ipairs(path.players) do players[#players + 1] = type(p) == "number" and p or p.index end
+        players[#players + 1] = event.player_index
+        path.players = players
+        path.visible = true
+        shown[#shown + 1] = path
+      end
+    end
+  end
+  storage.link_hover[event.player_index] = shown
+end
+
+--- Je chodník spojení dvou budov vidět? (testy; nil = spojení neexistuje)
+function M.link_path_visible(a_key, b_key)
+  local value = storage.renders[pair_key(a_key, b_key)]
+  local path = type(value) == "table" and value.path
+  if not (path and path.valid) then return nil end
+  return path.visible
 end
 
 --- Zničí vykreslení spojení (seznam objektů, nebo jeden objekt ze staršího savu).

@@ -11,6 +11,7 @@ function M.init()
   storage.renders = storage.renders or {}
   storage.lights = storage.lights or {}
   storage.spec_applied = storage.spec_applied or {}
+  storage.link_hover = storage.link_hover or {}
   storage.schedule = storage.schedule or {}
   storage.gui = storage.gui or {}
   storage.gui_board = storage.gui_board or {}

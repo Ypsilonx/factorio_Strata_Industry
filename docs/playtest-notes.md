@@ -51,3 +51,14 @@ nová překladiště. Odloženo jako nápady – zatím se nedělá:
 - [ ] **Předměty ze hry po městě** (krok 6 plánu): ikony předmětů, které město spotřebovává nebo překladiště
   právě obsahuje, rozházené kolem radnice, domů a na paletách skladu; kreslí skript, obnova jen při změně.
 - [ ] **Dvě kapaliny v překladišti kapalin** (varianta B/C) – zamítnuto kvůli složitosti, jeden vstup zůstává.
+
+## 2026-10-07 – druhá zkouška (grafika, světla, ruiny, specializace)
+
+- [x] **Klasická rozvodna stačila na elektřinu města**, městská rozvodna byla jen spotřebič. Teď je městská
+  rozvodna skutečná rozvodna (sloup, dráty jako rozvodna, napájí jen sebe) se skrytým spotřebičem města
+  `rt-power-load`; elektřina se počítá, jen když je spotřebič ve stejné síti jako městská rozvodna. U sloupu hra
+  ukazuje plochu napájení místo vizualizace dosahu k městu (dosah 4 dlaždice platí dál).
+- [x] **Průhledná čára (vyšlapaný chodník) mezi domy ruší.** Je skrytá a ukáže se jen hráči, který najede myší
+  na dům, radnici nebo trosky – chodníky celé sítě města (jako trasa potrubí). Šňůry s praporky zůstávají.
+- [x] **Specializace až po vybudování města:** bonus od úrovně 6, +1 % za každou úroveň nad 5 (`SPEC_START_LEVEL`);
+  panel ji ukazuje vždy (u cizího města „jako partner od úrovně 6“).

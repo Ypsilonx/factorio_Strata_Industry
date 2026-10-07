@@ -44,6 +44,8 @@ return {
         local count = remote.call(R, "link_renders", ctx.hall, ctx.house.unit_number)
         -- Chodník + stín + 10 úseků šňůry + praporky + 2 lucerny se světlem.
         H.check(count >= 16, "vykreslených objektů spojení: " .. count)
+        H.check(remote.call(R, "link_path_visible", ctx.hall, ctx.house.unit_number) == false,
+          "vyšlapaný chodník je vidět i bez najetí myší")
         ctx.house_key = ctx.house.unit_number
         ctx.house.destroy({ raise_destroy = true })
       end },

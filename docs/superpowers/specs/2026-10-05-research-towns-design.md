@@ -190,7 +190,7 @@ Mění sekci „Úrovně“; implementace v plánu 1b (úrovně) a v plánu 2 (s
   vlastní předměty `rt-`. Lití ze Space Age se počítá jako výrobce. Výsledek v `create.log` (`specializace …`).
 - **Každé město jinou:** nové město dostane specializaci, kterou má zatím nejméně měst (mezi rovnými podle id) –
   prvních `SPEC_COUNT` měst má každé jinou, sousední města se liší.
-- Bonus: `SPEC_STEP` (1 %) × úroveň, nejvýš `SPEC_TOWN_MAX` (15 %) na město; další města stejné specializace
+- Bonus (od 2026-10-07 až nad `SPEC_START_LEVEL` = 5, tedy od úrovně 6): `SPEC_STEP` (1 %) × úroveň nad 5, nejvýš `SPEC_TOWN_MAX` (15 %) na město; další města stejné specializace
   téže síly přidají jen `SPEC_DECAY`^pořadí (50 %, 25 %…), celkem nejvýš `SPEC_MAX` (25 %), dolů na celá procenta
   (hra drží produktivitu receptu po celých procentech). Vše × mapové nastavení „Síla specializací“ (za běhu,
   `on_runtime_mod_setting_changed` přepočte). Počítají se jen
