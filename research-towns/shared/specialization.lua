@@ -24,10 +24,12 @@ function M.pick(products, used, id)
   return candidates[(id - 1) % #candidates + 1]
 end
 
---- Bonus k produktivitě, který dává jedno partnerské město dané úrovně (SPEC_STEP za úroveň, nejvýš SPEC_TOWN_MAX),
---- × násobič z nastavení modu (výchozí 1, 0 = specializace vypnuté).
+--- Bonus k produktivitě, který dává jedno partnerské město dané úrovně: SPEC_STEP za každou úroveň nad
+--- SPEC_START_LEVEL (do ní nic – město musí být vybudované), nejvýš SPEC_TOWN_MAX, × násobič z nastavení modu
+--- (výchozí 1, 0 = specializace vypnuté).
 function M.town_bonus(level, multiplier)
-  return math.min(levels.SPEC_TOWN_MAX, levels.SPEC_STEP * level) * (multiplier or 1)
+  local above = math.max(0, level - levels.SPEC_START_LEVEL)
+  return math.min(levels.SPEC_TOWN_MAX, levels.SPEC_STEP * above) * (multiplier or 1)
 end
 
 --- Celkový bonus síly z měst se stejnou specializací: nejsilnější město naplno, každé další jen díl

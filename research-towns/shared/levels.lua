@@ -61,6 +61,8 @@ M.HOUSE_ABSORB = 15
 --- partnerského města a strop na město; další města stejné specializace přidají jen SPEC_DECAY^pořadí, celkem nejvýš
 --- SPEC_MAX. Vše × mapové nastavení „Síla specializací“ (rt-specialization-multiplier).
 M.SPEC_COUNT = 10
+--- Specializace se zapne až nad touto úrovní města (bonus SPEC_STEP za každou úroveň nad ní).
+M.SPEC_START_LEVEL = 5
 M.SPEC_STEP = 0.01
 M.SPEC_TOWN_MAX = 0.15
 M.SPEC_DECAY = 0.5

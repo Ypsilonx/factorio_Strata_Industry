@@ -164,10 +164,13 @@ local function set_specialization(label, status)
   label.visible = status.specialization ~= nil
   if not status.specialization then return end
   local name, icon = specializations.label(status.specialization)
-  if status.state == "partner" then
+  local start, step = levels.SPEC_START_LEVEL + 1, percent(levels.SPEC_STEP * specializations.multiplier())
+  if status.state ~= "partner" then
+    label.caption = { "rt.gui-specialization-offer", icon, name, start, step }
+  elseif status.spec_bonus > 0 then
     label.caption = { "rt.gui-specialization", icon, name, percent(status.spec_bonus), percent(status.spec_total) }
   else
-    label.caption = { "rt.gui-specialization-offer", icon, name, percent(status.spec_bonus) }
+    label.caption = { "rt.gui-specialization-inactive", icon, name, start, step }
   end
   label.tooltip = { "rt.gui-specialization-tooltip" }
 end

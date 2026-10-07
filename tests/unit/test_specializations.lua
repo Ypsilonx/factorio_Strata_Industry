@@ -91,10 +91,12 @@ return {
     A.eq(spec.pick({}, {}, 1), nil, "bez specializací")
   end },
   { "bonus města roste s úrovní do stropu", function()
-    A.truthy(math.abs(spec.town_bonus(1) - levels.SPEC_STEP) < 1e-9, "úroveň 1")
+    local first = levels.SPEC_START_LEVEL + 1
+    A.eq(spec.town_bonus(levels.SPEC_START_LEVEL), 0, "do úrovně SPEC_START_LEVEL bez bonusu")
+    A.truthy(math.abs(spec.town_bonus(first) - levels.SPEC_STEP) < 1e-9, "první úroveň s bonusem")
     A.truthy(math.abs(spec.town_bonus(1000) - levels.SPEC_TOWN_MAX) < 1e-9, "strop města")
-    A.truthy(math.abs(spec.town_bonus(1, 0.5) - levels.SPEC_STEP * 0.5) < 1e-9, "násobič z nastavení")
-    A.eq(spec.town_bonus(5, 0), 0, "násobič 0 = specializace vypnuté")
+    A.truthy(math.abs(spec.town_bonus(first, 0.5) - levels.SPEC_STEP * 0.5) < 1e-9, "násobič z nastavení")
+    A.eq(spec.town_bonus(first + 3, 0), 0, "násobič 0 = specializace vypnuté")
   end },
   { "součet měst stejné specializace: klesající přínos a strop", function()
     A.eq(spec.total({}), 0, "žádné město")

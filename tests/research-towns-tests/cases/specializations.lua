@@ -65,16 +65,16 @@ return {
     end,
     steps = {
       { ticks = 1, run = function(ctx)
-        remote.call(R, "set_level", ctx.town, 3)
-        H.check(math.abs(bonus(ctx, ctx.town) - expect(3)) < 1e-4, "bonus úrovně 3: " .. bonus(ctx, ctx.town))
+        remote.call(R, "set_level", ctx.town, 8)
+        H.check(math.abs(bonus(ctx, ctx.town) - expect(8)) < 1e-4, "bonus úrovně 8: " .. bonus(ctx, ctx.town))
         ctx.force.reset_technology_effects()
-        H.check(math.abs(bonus(ctx, ctx.town) - expect(3)) < 1e-4, "bonus po přepočtu výzkumů zmizel")
+        H.check(math.abs(bonus(ctx, ctx.town) - expect(8)) < 1e-4, "bonus po přepočtu výzkumů zmizel")
         -- Mapové nastavení „Síla specializací“ se projeví hned (vrátit ve stejném ticku – ostatní testy počítají s 1).
         remote.call(R, "set_specialization_multiplier", 0.5)
         local half = bonus(ctx, ctx.town)
         remote.call(R, "set_specialization_multiplier", 1)
-        H.check(math.abs(half - expect(3, 0.5)) < 1e-4, "násobič 0,5 se neprojevil: " .. half)
-        H.check(math.abs(bonus(ctx, ctx.town) - expect(3)) < 1e-4, "návrat násobiče na 1")
+        H.check(math.abs(half - expect(8, 0.5)) < 1e-4, "násobič 0,5 se neprojevil: " .. half)
+        H.check(math.abs(bonus(ctx, ctx.town) - expect(8)) < 1e-4, "návrat násobiče na 1")
         H.hall(ctx.town).die()
       end },
       { ticks = 1, run = function(ctx)
@@ -93,10 +93,10 @@ return {
     steps = { { ticks = 1, run = function(ctx)
       -- Druhému městu vnutíme stejnou specializaci jako prvnímu (v normální hře by dostalo jinou).
       remote.call(R, "set_specialization", ctx.b, H.status(ctx.a).specialization)
-      remote.call(R, "set_level", ctx.a, 5)
-      remote.call(R, "set_level", ctx.b, 5)
-      local expected = spec.total({ spec.town_bonus(5), spec.town_bonus(5) })
-      H.check(expected < 2 * expect(5), "klesající přínos se neuplatnil")
+      remote.call(R, "set_level", ctx.a, 10)
+      remote.call(R, "set_level", ctx.b, 10)
+      local expected = spec.total({ spec.town_bonus(10), spec.town_bonus(10) })
+      H.check(expected < 2 * expect(10), "klesající přínos se neuplatnil")
       H.check(math.abs(bonus(ctx, ctx.a) - expected) < 1e-4, "bonus dvou měst " .. bonus(ctx, ctx.a) .. " ≠ " .. expected)
     end } },
   },
