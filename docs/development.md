@@ -81,6 +81,16 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 - Náhled mapy s modem (po `run-tests.sh vanilla`): `factorio --config .test-run/vanilla/config.ini
   --mod-directory .test-run/vanilla/mods --generate-map-preview preview.png --map-gen-seed 123`.
 
+## Vydání na portál
+- Před vydáním: unit, vanilla, Space Age a compat (Bob's, `pymodpack`) zelené, ruční kontrola níže, `version`
+  v `info.json` a sekce v `changelog.txt`.
+- API klíč z <https://factorio.com/profile> (oprávnění *Publish Mods*, *Upload Mods*, *Edit Mods*) v souboru;
+  u nás leží ve složce `~/.factorio-api-key/`, proto `FACTORIO_API_KEY_FILE=~/.factorio-api-key/all_api_key.txt`.
+- `bash tools/publish.sh --new --dry-run` – kontroly bez odeslání; `--new` první vydání (založí mod, nastaví
+  kategorii, licenci, tagy, titul, shrnutí z `info.json` a popis z `docs/mod-portal.md`), bez přepínače nová
+  verze, `--details` nová verze + údaje. Kategorie, licence a tagy jsou nahoře v `tools/publish.sh`.
+- Screenshoty se na portál nahrávají ručně (API je neumí).
+
 ## Ruční kontrola ve hře (headless ji neověří)
 1. Nová hra, `/rt-create-town` (admin) – radnice 15×15 s popiskem a jménem, popisek i na mapě.
 2. Postavit dům u radnice – chodník se vykreslí; dům daleko – ikona varování. V Alt režimu číslo úrovně nad domem;

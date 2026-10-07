@@ -67,4 +67,7 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
 
 Četnost a velikost měst nastavíš posuvníkem **Města** v generátoru mapy.
 
+**Pozor:** mod odstraní laboratoře. Když ho z rozehrané hry odebereš, zmizí i radnice, domy a překladiště – a s nimi
+tvoje výzkumné budovy. Přidej ho jen do hry, kterou s ním chceš dohrát.
+
 Ladicí příkaz: `/rt-create-town` (admin) založí radnici severně od hráče.

@@ -32,7 +32,8 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 - **Upkeep** – while researching, a town keeps using a small share of the materials of its completed milestones
   (whole items per minute, a 5 minute stock). Without it the town hall stops.
 - **Depots** – goods (2×2 warehouse), fluid and power depots supply the nearest town; the **town substation**
-  is a real substation: connect it to your grid with a wire – the town takes power only through it.
+  is a real substation: build it within 4 tiles of a town building and connect it to your grid with a wire – the
+  town takes power only through it.
   A **town board** sends the town's requests (milestone, house upgrade or upkeep) and progress in % to the
   circuit network.
 
@@ -40,8 +41,9 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 - **Specializations** – every town is skilled in one basic material, derived from the game's data (vanilla:
   iron and copper plates, steel, gears, cables, pipes, circuits…; overhaul mods get their own). Neighbouring
   towns always differ. A partner town raises the **productivity of all recipes that make its material** (including
-  Space Age casting) by +1 % for every town level above 5 (from level 6 on), at most +15 % per town – you need less ore. More towns with the same
-  specialization add only half, a quarter… of their bonus, +25 % per material at most. The town hall panel shows
+  Space Age casting) by +1 % for every town level above 5 (from level 6 on), at most +15 % per town – you need
+  less ore. More towns with the same specialization add only half, a quarter… of their bonus, +25 % per material
+  at most. The town hall panel shows
   the specialization of every town, even one that is not your partner yet – choose your partners wisely.
   Bonuses from productivity research are kept.
 - **Clean air** – a researching town hall absorbs pollution (30/min at the first science up to 1000/min at the
@@ -49,8 +51,9 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 
 ### Danger
 - **Ruins** – if the biters destroy a town hall, the town survives in its ruins: it keeps its level, milestone
-  progress, houses and depots, but does not research and takes no power. Deliver the rebuild materials (half of
-  the current milestone's materials) through its depots and the town hall is rebuilt at the same level.
+  progress, houses and depots, but does not research, takes no power and its specialization gives no bonus.
+  Deliver the rebuild materials (half of the current milestone's materials) through its depots and the town hall
+  is rebuilt at the same level.
 
 ### Graphics
 - **Five eras** – the town hall is rebuilt with your research: a settlement of wood and thatch with fields,
@@ -87,6 +90,8 @@ The number and spacing of towns are set with the **Towns** slider in the map gen
 - Tested with Bob's mods (17 mods) and Pyanodon (`pymodpack`): sciences, milestones and specializations are
   derived automatically, all labs are replaced by town halls.
 - Labs from other mods are removed (their recipes are hidden); labs already built in a save keep working.
+- **Removing the mod** from a running save removes all town halls, houses and depots – and with them your
+  research buildings. Add it to a save you mean to keep playing with it.
 
 ## Credits
 
