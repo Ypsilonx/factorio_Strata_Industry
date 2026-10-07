@@ -14,27 +14,60 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 
 ## Features
 
+### Towns and partnership
 - **Towns on the map** – the map generator places towns across Nauvis (a *Towns* slider in the map settings,
-  visible in the map preview). The first town lies close to your landing site and welcomes you right away.
-- **Partnership** – walk up to another town and its people greet you and ask for a small gift (materials you
-  already produce). Deliver it through a depot and the town becomes your partner.
-- **Town levels = sciences** – each town level opens one new science pack. Level up by delivering the new
-  science pack, materials and enough connected houses. Beyond the last science, towns keep growing and gain
-  research productivity.
-- **Houses** – build houses within reach of the town hall (at most 5 in a row). Connected houses speed up
-  research (+120 % at most) and are upgraded one by one with surplus deliveries.
-- **Upkeep** – a town keeps using the materials of its completed milestones; keep the supply lines running.
-- **Clean air** – a researching town hall absorbs pollution (more with each science), and so do top-level houses.
-- **Ruins** – if the biters destroy a town hall, the town survives in its ruins; deliver materials through its
-  depots and the town hall is rebuilt at the same level.
-- **Depots** – goods, fluid and power depots supply the nearest town; a **town board** sends the town's
-  requests (including progress in %) to the circuit network.
-- **Five eras of graphics** – the town hall is rebuilt with your research: a settlement of wood and thatch,
+  visible in the map preview). The first town lies 100–200 tiles from your landing site and is your partner
+  right away.
+- **Partnership** – walk up to another town: its people greet you and ask for a small gift (materials you
+  already produce). Deliver it through a depot next to its town hall and the town becomes your partner.
+
+### Research and growth
+- **Town levels = sciences** – each town level opens one new science pack (vanilla 7 levels, Space Age 12,
+  overhaul mods as many as they have). Level up by delivering the new science pack, materials and enough
+  connected houses (4 per level, at most 20). Beyond the last science, towns keep growing and gain research
+  productivity.
+- **Houses** – build them within reach of the town hall or another house (at most 5 in a row). Connected houses
+  speed up research by (house level + 1) % each, +120 % at most, and are upgraded one by one (up to level 5)
+  with surplus deliveries.
+- **Upkeep** – while researching, a town keeps using a small share of the materials of its completed milestones
+  (whole items per minute, a 5 minute stock). Without it the town hall stops.
+- **Depots** – goods (2×2 warehouse), fluid and power depots supply the nearest town; the **town substation**
+  carries the town's power demand. A **town board** sends the town's requests (milestone, house upgrade or
+  upkeep) and progress in % to the circuit network.
+
+### Bonuses for your factory
+- **Specializations** – every town is skilled in one basic material, derived from the game's data (vanilla:
+  iron and copper plates, steel, gears, cables, pipes, circuits…; overhaul mods get their own). Neighbouring
+  towns always differ. A partner town raises the **productivity of all recipes that make its material** (including
+  Space Age casting) by +1 % per town level, at most +15 % per town – you need less ore. More towns with the same
+  specialization add only half, a quarter… of their bonus, +25 % per material at most. The town hall panel shows
+  the specialization of every town, even one that is not your partner yet – choose your partners wisely.
+  Bonuses from productivity research are kept.
+- **Clean air** – a researching town hall absorbs pollution (30/min at the first science up to 1000/min at the
+  last), and every level 5 house absorbs 15/min.
+
+### Danger
+- **Ruins** – if the biters destroy a town hall, the town survives in its ruins: it keeps its level, milestone
+  progress, houses and depots, but does not research and takes no power. Deliver the rebuild materials (half of
+  the current milestone's materials) through its depots and the town hall is rebuilt at the same level.
+
+### Graphics
+- **Five eras** – the town hall is rebuilt with your research: a settlement of wood and thatch with fields,
   then steam power and workshops, warehouses and tenements, tanks and a glass observatory, and finally a city
-  of science with solar fields, a roboport and roof gardens. Houses follow their own level, and buildings are
-  linked by garlands of flags and lanterns, later by wooden and paved walkways on the ground.
-- **Compatible with overhaul mods** – sciences, milestone materials and labs are derived from the game's data,
-  nothing is hard-coded.
+  of science with solar fields, a roboport and roof gardens. Houses follow their own level (cottage → tenement
+  with solar panels and a roof garden). Machines, trees, ground and items come from the game itself.
+- **At night** windows, lanterns, lamps and fires light up the town.
+- Buildings are linked by garlands of flags and lanterns, later by wooden and paved walkways on the ground.
+
+## Mod settings
+
+| Setting | Type | Default | What it does |
+|---|---|---|---|
+| Material upkeep multiplier | startup | 1 | How much material towns use continuously (0 = no upkeep). Lower it for slow overhauls such as Pyanodon. |
+| Pollution absorption multiplier | startup | 1 | How much pollution town halls and level 5 houses absorb (0 = none). |
+| Town specialization strength | map (runtime) | 1 | Multiplies the specialization bonus and its caps (0.5 = half, 0 = off). Can be changed in a running game – bonuses update immediately. |
+
+The number and spacing of towns are set with the **Towns** slider in the map generator (frequency, size).
 
 ## How to start
 
@@ -42,18 +75,17 @@ now:      science packs + goods + fluids + power → town hall (+ houses, upkeep
 2. Find your first town 100–200 tiles from the landing site and open its town hall.
 3. Build a town substation next to it and power it, insert red science packs – research starts.
 4. Build houses and depots, deliver the milestone, press **Upgrade town**.
-5. Explore: every new town you reach asks for a gift and then researches with you.
+5. Explore: every new town you reach asks for a gift and then researches with you – and brings its specialization.
 
 ## Compatibility
 
 - Factorio 2.0, base game and Space Age.
-- Tested with Bob's mods (17 mods) and Pyanodon (`pymodpack`): sciences and milestones are derived
-  automatically, all labs are replaced by town halls.
+- Tested with Bob's mods (17 mods) and Pyanodon (`pymodpack`): sciences, milestones and specializations are
+  derived automatically, all labs are replaced by town halls.
 - Labs from other mods are removed (their recipes are hidden); labs already built in a save keep working.
 
 ## Credits
 
-- Graphics rendered in Blender by the author. The town renders include trees and machines from Factorio
-  (trees, steam engine, boiler, poles, tanks, roboport, solar panels) – © Wube Software, used as permitted
-  for mods.
+- Graphics rendered in Blender by the author. The town renders include trees, machines, ground textures and
+  items from Factorio – © Wube Software, used as permitted for mods.
 - License: MIT (code). Factorio-derived graphics remain the property of Wube Software.

@@ -4,6 +4,6 @@
   "title": "Research Towns",
   "author": "Ypsilonx",
   "factorio_version": "2.0",
-  "description": "Nauvis was never empty. Partner with its people: supply their towns with science packs, goods, fluids and power, and research happens in their town halls instead of labs. Compatible with overhaul mods.",
+  "description": "Nauvis was never empty. There are no labs - research happens in the town halls of its people. Find their towns, become their partner and supply them with science packs, goods, fluids and power. Towns grow through five eras, specialize in basic materials (productivity bonus), clean the air and survive biter attacks as ruins. Compatible with overhaul mods.",
   "dependencies": ["base >= 2.0.0", "? pypostprocessing"]
 }
