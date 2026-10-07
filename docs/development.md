@@ -89,7 +89,9 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 - `bash tools/publish.sh --new --dry-run` – kontroly bez odeslání; `--new` první vydání (založí mod, nastaví
   kategorii, licenci, tagy, titul, shrnutí z `info.json` a popis z `docs/mod-portal.md`), bez přepínače nová
   verze, `--details` nová verze + údaje. Kategorie, licence a tagy jsou nahoře v `tools/publish.sh`.
-- Screenshoty se na portál nahrávají ručně (API je neumí).
+- Obrázky na stránku modu: `bash tools/portal-images.sh` nahraje `docs/screenshots/*.png` v pořadí podle jména
+  (zatím rendery z Blenderu; skutečné screenshoty ze hry je můžou nahradit). Zdrojový kód a domovská stránka
+  na portálu: `SOURCE_URL` v `tools/publish.sh` (GitHub).
 
 ## Ruční kontrola ve hře (headless ji neověří)
 1. Nová hra, `/rt-create-town` (admin) – radnice 15×15 s popiskem a jménem, popisek i na mapě.

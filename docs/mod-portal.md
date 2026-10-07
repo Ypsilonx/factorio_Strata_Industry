@@ -98,3 +98,4 @@ The number and spacing of towns are set with the **Towns** slider in the map gen
 - Graphics rendered in Blender by the author. The town renders include trees, machines, ground textures and
   items from Factorio – © Wube Software, used as permitted for mods.
 - License: MIT (code). Factorio-derived graphics remain the property of Wube Software.
+- Source code, tests and the Blender pipeline: <https://github.com/Ypsilonx/factorio_Strata_Industry>

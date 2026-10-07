@@ -17,6 +17,7 @@ MOD="research-towns"
 CATEGORY="content"
 LICENSE="default_mit"
 TAGS=(environment manufacturing power circuit-network)
+SOURCE_URL="https://github.com/Ypsilonx/factorio_Strata_Industry"
 
 MODE="version"
 DRY=0
@@ -63,7 +64,7 @@ fi
 ZIP="$(bash "$ROOT/tools/package.sh" | tail -1)"
 echo "Mod $MOD $VERSION ($TITLE), zip $ZIP ($(du -h "$ZIP" | cut -f1))"
 echo "Shrnutí (${#SUMMARY} znaků): $SUMMARY"
-echo "Kategorie $CATEGORY, licence $LICENSE, tagy ${TAGS[*]}, popis docs/mod-portal.md"
+echo "Kategorie $CATEGORY, licence $LICENSE, tagy ${TAGS[*]}, zdroj $SOURCE_URL, popis docs/mod-portal.md"
 if [ "$DRY" = 1 ]; then
   echo "Zkouška nanečisto (--dry-run) – na portál se nic neodeslalo."
   exit 0
@@ -77,6 +78,7 @@ check() {
 #: Údaje modu na portálu (titul, shrnutí, popis, kategorie, tagy, licence).
 edit_details() {
   local args=(-F "mod=$MOD" -F "title=$TITLE" -F "summary=$SUMMARY" -F "category=$CATEGORY" -F "license=$LICENSE"
+    -F "source_url=$SOURCE_URL" -F "homepage=$SOURCE_URL"
     -F "description=<$(cygpath -m "$ROOT/docs/mod-portal.md")")
   for tag in "${TAGS[@]}"; do args+=(-F "tags=$tag"); done
   check "Úprava údajů" "$(curl -sS -H "Authorization: Bearer $KEY" "${args[@]}" "$API/v2/mods/edit_details")"
@@ -92,7 +94,7 @@ URL="$(printf '%s' "$INIT" | grep -oE '"upload_url" *: *"[^"]+"' | sed -E 's/.*"
 [ -z "$URL" ] && { echo "Založení nahrávání selhalo: $INIT"; exit 1; }
 if [ "$MODE" = "new" ]; then
   check "Zveřejnění modu" "$(curl -sS -F "file=@$(cygpath -m "$ZIP")" -F "category=$CATEGORY" -F "license=$LICENSE" \
-    -F "description=<$(cygpath -m "$ROOT/docs/mod-portal.md")" "$URL")"
+    -F "source_url=$SOURCE_URL" -F "description=<$(cygpath -m "$ROOT/docs/mod-portal.md")" "$URL")"
   echo "Mod zveřejněn: https://mods.factorio.com/mod/$MOD"
 else
   check "Nahrání verze" "$(curl -sS -F "file=@$(cygpath -m "$ZIP")" "$URL")"
