@@ -12,6 +12,10 @@ vanilla:  science packs → lab
 now:      science packs + goods + fluids + power → town hall (+ houses, upkeep, partnership)
 ```
 
+Enjoying the mod? You can support its development:
+
+[![Buy Me a Coffee](https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png)](https://buymeacoffee.com/ypsilonx)
+
 ## Features
 
 ### Towns and partnership
@@ -90,6 +94,8 @@ The number and spacing of towns are set with the **Towns** slider in the map gen
 - Tested with Bob's mods (17 mods) and Pyanodon (`pymodpack`): sciences, milestones and specializations are
   derived automatically, all labs are replaced by town halls.
 - Labs from other mods are removed (their recipes are hidden); labs already built in a save keep working.
+- Recipes of other mods that use a lab as an ingredient (e.g. the greenhouse of Simply Greenhouse) get the
+  ingredients of the lab recipe instead, so they stay craftable.
 - **Removing the mod** from a running save removes all town halls, houses and depots – and with them your
   research buildings. Add it to a save you mean to keep playing with it.
 
