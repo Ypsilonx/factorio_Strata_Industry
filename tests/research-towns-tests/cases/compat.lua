@@ -61,6 +61,17 @@ return {
       end
     end
   end } } },
+  { name = "žádný neskrytý recept nemá laboratoř jako surovinu", steps = { { ticks = 1, run = function()
+    for name, recipe in pairs(prototypes.recipe) do
+      if not recipe.hidden then
+        for _, ingredient in pairs(recipe.ingredients) do
+          local item = ingredient.type == "item" and prototypes.item[ingredient.name]
+          local result = item and item.place_result
+          H.check(not (result and result.type == "lab"), "recept " .. name .. " chce laboratoř " .. ingredient.name)
+        end
+      end
+    end
+  end } } },
   { name = "milník chce vědu další úrovně a existující suroviny", steps = { { ticks = 1, run = function()
     local data, count = H.levels_data(), H.level_count()
     for level = 1, count - 1 do

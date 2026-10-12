@@ -6,11 +6,18 @@ local labs = require("prototypes.labs")
 local hall = require("prototypes.hall")
 local specializations = require("prototypes.specializations")
 
-local removed = labs.remove(data.raw, "rt-house")
+local removed, expanded = labs.remove(data.raw, "rt-house")
 local lab_names = {}
 for name in pairs(removed) do lab_names[#lab_names + 1] = name end
 table.sort(lab_names)
 log("research-towns: odstraněné laboratoře: " .. table.concat(lab_names, ", "))
+log("research-towns: laboratoř rozložená na suroviny v receptech: " .. table.concat(expanded, ", "))
+-- Recyklace (quality) vznikla v data-updates ze starých surovin – vracela by laboratoř a labs.remove ji
+-- proto vypnul. Přegenerovat ze surovin po rozkladu.
+if mods["quality"] then
+  local recycling = require("__quality__.prototypes.recycling")
+  for _, name in ipairs(expanded) do recycling.generate_recycling_recipe(data.raw.recipe[name]) end
+end
 
 local bands, count = science.bands(data.raw)
 local sciences = science.sciences(bands, count)

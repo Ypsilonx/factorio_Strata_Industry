@@ -56,6 +56,9 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 ## Kompatibilita
 - Vědy, suroviny milníků i laboratoře se odvozují z `data.raw` v `data-final-fixes.lua`; v `create.log` je vidět
   výsledek (řádky `research-towns: …`).
+- Cizí recepty s laboratoří jako surovinou (např. skleník ze simply-greenhouse) dostanou místo ní suroviny receptu
+  laboratoře (`labs.remove`, log `laboratoř rozložená na suroviny v receptech`); recyklace (quality) se pro ně
+  přegeneruje. Hlídá compat kontrola „žádný neskrytý recept nemá laboratoř jako surovinu“.
 - `info.json` má volitelnou závislost `? pypostprocessing` – Py si v něm teprve dopočítává prerekvizity výzkumů,
   náš final-fixes musí běžet až po něm (jinak skončí všechny vědy na úrovni 1).
 - Ověřeno 2026-10-05 (Factorio 2.0.77), plán 1b (úroveň = věda), unit 53/53, vanilla 37/37, Space Age 37/37:

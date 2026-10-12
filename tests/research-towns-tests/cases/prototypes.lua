@@ -37,4 +37,21 @@ return {
     H.check(serpent.line(trigger):find("rt-house", 1, true), "spouštěč: " .. serpent.line(trigger))
     H.check(prototypes.recipe["lab"].hidden, "recept laboratoře není skrytý")
   end } } },
+  { name = "laboratoř v cizím receptu rozložená na suroviny (i v recyklaci)", steps = { { ticks = 1, run = function()
+    -- Hra suroviny receptu řadí po svém – porovnat seřazené.
+    local got = {}
+    for _, ingredient in ipairs(prototypes.recipe["rt-test-lab-user"].ingredients) do
+      got[#got + 1] = ingredient.name .. "×" .. ingredient.amount
+    end
+    table.sort(got)
+    H.check(table.concat(got, ",") == "electronic-circuit×21,iron-gear-wheel×20,iron-plate×3,transport-belt×8",
+      "suroviny: " .. table.concat(got, ","))
+    local recycling = prototypes.recipe["rt-test-lab-user-recycling"]
+    if script.active_mods["quality"] then
+      H.check(recycling and recycling.enabled, "recyklace chybí nebo je vypnutá")
+      local products = {}
+      for _, product in ipairs(recycling.products) do products[product.name] = true end
+      H.check(products["electronic-circuit"] and not products["lab"], "recyklace: " .. serpent.line(recycling.products))
+    end
+  end } } },
 }

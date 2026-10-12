@@ -38,6 +38,29 @@ return {
     A.eq(#r.technology.electronics.effects, 1, "odemčení laboratoře odebráno")
     A.eq(r.technology.electronics.effects[1].recipe, "copper-cable", "ostatní odemčení zůstalo")
   end },
+  { "laboratoř jako surovina cizího receptu se rozloží na suroviny jejího receptu", function()
+    local r = raw()
+    r.recipe.lab.ingredients = { { type = "item", name = "electronic-circuit", amount = 10 },
+      { type = "item", name = "iron-gear-wheel", amount = 10 } }
+    r.recipe["lab-2"].ingredients = { { type = "item", name = "lab", amount = 1 },
+      { type = "item", name = "copper-cable", amount = 3 } }
+    r.recipe["lab-2"].results[1].amount = 2
+    r.recipe.greenhouse = { name = "greenhouse", ingredients = {
+      { type = "item", name = "lab", amount = 2 }, { type = "item", name = "electronic-circuit", amount = 1 },
+      { type = "item", name = "lab-2", amount = 1 }, { type = "fluid", name = "water", amount = 50 } },
+      results = { { type = "item", name = "greenhouse", amount = 1 } } }
+    r.recipe["greenhouse-recycling"] = { name = "greenhouse-recycling", hidden = true,
+      ingredients = { { type = "item", name = "greenhouse", amount = 1 } },
+      results = { { type = "item", name = "lab", amount = 1 } } }
+    local _, expanded = labs.remove(r, "rt-house")
+    A.eq(table.concat(expanded, ","), "greenhouse", "rozložen jen cizí neskrytý recept")
+    -- 2× lab = 20 obvodů + 20 kol; +1 obvod; lab-2 dává 2 ks → ½ × (10 obvodů + 10 kol + 3 kabely), kabely ⌈1,5⌉.
+    local got = {}
+    for _, ingredient in ipairs(r.recipe.greenhouse.ingredients) do got[#got + 1] = ingredient.name .. "×" .. ingredient.amount end
+    A.eq(table.concat(got, ","), "electronic-circuit×26,iron-gear-wheel×25,copper-cable×2,water×50", "suroviny")
+    A.eq(r.recipe["lab-2"].ingredients[1].name, "lab", "recept laboratoře beze změny")
+    A.eq(r.recipe["greenhouse-recycling"].ingredients[1].name, "greenhouse", "recyklace beze změny")
+  end },
   { "spouštěče s laboratoří přesměrované na dům", function()
     local r = raw()
     labs.remove(r, "rt-house")
