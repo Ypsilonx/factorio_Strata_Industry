@@ -1,4 +1,9 @@
 ---------------------------------------------------------------------------------------------------
+Version: 0.1.1
+Date: 2026-10-12
+  Compatibility:
+    - Recipes of other mods that use a lab as an ingredient (e.g. Simply Greenhouse) get the ingredients of the lab recipe instead, so they stay craftable; their recycling recipes are regenerated.
+---------------------------------------------------------------------------------------------------
 Version: 0.1.0
 Date: 2026-10-07
   Features:
