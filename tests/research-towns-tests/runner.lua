@@ -21,8 +21,9 @@ end
 function M.on_init()
   local surface = game.create_surface("rt-test")
   surface.generate_with_lab_tiles = true
-  -- Poloměr 16 chunků: výřezy testů (6 v řadě po 96 dlaždicích) sahají s počtem testů až k ±480 dlaždicím.
-  surface.request_to_generate_chunks({ 0, 0 }, 16)
+  -- Výřezy testů (6 v řadě po 96 dlaždicích od −288) rostou s počtem testů dolů – poloměr podle poslední řady.
+  local bottom = math.floor((#cases - 1) / 6) * 96 - 288 + 96
+  surface.request_to_generate_chunks({ 0, 0 }, math.max(16, math.ceil(bottom / 32) + 1))
   surface.force_generate_chunk_requests()
   storage.summary = { pass = 0, fail = 0, skip = 0 }
   storage.tests = {}
