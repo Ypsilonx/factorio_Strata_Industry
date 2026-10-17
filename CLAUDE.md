@@ -21,7 +21,7 @@ Doména: factorio-mod (+ blender-workflow pro grafiku) – obecná pravidla jsou
 - `research-towns/shared/` – čistá logika sdílená runtime a testy (`worldgen`, `specialization`, `story`) + generované `night_lights.lua`
 - `blender/` – pipeline spritů radnice, domů, ruin a překladišť (`build_hall.py` + moduly `rt_*.py`, `camera.toml`)
 - `tests/unit/`, `tests/research-towns-tests/` (integrační, `cases/compat.lua` pro cizí mody)
-- `docs/` – `development.md` (vývoj, ladění, checklist ruční kontroly), `user-guide.md`, `mod-portal.md`, návrhy v `docs/superpowers/specs/`
+- `docs/` – `development.md` (vývoj, ladění, checklist ruční kontroly), `user-guide.md`, `mod-portal.md`, návrhy v `docs/specs/`
 
 ## Rozhodnutí a pravidla tohoto projektu
 

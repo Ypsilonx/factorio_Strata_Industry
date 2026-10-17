@@ -6,6 +6,6 @@ Příběh: obyvatelé Nauvisu znají planetu, ty znáš stroje – partnerství,
 
 - Návod: [docs/user-guide.md](docs/user-guide.md)
 - Vývoj: [docs/development.md](docs/development.md)
-- Návrh: [docs/superpowers/specs/2026-10-05-research-towns-design.md](docs/superpowers/specs/2026-10-05-research-towns-design.md)
+- Návrh: [docs/specs/2026-10-05-research-towns-design.md](docs/specs/2026-10-05-research-towns-design.md)
 
 Rychlý start vývoje: `bash tools/run-unit.sh`, `bash tools/run-tests.sh vanilla`, `bash tools/link-mod.sh` + F5 ve VSCode.
