@@ -6,7 +6,7 @@
 - Lua 5.3 v PATH pro unit testy (hra běží na Lua 5.2 – v modu nepoužívat `//`).
 
 ## Struktura
-Viz mapa souborů v `docs/superpowers/plans/2026-10-05-research-towns-core.md`. `control.lua` jen napojuje události.
+Mapa modulů viz `CLAUDE.md`. `control.lua` jen napojuje události.
 
 ## Kde ladit hodnoty
 | Co | Kde |
@@ -87,8 +87,7 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 ## Vydání na portál
 - Před vydáním: unit, vanilla, Space Age a compat (Bob's, `pymodpack`) zelené, ruční kontrola níže, `version`
   v `info.json` a sekce v `changelog.txt`.
-- API klíč z <https://factorio.com/profile> (oprávnění *Publish Mods*, *Upload Mods*, *Edit Mods*);
-  leží ve složce `~/.factorio-api-key/`, skripty berou výchozí `all_api_key.txt` (jiný: `FACTORIO_API_KEY_FILE`).
+- API klíč: výchozí `~/.factorio-api-key/all_api_key.txt`, jiný přes `FACTORIO_API_KEY_FILE`.
 - `bash tools/publish.sh --new --dry-run` – kontroly bez odeslání; `--new` první vydání (založí mod, nastaví
   kategorii, licenci, tagy, titul, shrnutí z `info.json` a popis z `docs/mod-portal.md`), bez přepínače nová
   verze, `--details` nová verze + údaje. Kategorie, licence a tagy jsou nahoře v `tools/publish.sh`.
