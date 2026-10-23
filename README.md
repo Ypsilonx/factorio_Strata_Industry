@@ -1,6 +1,6 @@
 # Research Towns
 
-Mod do Factoria 2.0: laboratoře nahrazují radnice měst, která rostou podle toho, co jim dodáváš.
+Mod do Factoria 2.1 (verze 0.1.x pro 2.0): laboratoře nahrazují radnice měst, která rostou podle toho, co jim dodáváš.
 Kompatibilní s overhauly (vědy, suroviny i laboratoře se odvozují z obsahu hry).
 Příběh: obyvatelé Nauvisu znají planetu, ty znáš stroje – partnerství, ze kterého mají užitek obě strany.
 

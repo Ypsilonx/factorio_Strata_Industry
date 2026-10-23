@@ -32,12 +32,14 @@ Enjoying the mod? You can support its development:
   productivity.
 - **Houses** – build them within reach of the town hall or another house (at most 5 in a row). Connected houses
   speed up research by (house level + 1) % each, +120 % at most, and are upgraded one by one (up to level 5)
-  with surplus deliveries.
+  with surplus deliveries. Untick **Upgrade houses** in the town hall panel to keep every delivery for the
+  upkeep and the milestone when production runs short.
 - **Upkeep** – while researching, a town keeps using a small share of the materials of its completed milestones
   (whole items per minute, a 5 minute stock). Without it the town hall stops.
 - **Depots** – goods (2×2 warehouse), fluid and power depots supply the nearest town; the **town substation**
   is a real substation: build it within 4 tiles of a town building and connect it to your grid with a wire – the
-  town takes power only through it.
+  town takes power only through it. The town hall panel shows the town's power use (X / Y MW), the town hall
+  status tells you why it is not researching, and the electric network window lists the town as *Town (research)*.
   A **town board** sends the town's requests (milestone, house upgrade or upkeep) and progress in % to the
   circuit network.
 
@@ -90,8 +92,8 @@ The number and spacing of towns are set with the **Towns** slider in the map gen
 
 ## Compatibility
 
-- Factorio 2.0, base game and Space Age.
-- Tested with Bob's mods (17 mods) and Pyanodon (`pymodpack`): sciences, milestones and specializations are
+- Factorio 2.1, base game and Space Age. Version 0.1.x of the mod is for Factorio 2.0.
+- Tested with Bob's mods 3.0 (16 mods) and Pyanodon 3.1 (`pymodpack`): sciences, milestones and specializations are
   derived automatically, all labs are replaced by town halls.
 - Labs from other mods are removed (their recipes are hidden); labs already built in a save keep working.
 - Recipes of other mods that use a lab as an ingredient (e.g. the greenhouse of Simply Greenhouse) get the
