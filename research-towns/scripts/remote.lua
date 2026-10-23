@@ -149,6 +149,16 @@ remote.add_interface("research-towns", {
     local t = town(id)
     if t then towns.set_level(t, level) end
   end,
+  --- Vylepšuje město domy? (nil = město neexistuje)
+  house_upgrades = function(id)
+    local t = town(id)
+    if t then return not t.house_upgrades_off end
+  end,
+  --- Zapne/vypne vylepšování domů města (jako zaškrtávátko v okně radnice).
+  set_house_upgrades = function(id, enabled)
+    local t = town(id)
+    if t then towns.set_house_upgrades(t, enabled) end
+  end,
   --- Přejmenuje město.
   rename = function(id, name)
     local t = town(id)

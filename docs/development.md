@@ -104,7 +104,10 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
    po vylepšení domu se zvýší.
 3. Otevřít radnici – panel vpravo: úroveň, domy, elektřina, milník s ikonami, tlačítko Povýšit neaktivní.
 4. Přejmenovat město v panelu (Enter) – změní se popisek.
-5. Rozvodna bez elektřiny → „Nedostatek elektřiny“, radnice nezkoumá; s elektřinou zkoumá.
+5. Bez městské rozvodny: panel „Chybí městská rozvodna …“, stav radnice (okno entity) „Chybí městská rozvodna“ místo
+   „zakázáno skriptem“. Rozvodna bez elektřiny → záhlaví „Nedostatek elektřiny: X / Y MW“ s progress barem, stav
+   „Nedostatek elektřiny“; s elektřinou zkoumá. V okně elektrické sítě (klik na sloup) je spotřeba jako „Město (výzkum)“
+   s ikonou radnice; spotřebič není ve Factoriopedii.
 6. Dodat milník (vč. zelené vědy) + 4 domy → Povýšit → radnice změní barvu, panel ukazuje úroveň 2; domy si drží vlastní úroveň.
 7. Výzkum „Automation science pack“ se spustí vyrobením domu.
 8. Panel radnice: úroveň s počtem věd, produktivita (jen nad poslední vědou), domy k vylepšení s požadavky,
@@ -149,3 +152,8 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
     najetí nejsou vidět.
 24. Kouř: radnice, která zkoumá, kouří z komínů (ve dne i v noci); bez vědy nebo elektřiny kouř přestane.
     Městská rozvodna nehučí.
+25. Přepínač **Vylepšovat domy** v panelu radnice (nad „Domy k vylepšení“, jen u partnerského města): odškrtnout →
+    záhlaví „Vylepšování domů je vypnuté“, sloty domů zmizí, překladiště nebere suroviny na domy, tabule v režimu Dům
+    posílá nuly; zaškrtnout → vylepšování pokračuje s dřívějším postupem. Stav drží i po zavření okna a uložení.
+26. Port 2.1: save z 0.1.1 (Factorio 2.0) se načte ve 2.1 – města, domy, překladiště, tabule a panel radnice zůstanou;
+    překladiště kapalin odebírá kapalinu; přepínač domů je zaškrtnutý.

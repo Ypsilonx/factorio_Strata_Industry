@@ -72,6 +72,35 @@ return {
     end } },
   },
   {
+    name = "vypnuté vylepšování domů: překladiště na domy nic nedá, po zapnutí se dům vylepší",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      remote.call(R, "set_level", ctx.town, 2)
+      ctx.house = H.house(ctx, 11, 0)
+      ctx.depot = H.place(ctx, "rt-goods-depot", 0, 10)
+      local wanted = materials(1)
+      for name, amount in pairs(materials(2)) do wanted[name] = (wanted[name] or 0) + amount end
+      for name, amount in pairs(wanted) do ctx.depot.insert({ name = name, count = 2 * amount }) end
+      remote.call(R, "set_house_upgrades", ctx.town, false)
+    end,
+    steps = { { ticks = 1, run = function(ctx)
+      H.check(remote.call(R, "house_upgrades", ctx.town) == false, "přepínač se nevypnul")
+      H.process(ctx.town)
+      local s = H.status(ctx.town)
+      H.check(remote.call(R, "house_level", ctx.house.unit_number) == 1, "dům se vylepšil i s vypnutým přepínačem")
+      H.check(not s.house_upgrades and #s.house_requirements == 0 and s.houses_to_upgrade == 0,
+        "stav vypnutého vylepšování: " .. serpent.line({ s.house_upgrades, s.house_requirements, s.houses_to_upgrade }))
+      -- Druhé zpracování nic dalšího nebere: milník je kompletní, zásoba spotřeby plná.
+      local before = ctx.depot.get_inventory(defines.inventory.chest).get_item_count()
+      H.process(ctx.town)
+      H.check(ctx.depot.get_inventory(defines.inventory.chest).get_item_count() == before,
+        "překladiště dál odebírá: " .. before .. " → " .. ctx.depot.get_inventory(defines.inventory.chest).get_item_count())
+      remote.call(R, "set_house_upgrades", ctx.town, true)
+      H.process(ctx.town)
+      H.check(remote.call(R, "house_level", ctx.house.unit_number) == 2, "po zapnutí se dům nevylepšil")
+    end } },
+  },
+  {
     name = "radnice má přednost před domy",
     setup = function(ctx)
       ctx.town = H.town(ctx)

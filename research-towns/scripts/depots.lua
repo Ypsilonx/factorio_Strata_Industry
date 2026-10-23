@@ -210,6 +210,15 @@ function M.power_ok(town)
   return any
 end
 
+--- Má město aspoň jednu městskou rozvodnu?
+function M.has_power_depot(town)
+  for key in pairs(town.depots) do
+    local depot = storage.depots[key]
+    if depot and depot.kind == "power" then return true end
+  end
+  return false
+end
+
 --- Pokrytí elektřiny města v procentech (nejhorší rozvodna; bez rozvodny 0).
 function M.power_percent(town)
   local worst

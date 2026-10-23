@@ -24,6 +24,7 @@ M.NAMES = {
   power = "rt_town_power",
   level_header = "rt_town_level_header",
   requirements = "rt_town_requirements",
+  house_toggle = "rt_town_house_toggle",
   house_header = "rt_town_house_header",
   house_requirements = "rt_town_house_requirements",
   upkeep_status = "rt_town_upkeep_status",
@@ -75,9 +76,11 @@ function M.ensure(player)
   frame.add({ type = "label", name = n.specialization })
   frame.add({ type = "label", name = n.houses })
   frame.add({ type = "label", name = n.productivity })
-  frame.add({ type = "label", name = n.power })
+  add_header(frame, n.power)
   add_header(frame, n.level_header)
   add_slots(frame, n.requirements)
+  frame.add({ type = "checkbox", name = n.house_toggle, caption = { "rt.gui-house-toggle" }, state = true,
+    tooltip = { "rt.gui-house-toggle-tooltip" } })
   add_header(frame, n.house_header)
   add_slots(frame, n.house_requirements)
   frame.add({ type = "label", name = n.upkeep_status })
@@ -175,6 +178,24 @@ local function set_specialization(label, status)
   label.tooltip = { "rt.gui-specialization-tooltip" }
 end
 
+--- Megawatty pro panel: pod 10 MW s jedním desetinným místem.
+local function megawatts(watts)
+  local mw = watts / 1e6
+  return string.format(mw < 10 and "%.1f" or "%.0f", mw)
+end
+
+--- Záhlaví elektřiny: odebíraný / potřebný příkon a pokrytí jako progress bar; bez městské rozvodny jen výzva
+--- k její stavbě (bez progress baru).
+local function set_power(header, status)
+  local need = status.power_watts
+  local got = need * status.power_percent / 100
+  local caption = { "rt.gui-power-no-depot", megawatts(need) }
+  if status.power_depot then
+    caption = { status.power_ok and "rt.gui-power-ok" or "rt.gui-power-missing", megawatts(got), megawatts(need) }
+  end
+  set_header(header, caption, status.power_depot and status.power_percent / 100 or nil)
+end
+
 --- Naplní panel hráče stavem města.
 local function fill(player, town)
   local frame = player.gui.relative[M.NAMES.frame]
@@ -184,7 +205,8 @@ local function fill(player, town)
   set_specialization(frame[n.specialization], status)
   -- Cizí město ukazuje jen dar, ruina cenu obnovy; partnerské vrátí viditelnost sekcí.
   local partner = status.state == "partner"
-  for _, key in ipairs({ n.houses, n.power, n.house_header, n.house_requirements, n.upkeep_status, n.upkeep, n.upgrade }) do
+  for _, key in ipairs({ n.houses, n.power, n.house_toggle, n.house_header, n.house_requirements, n.upkeep_status,
+    n.upkeep, n.upgrade }) do
     frame[key].visible = partner
   end
   if not partner then
@@ -201,12 +223,14 @@ local function fill(player, town)
   local productivity = math.floor(status.productivity * 100 + 0.5)
   frame[n.productivity].visible = productivity > 0
   frame[n.productivity].caption = { "rt.gui-productivity", productivity }
-  local megawatts = string.format("%.0f", status.power_watts / 1e6)
-  frame[n.power].caption = status.power_ok and { "rt.gui-power-ok", megawatts } or { "rt.gui-power-missing", megawatts }
+  set_power(frame[n.power], status)
   set_header(frame[n.level_header], { "rt.gui-requirements" }, status.level_progress)
   fill_slots(frame[n.requirements], requirement_slots(status.requirements))
+  frame[n.house_toggle].state = status.house_upgrades
   local house_caption = { "rt.gui-house-upgrade-none" }
-  if status.house_target_level then
+  if not status.house_upgrades then
+    house_caption = { "rt.gui-house-upgrade-off" }
+  elseif status.house_target_level then
     house_caption = { "rt.gui-house-upgrade", status.houses_to_upgrade, status.house_target_level + 1 }
   elseif status.house_bonus_full then
     house_caption = { "rt.gui-house-upgrade-full" }
@@ -263,6 +287,15 @@ function M.on_click(event)
     -- Povýšení vyměnilo entitu radnice – okno staré radnice se zavřelo, panel znovu otevře hráč.
     storage.gui[event.player_index] = nil
   end
+end
+
+--- Zaškrtávátko „Vylepšovat domy“.
+function M.on_checked(event)
+  if event.element.name ~= M.NAMES.house_toggle then return end
+  local town = storage.towns[storage.gui[event.player_index]]
+  if not town then return end
+  towns.set_house_upgrades(town, event.element.state)
+  fill(game.get_player(event.player_index), town)
 end
 
 --- Potvrzení jména Enterem.

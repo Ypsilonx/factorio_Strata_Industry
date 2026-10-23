@@ -87,10 +87,14 @@ power.radius_visualisation_picture = nil
 power.working_sound = nil
 
 -- Skrytý spotřebič města pod městskou rozvodnou: odběr (power_usage) a zásobník nastavuje skript podle úrovně
--- města; limit toku jen omezuje špičku. Nejde vybrat, nemá kolizi ani grafiku.
+-- města; limit toku jen omezuje špičku. Nejde vybrat, nemá kolizi ani grafiku. Není hidden (jen ve Factoriopedii),
+-- aby byla spotřeba města vidět v okně elektrické sítě pod jménem a ikonou města.
 local load = table.deepcopy(data.raw["electric-energy-interface"]["electric-energy-interface"])
 load.name = "rt-power-load"
-load.hidden = true
+load.hidden = false
+load.hidden_in_factoriopedia = true
+load.icons = { { icon = GRAPHICS .. "icons/hall-1.png", icon_size = 64 } }
+load.icon = nil
 load.minable = nil
 load.flags = { "not-on-map", "not-selectable-in-game", "not-blueprintable", "not-deconstructable", "hide-alt-info",
   "placeable-off-grid", "not-upgradable", "no-copy-paste" }
@@ -109,7 +113,7 @@ load.energy_source = {
   type = "electric", usage_priority = "secondary-input",
   buffer_capacity = "1MJ", input_flow_limit = "2GW", output_flow_limit = "0W",
 }
-load.localised_name = { "entity-name.rt-power-depot" }
+load.localised_name = { "entity-name.rt-power-load" }
 
 --- Předmět a recept překladiště.
 local function item_and_recipe(entity, order, ingredients)

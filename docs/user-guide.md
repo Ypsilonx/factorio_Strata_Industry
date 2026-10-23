@@ -23,7 +23,9 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
    potřebuje město 4 aktivní domy na úroveň (nejvýš 20).
 3. **Městská rozvodna** u radnice nebo domu odebírá elektřinu města; bez ní radnice nezkoumá. Je to skutečná
    rozvodna – připoj ji drátem ke své síti (jako klasickou rozvodnu). Město bere elektřinu jen přes ni; klasická
-   rozvodna u radnice nestačí.
+   rozvodna u radnice nestačí. Panel radnice ukazuje odebíraný a potřebný příkon (X / Y MW) s progress barem
+   a okno radnice místo „zakázáno skriptem“ píše důvod (chybí městská rozvodna, elektřina nebo suroviny). V okně
+   elektrické sítě je spotřeba města jako „Město (výzkum)“.
 4. **Překladiště zboží (sklad 2×2) a kapalin** u radnice nebo aktivního domu dodávají suroviny. Pořadí: nejdřív
    zásoba pro provoz, pak milník radnice (nová věda + suroviny), pak vylepšení domů. Co nikdo nepotřebuje, zůstane.
 5. Až je milník splněný a máš dost domů, klikni v panelu radnice na **Povýšit město**. Progress bar v panelu
@@ -32,7 +34,9 @@ Laboratoře ve hře nejsou. Zkoumá se v **radnicích** měst. Stručný návod 
    Spotřeba je v celých kusech za minutu; radnice si drží zásobu na 5 minut provozu.
 7. **Vylepšení domů** je dobrovolné: dodávky navíc vylepšují domy postupně jeden po druhém (stejné suroviny jako
    milník radnice, bez vědy) až do úrovně 5. Dům dává bonus (úroveň + 1) %, všechny domy dohromady nejvýš +120 %.
-   Úroveň domu uvidíš jako číslo nad domem v Alt režimu.
+   Úroveň domu uvidíš jako číslo nad domem v Alt režimu. Zaškrtávátkem **Vylepšovat domy** v okně radnice
+   vylepšování vypneš: překladiště pak na domy nic neberou a vše zůstane pro spotřebu a milník (když klesne
+   výroba a stačí udržet výzkum). Domy si nechají úroveň i bonus, rozpracované vylepšení se zachová.
 8. **Za poslední vědou** město roste dál; každá úroveň přidá produktivitu výzkumu radnice.
 9. **Městská tabule** posílá do obvodové sítě požadavky města – režim Radnice, Dům nebo Spotřeba zvolíš v jejím
    okně (Spotřeba = celá zásoba na 5 minut); navíc signály příkonu (MW), pokrytí elektřiny (%), postupu k další

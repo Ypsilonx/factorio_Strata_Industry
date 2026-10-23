@@ -125,12 +125,39 @@ return {
         H.process(ctx.town)
         H.check(H.status(ctx.town).power_ok, "elektřina nepokryta")
         H.check(not H.hall(ctx.town).disabled_by_script, "radnice vypnutá i s elektřinou")
+        H.check(H.hall(ctx.town).custom_status == nil, "stav radnice i s elektřinou: "
+          .. serpent.line(H.hall(ctx.town).custom_status))
         ctx.substation.destroy()
       end },
       { ticks = 120, run = function(ctx)
         H.process(ctx.town)
         H.check(not H.status(ctx.town).power_ok, "elektřina pokryta bez rozvodny")
         H.check(H.hall(ctx.town).disabled_by_script, "radnice zkoumá bez elektřiny")
+        local custom = H.hall(ctx.town).custom_status
+        H.check(custom and custom.label[1] == "rt.status-no-power", "stav radnice bez elektřiny: " .. serpent.line(custom))
+      end },
+    },
+  },
+  {
+    name = "bez městské rozvodny: radnice to ukáže ve stavu, spotřeba města je ve statistice sítě",
+    setup = function(ctx)
+      ctx.town = H.town(ctx)
+      H.power(ctx, -10, 13)
+    end,
+    steps = {
+      { ticks = 1, run = function(ctx)
+        H.process(ctx.town)
+        local custom = H.hall(ctx.town).custom_status
+        H.check(custom and custom.label[1] == "rt.status-no-depot", "stav radnice bez rozvodny: " .. serpent.line(custom))
+        H.check(not H.status(ctx.town).power_depot, "status hlásí rozvodnu")
+        ctx.pole = H.place(ctx, "rt-power-depot", -4, 10)
+      end },
+      { ticks = 60, run = function(ctx)
+        H.process(ctx.town)
+        H.check(H.status(ctx.town).power_ok and H.status(ctx.town).power_depot, "po stavbě rozvodny bez elektřiny")
+        local used = ctx.pole.electric_network_statistics.input_counts["rt-power-load"]
+        H.check(used and used > 0, "spotřeba města chybí ve statistice: " .. serpent.line(ctx.pole.electric_network_statistics.input_counts))
+        H.check(not prototypes.entity["rt-power-load"].hidden, "spotřebič města je skrytý – okno sítě ho neukáže")
       end },
     },
   },

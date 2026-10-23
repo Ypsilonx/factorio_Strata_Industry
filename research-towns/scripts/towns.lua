@@ -315,10 +315,10 @@ local function house_bonus_full(town, candidates)
   return levels.bonus_full(town.level, list)
 end
 
---- Dům, který se právě vylepšuje, a jeho požadavky (nil, nil = nic k vylepšení, i když je bonus plný –
---- suroviny by se utratily zbytečně).
+--- Dům, který se právě vylepšuje, a jeho požadavky (nil, nil = nic k vylepšení: hráč vylepšování vypnul,
+--- nebo je bonus plný – suroviny by se utratily zbytečně).
 local function house_target(town, candidates)
-  if house_bonus_full(town, candidates) then return nil, nil end
+  if town.house_upgrades_off or house_bonus_full(town, candidates) then return nil, nil end
   local target = houses.pick(candidates, levels.house_level_max(town.level, config.level_count()))
   return target, target and config.house_requirements(target.level)
 end
@@ -385,12 +385,12 @@ function M.status(town)
     productivity = levels.productivity_modules(town.level, count) * levels.BONUS_STEP,
     beacon_modules = beacon and beacon.valid and beacon.get_module_inventory().get_item_count(BONUS_MODULE) or 0,
     power_ok = town.power_ok, power_watts = levels.power_mw(town.level, count) * 1e6,
-    power_percent = depots.power_percent(town),
+    power_percent = depots.power_percent(town), power_depot = depots.has_power_depot(town),
     requirements = with_delivered(config.upgrade(town.level), town.progress), can_upgrade = M.can_upgrade(town),
     house_requirements = with_delivered(house_reqs, town.house_progress),
     houses_to_upgrade = target and houses.upgradable(candidates, levels.house_level_max(town.level, count)) or 0,
     house_target_level = target and target.level,
-    house_bonus_full = house_bonus_full(town, candidates),
+    house_bonus_full = house_bonus_full(town, candidates), house_upgrades = not town.house_upgrades_off,
     level_progress = level_progress(town),
     house_upgrade_progress = milestones.fraction(house_reqs, town.house_progress),
     upkeep = upkeep_status(town, #candidates), upkeep_ok = town.upkeep_ok,
@@ -466,6 +466,25 @@ local function process_repair(town)
   end
 end
 
+--- Stav radnice v okně entity místo obecného „zakázáno skriptem“: proč město nezkoumá (nil = hra ukáže svůj stav).
+--- @return CustomEntityStatus|nil
+local function hall_status(town)
+  local red = defines.entity_status_diode.red
+  if not town.power_ok then
+    return { diode = red, label = depots.has_power_depot(town) and { "rt.status-no-power" } or { "rt.status-no-depot" } }
+  end
+  if not town.upkeep_ok then return { diode = red, label = { "rt.status-no-upkeep" } } end
+  return nil
+end
+
+--- Zapne/vypne vylepšování domů. Vypnuté = překladiště na domy nic neberou, dodávky zůstanou pro spotřebu
+--- a milník radnice; rozpracovaný postup domu se drží do zapnutí. Ve storage jen příznak vypnutí (nil = zapnuto,
+--- starší savy tak nepotřebují migraci).
+function M.set_house_upgrades(town, enabled)
+  town.house_upgrades_off = not enabled or nil
+  M.refresh_boards(town)
+end
+
 --- Pravidelné zpracování: dodávky z překladišť (zásoba spotřeby → milník radnice → vylepšení domu),
 --- vylepšení domu, spotřeba zásoby, kontrola elektřiny a zapnutí/vypnutí výzkumu.
 function M.process(town)
@@ -502,6 +521,7 @@ function M.process(town)
     town.upkeep_ok = true
   end
   town.hall.disabled_by_script = not (town.power_ok and town.upkeep_ok)
+  town.hall.custom_status = hall_status(town)
   M.refresh_boards(town)
 end
 
@@ -519,6 +539,7 @@ function M.on_hall_died(key)
   if not ruin then return M.on_hall_removed(key) end
   ruin.destructible = false
   ruin.disabled_by_script = true
+  ruin.custom_status = { diode = defines.entity_status_diode.yellow, label = { "rt.status-ruin" } }
   network.replace_hall(key, ruin)
   town.hall = ruin
   town.state = "ruin"
