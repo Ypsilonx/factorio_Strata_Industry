@@ -3,14 +3,34 @@
 --- (počet receptů, ve kterých jsou surovinou), každý se všemi recepty, které ho vyrábějí jako hlavní výrobek.
 local M = {}
 
---- Typy předmětů, které můžou být specializací (vědecké balíčky – typ tool – ne).
+--- Typy předmětů, které můžou být specializací (typ tool ne; vědy typu item – od 2.1 vanilla – vyřadí science_packs).
 local ITEM_TYPES = { "item", "module", "capsule", "ammo", "item-with-entity-data", "rail-planner", "repair-tool" }
 --- Vlastní předměty modu nejsou materiálem specializace.
 local OWN_PREFIX = "rt-"
 
+--- Patří recept do kategorie recyklace? (od 2.1 má recept jen pole categories)
+local function recycling(recipe)
+  for _, category in ipairs(recipe.categories or {}) do
+    if category == "recycling" then return true end
+  end
+  return false
+end
+
 --- Je recept skutečný výrobní postup? Skryté (recyklace Space Age), recyklace a parametry ne.
 local function real(recipe)
-  return not recipe.hidden and not recipe.parameter and recipe.category ~= "recycling"
+  return not recipe.hidden and not recipe.parameter and not recycling(recipe)
+end
+
+--- Vědecké balíčky = suroviny výzkumů; specializací nejsou.
+--- @return table<string, true> jména předmětů
+local function science_packs(raw)
+  local set = {}
+  for _, tech in pairs(raw.technology or {}) do
+    for _, ingredient in ipairs(tech.unit and tech.unit.ingredients or {}) do
+      set[ingredient[1] or ingredient.name] = true
+    end
+  end
+  return set
 end
 
 --- Počítá se recept do používanosti surovin? Recepty bez rozkladu (plnění a vyprázdnění barelů, kanystrů) ne – jinak
@@ -88,8 +108,10 @@ local function main_product(recipe)
 end
 
 --- Je materiál vhodný? Existuje, není skrytý, není věda ani vlastní předmět modu.
-local function eligible(raw, product)
+--- @param packs table<string, true> vědecké balíčky (science_packs)
+local function eligible(raw, product, packs)
   if product.name:sub(1, #OWN_PREFIX) == OWN_PREFIX then return false end
+  if product.type ~= "fluid" and packs[product.name] then return false end
   if product.type == "fluid" then
     local fluid = raw.fluid and raw.fluid[product.name]
     return fluid ~= nil and not fluid.hidden
@@ -129,9 +151,9 @@ function M.collect(raw, available, count)
       end
     end
   end
-  local candidates, from_world, packed = {}, world(raw), containers(raw)
+  local candidates, from_world, packed, packs = {}, world(raw), containers(raw), science_packs(raw)
   for key, product in pairs(types) do
-    if usage[key] and not from_world[key] and not packed[key] and eligible(raw, product) and available(key) then
+    if usage[key] and not from_world[key] and not packed[key] and eligible(raw, product, packs) and available(key) then
       table.sort(producers[key])
       candidates[#candidates + 1] = { type = product.type, name = product.name, recipes = producers[key],
         usage = usage[key] }

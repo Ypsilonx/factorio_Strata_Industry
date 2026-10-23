@@ -12,10 +12,10 @@ for name in pairs(removed) do lab_names[#lab_names + 1] = name end
 table.sort(lab_names)
 log("research-towns: odstraněné laboratoře: " .. table.concat(lab_names, ", "))
 log("research-towns: laboratoř rozložená na suroviny v receptech: " .. table.concat(expanded, ", "))
--- Recyklace (quality) vznikla v data-updates ze starých surovin – vracela by laboratoř a labs.remove ji
--- proto vypnul. Přegenerovat ze surovin po rozkladu.
-if mods["quality"] then
-  local recycling = require("__quality__.prototypes.recycling")
+-- Recyklace (od 2.1 vestavěný mod recycler) vznikla v data-updates ze starých surovin – vracela by laboratoř
+-- a labs.remove ji proto vypnul. Přegenerovat ze surovin po rozkladu.
+if mods["recycler"] then
+  local recycling = require("__recycler__.recycling")
   for _, name in ipairs(expanded) do recycling.generate_recycling_recipe(data.raw.recipe[name]) end
 end
 

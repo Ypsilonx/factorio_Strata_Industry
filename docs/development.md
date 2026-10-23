@@ -1,7 +1,7 @@
 # Research Towns – vývoj
 
 ## Prostředí
-- Factorio 2.0 (Steam), cesta v `tools/run-tests.sh` (proměnná `FACTORIO_EXE`).
+- Factorio 2.1 (Steam; od modu 0.2.0, verze 0.1.x jsou pro 2.0), cesta v `tools/run-tests.sh` (proměnná `FACTORIO_EXE`).
 - VSCode + sumneko.lua + FMTK (`justarandomgeek.factoriomod-debug`); ladění: `bash tools/link-mod.sh`, pak F5 („Factorio – Research Towns“).
 - Lua 5.3 v PATH pro unit testy (hra běží na Lua 5.2 – v modu nepoužívat `//`).
 
@@ -57,8 +57,8 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
 - Vědy, suroviny milníků i laboratoře se odvozují z `data.raw` v `data-final-fixes.lua`; v `create.log` je vidět
   výsledek (řádky `research-towns: …`).
 - Cizí recepty s laboratoří jako surovinou (např. skleník ze simply-greenhouse) dostanou místo ní suroviny receptu
-  laboratoře (`labs.remove`, log `laboratoř rozložená na suroviny v receptech`); recyklace (quality) se pro ně
-  přegeneruje. Hlídá compat kontrola „žádný neskrytý recept nemá laboratoř jako surovinu“.
+  laboratoře (`labs.remove`, log `laboratoř rozložená na suroviny v receptech`); recyklace (od 2.1 mod
+  `recycler`, odemyká ji výzkum recycling) se pro ně přegeneruje. Hlídá compat kontrola „žádný neskrytý recept nemá laboratoř jako surovinu“.
 - `info.json` má volitelnou závislost `? pypostprocessing` – Py si v něm teprve dopočítává prerekvizity výzkumů,
   náš final-fixes musí běžet až po něm (jinak skončí všechny vědy na úrovni 1).
 - Ověřeno 2026-10-05 (Factorio 2.0.77), plán 1b (úroveň = věda), unit 53/53, vanilla 37/37, Space Age 37/37:
@@ -74,6 +74,9 @@ Sprity vznikají skriptem `blender/build_hall.py` (headless, z kořene repa), p�
   Bob's (17 modů) compat 6/6, `pymodpack` compat 6/6. Specializace: vanilla ocel, železo, obvody, kola, měď,
   trubky, kabely, LDS; Space Age totéž s litím a wolfram; Bob's titan, hliník, nitinol, kobaltová kola…;
   Py bedding, malé díly, ocel, plasty, obvody (barely vyřazené jako obaly kapalin).
+- Ověřeno 2026-10-23, port na Factorio 2.1.23: unit 84/84, vanilla 67/67, Space Age 67/67, Bob's 3.0 (16 modů `bob*`)
+  compat 7/7 (16 úrovní), `pymodpack` 3.1 compat 7/7. Změny 2.1: recyklace v modu `recycler`, kategorie receptu jen
+  `categories`, vědy typu `item` (specializace je vyřazují podle surovin výzkumů), kapaliny `get_fluid`/`remove_fluid(1, …)`.
 
 ## Testy
 - `bash tools/run-unit.sh` – čistá logika.

@@ -11,7 +11,9 @@ local function raw()
     "water-barrel", "rt-house", "lonely" }) do
     r.item[name] = { name = name }
   end
-  r.tool["red-pack"] = { name = "red-pack" }
+  -- Od 2.1 je věda typu item; pozná se podle výzkumu, i když ji používají recepty (Py, Space Age).
+  r.item["red-pack"] = { name = "red-pack" }
+  r.technology.automation = { name = "automation", unit = { ingredients = { { "red-pack", 1 } } } }
   r.fluid.water = { name = "water" }
   r.resource["iron-ore"] = { name = "iron-ore", minable = { result = "iron-ore" } }
   r.resource["copper-ore"] = { name = "copper-ore", minable = { result = "copper-ore" } }
@@ -33,7 +35,7 @@ local function raw()
   recipe("rt-house", { { "gear", 1 }, { "iron-plate", 1 } }, { { "rt-house", 1 } })
   recipe("pipe-thing", { { "iron-plate", 1 } }, { { "lonely", 1 } })
   -- Recyklace (skrytá) a barely (bez rozkladu) se nepočítají.
-  recipe("gear-recycling", { { "gear", 1 } }, { { "iron-plate", 2 } }, { hidden = true, category = "recycling" })
+  recipe("gear-recycling", { { "gear", 1 } }, { { "iron-plate", 2 } }, { hidden = true, categories = { "recycling" } })
   recipe("barrel", { { "iron-plate", 1 } }, { { "barrel", 1 } })
   recipe("fill-water", { { "barrel", 1 }, { "water", 50, "fluid" } }, { { "water-barrel", 1 } },
     { allow_decomposition = false })
@@ -46,6 +48,7 @@ local function raw()
   recipe("fill-oil", { { "barrel", 1 }, { "oil", 50, "fluid" } }, { { "oil-barrel", 1 } })
   recipe("empty-oil", { { "oil-barrel", 1 } }, { { "oil", 50, "fluid" }, { "barrel", 1 } }, { main_product = "oil" })
   for i = 1, 8 do recipe("oily-" .. i, { { "oil-barrel", 1 } }, { { "gear", 1 } }) end
+  for i = 1, 8 do recipe("packed-" .. i, { { "red-pack", 1 } }, { { "lonely", 1 } }) end
   -- Voda se čerpá ze světa; i když ji nějaký recept vyrábí a hodně receptů ji používá, specializací není.
   r.tile.water = { name = "water", fluid = "water" }
   recipe("ice-melting", { { "iron-ore", 1 } }, { { "water", 20, "fluid" } })

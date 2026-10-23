@@ -47,8 +47,14 @@ return {
     H.check(table.concat(got, ",") == "electronic-circuit×21,iron-gear-wheel×20,iron-plate×3,transport-belt×8",
       "suroviny: " .. table.concat(got, ","))
     local recycling = prototypes.recipe["rt-test-lab-user-recycling"]
-    if script.active_mods["quality"] then
-      H.check(recycling and recycling.enabled, "recyklace chybí nebo je vypnutá")
+    if script.active_mods["recycler"] then
+      -- Od 2.1 recyklaci odemyká výzkum recycling (bez něj je recept zapnutý od začátku).
+      local unlocked = recycling and recycling.enabled
+      local tech = prototypes.technology["recycling"]
+      for _, effect in ipairs(tech and tech.effects or {}) do
+        unlocked = unlocked or (effect.type == "unlock-recipe" and effect.recipe == recycling.name)
+      end
+      H.check(recycling and unlocked, "recyklace chybí nebo ji nic neodemyká")
       local products = {}
       for _, product in ipairs(recycling.products) do products[product.name] = true end
       H.check(products["electronic-circuit"] and not products["lab"], "recyklace: " .. serpent.line(recycling.products))

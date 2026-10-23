@@ -20,9 +20,10 @@ mkdir -p "$RUN/mods" "$RUN/write-data"
 cp -r "$ROOT/research-towns" "$RUN/mods/research-towns"
 cp -r "$ROOT/tests/research-towns-tests" "$RUN/mods/research-towns-tests"
 
-declare -A BUILTIN=([base]=true [elevated-rails]=false [quality]=false [space-age]=false)
+# recycler (od 2.1) uvádět výslovně – vestavěný mod, který v mod-list.json chybí, hra potichu zapne.
+declare -A BUILTIN=([base]=true [elevated-rails]=false [quality]=false [recycler]=false [space-age]=false)
 EXTRA=()
-[ "$VARIANT" = "space-age" ] && BUILTIN=([base]=true [elevated-rails]=true [quality]=true [space-age]=true)
+[ "$VARIANT" = "space-age" ] && BUILTIN=([base]=true [elevated-rails]=true [quality]=true [recycler]=true [space-age]=true)
 
 # Zkopíruje nejvyšší verzi modu ze složky MODS_SOURCE a rekurzivně jeho povinné závislosti.
 declare -A SEEN=()
@@ -33,6 +34,8 @@ add_mod() {
   if [ -n "${BUILTIN[$name]:-}" ]; then
     BUILTIN[$name]=true
     [ "$name" = "space-age" ] && BUILTIN[quality]=true && BUILTIN[elevated-rails]=true
+    # quality i space-age závisí na recycler.
+    [ "$name" = "space-age" ] || [ "$name" = "quality" ] && BUILTIN[recycler]=true
     return 0
   fi
   [ "$name" = "core" ] && return 0
@@ -41,12 +44,13 @@ add_mod() {
   if [ -z "$zip" ]; then echo "Mod $name není v $MODS_SOURCE"; exit 1; fi
   cp "$zip" "$RUN/mods/"
   EXTRA+=("$name")
-  # Povinné závislosti: bez prefixu ?, (?), ! a ~ (ten je povinný, jen nemění pořadí načítání).
+  # Povinné závislosti: bez prefixu ?, (?), ! a ~ (ten je povinný, jen nemění pořadí načítání);
+  # + (od 2.1) je volitelná, ale ve výchozím stavu zapnutá – bere se jako povinná.
   local dep
   # info.json může být i na jednom řádku – proto spojit řádky a vzít jen obsah pole "dependencies".
   for dep in $(unzip -p "$zip" '*/info.json' | tr -d '\r\n' | grep -o '"dependencies"[^]]*' \
       | grep -o '"[^"]*"' | tr -d '"' | grep -v '^dependencies$' \
-      | grep -vE '^(\?|\(\?\)|!)' | sed -E 's/^~ ?//; s/^ *//; s/[ <>=].*$//'); do
+      | grep -vE '^(\?|\(\?\)|!)' | sed -E 's/^[~+] ?//; s/^ *//; s/[ <>=].*$//'); do
     add_mod "$dep"
   done
 }
@@ -67,7 +71,7 @@ fi
 
 {
   echo '{"mods":['
-  for name in base elevated-rails quality space-age; do echo "  {\"name\":\"$name\",\"enabled\":${BUILTIN[$name]}},"; done
+  for name in base elevated-rails quality recycler space-age; do echo "  {\"name\":\"$name\",\"enabled\":${BUILTIN[$name]}},"; done
   for name in "${EXTRA[@]}"; do echo "  {\"name\":\"$name\",\"enabled\":true},"; done
   echo '  {"name":"research-towns","enabled":true},'
   echo '  {"name":"research-towns-tests","enabled":true}'

@@ -174,11 +174,12 @@ function M.collect(town, sinks)
           end
         end
       elseif depot.kind == "fluid" then
-        local fluid = entity.fluidbox[1]
+        local fluid = entity.get_fluid(1)
         if fluid then
           local take = allocation.wanted(sinks, "fluid", fluid.name, fluid.amount)
           if take > 0 then
-            allocation.distribute(sinks, "fluid", fluid.name, entity.remove_fluid({ name = fluid.name, amount = take }))
+            local removed = entity.remove_fluid(1, take)
+            allocation.distribute(sinks, "fluid", fluid.name, removed and removed.amount or 0)
           end
         end
       end
